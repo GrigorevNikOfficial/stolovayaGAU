@@ -26,9 +26,10 @@ export const register = async (req, res) => {
     const token = generateToken(result.insertId);
 
     const [users] = await pool.execute(
-      'SELECT id, first_name, last_name, phone, mail, created_at FROM users WHERE id = ?',
-      [result.insertId]
+        'SELECT id, first_name, last_name, phone, mail, role, created_at FROM users WHERE id = ?',
+        [result.insertId]
     );
+
 
     res.status(201).json({
       message: 'Пользователь успешно зарегистрирован',

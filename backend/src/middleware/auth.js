@@ -11,11 +11,12 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     const [users] = await pool.execute(
-      'SELECT id, first_name, last_name, phone, mail, created_at FROM users WHERE id = ?',
-      [decoded.userId]
+        'SELECT id, first_name, last_name, phone, mail, role, created_at FROM users WHERE id = ?',
+        [decoded.userId]
     );
+
 
     if (users.length === 0) {
       return res.status(401).json({ error: 'Пользователь не найден' });
@@ -44,4 +45,16 @@ export const generateToken = (userId) => {
     process.env.JWT_SECRET, 
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
+};
+// Middleware для проверки роли админа
+export const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Требуется аутентификация' });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора' });
+  }
+
+  next();
 };
