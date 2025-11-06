@@ -1,0 +1,126 @@
+-- database.sql
+-- Полная схема БД для столовой с доставкой
+
+CREATE DATABASE IF NOT EXISTS stolovaya_gau CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE stolovaya_gau;
+
+-- Таблица пользователей
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL UNIQUE,
+    mail VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Таблица блюд/товаров
+CREATE TABLE items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    uniq_nom VARCHAR(100) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(100),
+    cal INT,
+    number_pribors INT,
+    time_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image_url VARCHAR(500),
+    is_available BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Таблица заказов
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    total_amount DECIMAL(10, 2) NOT NULL,
+    status ENUM('pending', 'confirmed', 'cooking', 'ready', 'delivering', 'delivered', 'cancelled') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Таблица элементов заказа
+CREATE TABLE order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    item_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    price_at_time DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_order_item (order_id, item_id)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Таблица доставки
+CREATE TABLE deliveries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL UNIQUE,
+    tracking_number VARCHAR(100) NOT NULL UNIQUE,
+    address TEXT NOT NULL,
+    status ENUM('pending', 'packing', 'on_way', 'delivered', 'cancelled') DEFAULT 'pending',
+    delivery_date TIMESTAMP NULL,
+    estimated_delivery TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Индексы для оптимизации
+CREATE INDEX idx_items_category ON items(category);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_deliveries_status ON deliveries(status);
+CREATE INDEX idx_deliveries_tracking ON deliveries(tracking_number);
+
+-- Тестовые данные (пока без кириллицы)
+INSERT INTO users (first_name, last_name, phone, mail, password) VALUES
+('Ivan', 'Petrov', '+79161234567', 'ivan@mail.ru', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
+('Maria', 'Sidorova', '+79167654321', 'maria@mail.ru', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
+('Alexey', 'Pavlov', '+79031112233', 'alex@mail.ru', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+
+-- Категории блюд (английские названия)
+INSERT INTO items (uniq_nom, name, description, price, category, cal, number_pribors, image_url) VALUES
+-- Супы
+('SOUP-001', 'Borshch', 'Traditional Russian beet soup', 180.00, 'soups', 250, 1, '/images/borsh.jpg'),
+('SOUP-002', 'Chicken Soup', 'Homemade chicken noodle soup', 160.00, 'soups', 200, 1, '/images/chicken-soup.jpg'),
+
+-- Основные блюда
+('MAIN-001', 'Chicken Kiev', 'Chicken cutlet with butter and herbs', 320.00, 'main', 450, 2, '/images/kiev-cutlet.jpg'),
+('MAIN-002', 'Mashed Potatoes with Mushrooms', 'Creamy mashed potatoes with fried mushrooms', 240.00, 'main', 350, 1, '/images/pure-mushrooms.jpg'),
+('MAIN-003', 'Buckwheat with Beef', 'Buckwheat porridge with stewed beef', 280.00, 'main', 400, 1, '/images/grechka-beef.jpg'),
+
+-- Салаты
+('SALAD-001', 'Caesar Salad', 'Classic Caesar salad with chicken', 220.00, 'salads', 300, 1, '/images/caesar.jpg'),
+('SALAD-002', 'Olivier Salad', 'Traditional Russian Olivier salad', 190.00, 'salads', 280, 1, '/images/olivier.jpg'),
+
+-- Напитки
+('DRINK-001', 'Kompot', 'Homemade berry kompot', 80.00, 'drinks', 120, 1, '/images/compote.jpg'),
+('DRINK-002', 'Mors', 'Cranberry fruit drink', 90.00, 'drinks', 100, 1, '/images/mors.jpg'),
+
+-- Десерты
+('DESSERT-001', 'Charlotte', 'Apple charlotte pie', 150.00, 'desserts', 320, 1, '/images/charlotte.jpg'),
+('DESSERT-002', 'Syrniki', 'Russian cottage cheese pancakes', 170.00, 'desserts', 280, 2, '/images/syrniki.jpg');
+
+-- Тестовые заказы
+INSERT INTO orders (user_id, total_amount, status) VALUES
+(1, 540.00, 'delivered'),
+(2, 410.00, 'delivering');
+
+INSERT INTO order_items (order_id, item_id, quantity, price_at_time) VALUES
+(1, 1, 1, 180.00),
+(1, 3, 1, 320.00),
+(1, 8, 1, 80.00),
+(2, 2, 1, 160.00),
+(2, 6, 1, 220.00),
+(2, 9, 1, 90.00);
+
+-- Тестовые доставки
+INSERT INTO deliveries (order_id, tracking_number, address, status, delivery_date) VALUES
+(1, 'TRACK-001', 'Lenina st, 10, apt 25', 'delivered', NOW() - INTERVAL 1 DAY),
+(2, 'TRACK-002', 'Mira ave, 15, apt 8', 'on_way', NOW() + INTERVAL 1 HOUR);
