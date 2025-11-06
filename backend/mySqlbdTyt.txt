@@ -124,3 +124,10 @@ INSERT INTO order_items (order_id, item_id, quantity, price_at_time) VALUES
 INSERT INTO deliveries (order_id, tracking_number, address, status, delivery_date) VALUES
 (1, 'TRACK-001', 'Lenina st, 10, apt 25', 'delivered', NOW() - INTERVAL 1 DAY),
 (2, 'TRACK-002', 'Mira ave, 15, apt 8', 'on_way', NOW() + INTERVAL 1 HOUR);
+
+
+
+-- Добавляем поле role с дефолтным значением 'user'
+ALTER TABLE users
+ADD COLUMN role ENUM('user', 'admin') NOT NULL DEFAULT 'user'
+AFTER password;
