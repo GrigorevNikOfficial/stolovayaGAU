@@ -12,6 +12,10 @@ function App() {
     getMe,
   ]);
 
+  const [currentPath, setCurrentPath] = React.useState(
+    window.location.pathname
+  );
+
   React.useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token && !currentUser) {
@@ -19,14 +23,20 @@ function App() {
     }
   }, [currentUser, handleGetMe]);
 
-  const getCurrentPage = () => {
-    const path = window.location.pathname;
+  // Слушаем изменения URL
+  React.useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
 
-    if (path === '/login') {
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
+
+  const getCurrentPage = () => {
+    if (currentPath === '/login' || currentPath === '/register') {
       return <AuthForm />;
-    } else if (path === '/register') {
-      return <AuthForm />;
-    } else if (path === '/profile') {
+    } else if (currentPath === '/profile') {
       return isAuthenticated ? <ProfilePage /> : <HomePage />;
     } else {
       return <HomePage />;

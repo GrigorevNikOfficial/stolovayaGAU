@@ -47,12 +47,14 @@ export const createOrderFx = createEffect(
 
 export const updateOrderStatusFx = createEffect(
   async (order: UpdateOrderRequest): Promise<Order> => {
+    console.log('Updating order status:', order);
     return await ordersApi.updateOrder(order);
   }
 );
 
 export const cancelOrderFx = createEffect(
   async (orderId: number): Promise<Order> => {
+    console.log('Cancelling order:', orderId);
     return await ordersApi.updateOrder({ id: orderId, status: 'cancelled' });
   }
 );

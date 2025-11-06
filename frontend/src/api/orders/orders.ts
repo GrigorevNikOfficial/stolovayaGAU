@@ -40,7 +40,9 @@ export const ordersApi = {
 
   // Обновить статус заказа
   updateOrder: async (order: UpdateOrderRequest): Promise<Order> => {
-    return httpClient.put<Order>(`/orders/${order.id}`, order);
+    return httpClient.put<Order>(`/orders/${order.id}`, {
+      status: order.status,
+    });
   },
 
   // Получить историю заказа

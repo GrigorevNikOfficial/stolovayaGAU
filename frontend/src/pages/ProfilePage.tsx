@@ -11,6 +11,11 @@ export const ProfilePage: React.FC = () => {
     loadOrders,
   ]);
 
+  const handleNavigation = (path: string) => {
+    window.history.pushState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   // Загружаем заказы ТОЛЬКО при загрузке страницы профиля
   React.useEffect(() => {
     if (currentUser) {
@@ -22,15 +27,11 @@ export const ProfilePage: React.FC = () => {
     }
   }, [currentUser, handleLoadOrders]);
 
-  const handleBackToHome = () => {
-    window.history.pushState({}, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  };
-
   const handleLogoutClick = () => {
     handleLogout();
-    window.history.pushState({}, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    setTimeout(() => {
+      handleNavigation('/');
+    }, 100);
   };
 
   if (!currentUser) {
@@ -41,7 +42,7 @@ export const ProfilePage: React.FC = () => {
             Пользователь не авторизован
           </h2>
           <button
-            onClick={handleBackToHome}
+            onClick={() => handleNavigation('/')}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
           >
             На главную
@@ -60,16 +61,11 @@ export const ProfilePage: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900">
                 Профиль пользователя
               </h1>
-              <button
-                onClick={handleBackToHome}
-                className="text-indigo-600 hover:text-indigo-500 text-sm mt-2"
-              >
-                ← Назад в меню
-              </button>
+              {/* УБРАНА СТРЕЛОЧКА И "Назад в меню" */}
             </div>
             <div className="flex gap-2">
               <button
-                onClick={handleBackToHome}
+                onClick={() => handleNavigation('/')}
                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 В меню

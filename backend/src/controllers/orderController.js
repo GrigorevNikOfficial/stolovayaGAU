@@ -239,3 +239,78 @@ export const getOrderById = async (req, res) => {
     res.status(500).json({ error: 'Ошибка при получении заказа' });
   }
 };
+
+// Обновить статус заказа
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userRole = req.user.role;
+
+    // Только админы могут менять статусы
+    if (userRole !== 'admin') {
+      return res.status(403).json({ error: 'Недостаточно прав для изменения статуса заказа' });
+    }
+
+    const validStatuses = ['pending', 'confirmed', 'cooking', 'ready', 'delivering', 'delivered', 'completed', 'cancelled'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Неверный статус заказа' });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+      // Проверяем существование заказа
+      const [orders] = await connection.execute(
+          'SELECT id FROM orders WHERE id = ?',
+          [id]
+      );
+
+      if (orders.length === 0) {
+        return res.status(404).json({ error: 'Заказ не найден' });
+      }
+
+      // Обновляем статус заказа
+      await connection.execute(
+          'UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?',
+          [status, id]
+      );
+
+      // Добавляем запись в историю
+      const statusNotes = {
+        pending: 'Заказ создан',
+        confirmed: 'Заказ подтвержден',
+        cooking: 'Заказ передан на кухню',
+        ready: 'Заказ готов',
+        delivering: 'Заказ передан курьеру',
+        delivered: 'Заказ доставлен',
+        completed: 'Заказ завершен',
+        cancelled: 'Заказ отменен'
+      };
+
+      await connection.execute(
+          'INSERT INTO order_history (order_id, status, notes) VALUES (?, ?, ?)',
+          [id, status, statusNotes[status] || `Статус изменен на ${status}`]
+      );
+
+      // Получаем обновленный заказ
+      const [updatedOrder] = await connection.execute(
+          'SELECT * FROM orders WHERE id = ?',
+          [id]
+      );
+
+      res.json(updatedOrder[0]);
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Update order status error:', error);
+    res.status(500).json({ error: 'Ошибка при обновлении статуса заказа' });
+  }
+};
