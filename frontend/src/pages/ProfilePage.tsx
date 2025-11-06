@@ -1,19 +1,35 @@
 import React from 'react';
-import { useStore, useEvent } from 'effector-react';
+import { useUnit } from 'effector-react';
 import { $currentUser, logoutUser } from '../models/users';
 
 export const ProfilePage: React.FC = () => {
-  const currentUser = useStore($currentUser);
-  const handleLogout = useEvent(logoutUser);
+  const [currentUser, handleLogout] = useUnit([$currentUser, logoutUser]);
+
+  const handleBackToHome = () => {
+    window.location.href = '/';
+  };
+
+  const handleLogoutClick = () => {
+    handleLogout();
+    // После выхода сразу перенаправляем на главную
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
+  };
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">
             Пользователь не авторизован
           </h2>
-          <p>Пожалуйста, войдите в систему</p>
+          <button
+            onClick={handleBackToHome}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+          >
+            На главную
+          </button>
         </div>
       </div>
     );
@@ -24,17 +40,34 @@ export const ProfilePage: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4">
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-start mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Профиль пользователя
-            </h1>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Выйти
-            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Профиль пользователя
+              </h1>
+              <button
+                onClick={handleBackToHome}
+                className="text-indigo-600 hover:text-indigo-500 text-sm mt-2"
+              >
+                ← Назад на главную
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleBackToHome}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                На главную
+              </button>
+              <button
+                onClick={handleLogoutClick}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Выйти
+              </button>
+            </div>
           </div>
 
+          {/* Остальной код профиля остается без изменений */}
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -42,7 +75,7 @@ export const ProfilePage: React.FC = () => {
                   Имя
                 </label>
                 <p className="mt-1 text-sm text-gray-900">
-                  {currentUser.firstName}
+                  {currentUser.first_name}
                 </p>
               </div>
               <div>
@@ -50,7 +83,7 @@ export const ProfilePage: React.FC = () => {
                   Фамилия
                 </label>
                 <p className="mt-1 text-sm text-gray-900">
-                  {currentUser.lastName}
+                  {currentUser.last_name}
                 </p>
               </div>
             </div>
@@ -61,6 +94,15 @@ export const ProfilePage: React.FC = () => {
               </label>
               <p className="mt-1 text-sm text-gray-900">{currentUser.phone}</p>
             </div>
+
+            {currentUser.mail && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <p className="mt-1 text-sm text-gray-900">{currentUser.mail}</p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -87,6 +129,17 @@ export const ProfilePage: React.FC = () => {
               </label>
               <p className="mt-1 text-sm text-gray-900">{currentUser.id}</p>
             </div>
+
+            {currentUser.created_at && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Дата регистрации
+                </label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {new Date(currentUser.created_at).toLocaleDateString('ru-RU')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -19,8 +19,10 @@ export const setEditingUser = createEvent<User | null>();
 export const resetForm = createEvent();
 export const searchUsers = createEvent<string>();
 export const loadUsersByRole = createEvent<User['role']>();
+export const registerUser = createEvent<CreateUserRequest>();
 export const loginUser = createEvent<{ phone: string; password: string }>();
 export const logoutUser = createEvent();
+export const getMe = createEvent();
 export const clearSearch = createEvent();
 export const clearRoleFilter = createEvent();
 export const clearAuthError = createEvent();
@@ -76,6 +78,14 @@ export const loadUsersByRoleFx = createEffect(
   }
 );
 
+export const registerUserFx = createEffect(
+  async (
+    userData: CreateUserRequest
+  ): Promise<{ user: User; token: string }> => {
+    return await usersApi.register(userData);
+  }
+);
+
 export const loginUserFx = createEffect(
   async ({
     phone,
@@ -89,14 +99,15 @@ export const loginUserFx = createEffect(
 );
 
 export const logoutUserFx = createEffect(async (): Promise<void> => {
-  return await usersApi.logout();
+  // Очищаем localStorage
+  localStorage.removeItem('authToken');
+  // Можно добавить вызов API logout если нужно
+  // await usersApi.logout()
 });
 
-export const refreshTokenFx = createEffect(
-  async (): Promise<{ user: User; token: string }> => {
-    return await usersApi.refreshToken();
-  }
-);
+export const getMeFx = createEffect(async (): Promise<User> => {
+  return await usersApi.getMe();
+});
 
 // Stores
 export const $users = createStore<User[]>([])
@@ -128,19 +139,28 @@ export const $displayedUsers = createStore<User[]>([])
   .on(searchUsersFx.doneData, (_, users) => users)
   .on(loadUsersByRoleFx.doneData, (_, users) => users);
 
+// Исправление reset - передаем события через запятую, а не в массиве
 export const $editingUser = createStore<User | null>(null)
   .on(setEditingUser, (_, user) => user)
-  .reset([createUserFx.done, updateUserFx.done, patchUserFx.done, resetForm]);
+  .reset(createUserFx.done, updateUserFx.done, patchUserFx.done, resetForm);
 
 // Authentication stores
 export const $currentUser = createStore<User | null>(null)
+  .on(registerUserFx.doneData, (_, { user }) => user)
   .on(loginUserFx.doneData, (_, { user }) => user)
-  .reset([logoutUserFx.done, logoutUser]);
+  .on(getMeFx.doneData, (_, user) => user)
+  .reset(logoutUserFx.done); // Сбрасываем при успешном выходе
 
 export const $authToken = createStore<string | null>(null)
-  .on(loginUserFx.doneData, (_, { token }) => token)
-  .on(refreshTokenFx.doneData, (_, { token }) => token)
-  .reset([logoutUserFx.done, logoutUser]);
+  .on(registerUserFx.doneData, (_, { token }) => {
+    localStorage.setItem('authToken', token);
+    return token;
+  })
+  .on(loginUserFx.doneData, (_, { token }) => {
+    localStorage.setItem('authToken', token);
+    return token;
+  })
+  .reset(logoutUserFx); // Сбрасываем при любом выходе
 
 export const $isAuthenticated = $currentUser.map(user => user !== null);
 
@@ -156,10 +176,9 @@ export const $isMutating = createStore(false)
   .on(patchUserFx.pending, (_, pending) => pending)
   .on(deleteUserFx.pending, (_, pending) => pending);
 
-export const $isLoggingIn = createStore(false).on(
-  loginUserFx.pending,
-  (_, pending) => pending
-);
+export const $isLoggingIn = createStore(false)
+  .on(loginUserFx.pending, (_, pending) => pending)
+  .on(registerUserFx.pending, (_, pending) => pending);
 
 export const $isLoggingOut = createStore(false).on(
   logoutUserFx.pending,
@@ -175,7 +194,7 @@ export const $error = createStore<string | null>(null)
   .on(deleteUserFx.fail, (_, { error }) => error.message)
   .on(searchUsersFx.fail, (_, { error }) => error.message)
   .on(loadUsersByRoleFx.fail, (_, { error }) => error.message)
-  .reset([
+  .reset(
     loadUsers,
     createUser,
     updateUser,
@@ -184,13 +203,14 @@ export const $error = createStore<string | null>(null)
     searchUsers,
     loadUsersByRole,
     clearSearch,
-    clearRoleFilter,
-  ]);
+    clearRoleFilter
+  );
 
 export const $authError = createStore<string | null>(null)
   .on(loginUserFx.fail, (_, { error }) => error.message)
-  .on(refreshTokenFx.fail, (_, { error }) => error.message)
-  .reset([loginUser, logoutUser, clearAuthError]);
+  .on(registerUserFx.fail, (_, { error }) => error.message)
+  .on(getMeFx.fail, (_, { error }) => error.message)
+  .reset(loginUser, registerUser, logoutUser, clearAuthError);
 
 // Stores для UI состояния
 export const $searchQuery = createStore('')
@@ -248,6 +268,11 @@ sample({
 });
 
 sample({
+  clock: registerUser,
+  target: registerUserFx,
+});
+
+sample({
   clock: loginUser,
   target: loginUserFx,
 });
@@ -257,8 +282,21 @@ sample({
   target: logoutUserFx,
 });
 
+sample({
+  clock: getMe,
+  target: getMeFx,
+});
+
 // Автоматическая очистка фильтров при загрузке всех users
 sample({
   clock: loadUsers,
   target: [clearSearch, clearRoleFilter],
+});
+
+// Автоматически получаем текущего пользователя при наличии токена
+sample({
+  clock: $authToken.updates,
+  source: $authToken,
+  filter: (token, previousToken) => token !== null && previousToken === null,
+  target: getMe,
 });

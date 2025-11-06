@@ -1,80 +1,69 @@
-import { API_CONFIG } from './config';
+const API_BASE = 'http://localhost:3002/api';
 
-class HttpClient {
-  private baseUrl: string;
-  private defaultHeaders: HeadersInit;
+export const httpClient = {
+  async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const token = localStorage.getItem('authToken');
 
-  constructor(baseUrl: string, defaultHeaders: HeadersInit = {}) {
-    this.baseUrl = baseUrl;
-    this.defaultHeaders = defaultHeaders;
-  }
+    // Исправление типов для headers
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
 
-  async get<T>(url: string): Promise<T> {
-    return this.request<T>(url, { method: 'GET' });
-  }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
-  async post<T>(url: string, data?: any): Promise<T> {
+    const response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP error! status: ${response.status}`;
+
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  get<T>(url: string): Promise<T> {
+    return this.request<T>(url);
+  },
+
+  post<T>(url: string, data?: any): Promise<T> {
     return this.request<T>(url, {
       method: 'POST',
       body: JSON.stringify(data),
     });
-  }
+  },
 
-  async put<T>(url: string, data?: any): Promise<T> {
+  put<T>(url: string, data?: any): Promise<T> {
     return this.request<T>(url, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-  }
+  },
 
-  async patch<T>(url: string, data?: any): Promise<T> {
+  patch<T>(url: string, data?: any): Promise<T> {
     return this.request<T>(url, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
-  }
+  },
 
-  async delete<T>(url: string): Promise<T> {
-    return this.request<T>(url, { method: 'DELETE' });
-  }
-
-  private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
-
-    try {
-      const response = await fetch(`${this.baseUrl}${url}`, {
-        headers: {
-          ...this.defaultHeaders,
-          ...options.headers,
-        },
-        signal: controller.signal,
-        ...options,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // For DELETE requests that might not return content
-      if (response.status === 204) {
-        return {} as T;
-      }
-
-      return response.json();
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout');
-      }
-      throw error;
-    }
-  }
-}
-
-export const httpClient = new HttpClient(
-  API_CONFIG.BASE_URL,
-  API_CONFIG.DEFAULT_HEADERS
-);
+  delete<T>(url: string): Promise<T> {
+    return this.request<T>(url, {
+      method: 'DELETE',
+    });
+  },
+};
