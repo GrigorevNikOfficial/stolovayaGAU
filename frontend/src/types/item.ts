@@ -7,7 +7,7 @@ export interface Item {
   category?: string | number;
   cal?: number;
   number_pribors?: number;
-  createdAt?: string;
+  createdAt: string;
   updatedAt?: string;
 }
 

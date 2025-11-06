@@ -12,7 +12,6 @@ function App() {
     getMe,
   ]);
 
-  // При загрузке приложения проверяем токен
   React.useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token && !currentUser) {
@@ -20,7 +19,6 @@ function App() {
     }
   }, [currentUser, handleGetMe]);
 
-  // Определяем текущую страницу на основе URL
   const getCurrentPage = () => {
     const path = window.location.pathname;
 

@@ -1,58 +1,50 @@
 import type {
   CreateOrderRequest,
   Order,
+  OrderWithDetails,
   UpdateOrderRequest,
 } from '../../types/order';
 import { httpClient } from '../http-client';
 
 export const ordersApi = {
-  // Получить все заказы
-  getOrders: async (): Promise<Order[]> => {
-    return httpClient.get<Order[]>('/orders');
+  // Получить все заказы (для админов) или свои заказы (для пользователей)
+  getOrders: async (): Promise<{ orders: Order[] }> => {
+    return httpClient.get<{ orders: Order[] }>('/orders');
   },
 
   // Получить заказ по ID
-  getOrder: async (id: number): Promise<Order> => {
-    return httpClient.get<Order>(`/orders/${id}`);
+  getOrder: async (
+    id: number
+  ): Promise<{ order: OrderWithDetails; items: any[]; history: any[] }> => {
+    return httpClient.get<{
+      order: OrderWithDetails;
+      items: any[];
+      history: any[];
+    }>(`/orders/${id}`);
   },
 
   // Создать заказ
-  createOrder: async (order: CreateOrderRequest): Promise<Order> => {
-    return httpClient.post<Order>('/orders', order);
+  createOrder: async (
+    order: CreateOrderRequest
+  ): Promise<{
+    message: string;
+    order: Order;
+    order_number: string;
+  }> => {
+    return httpClient.post<{
+      message: string;
+      order: Order;
+      order_number: string;
+    }>('/orders', order);
   },
 
-  // Обновить заказ
+  // Обновить статус заказа
   updateOrder: async (order: UpdateOrderRequest): Promise<Order> => {
     return httpClient.put<Order>(`/orders/${order.id}`, order);
   },
 
-  // Частичное обновление заказа
-  patchOrder: async (
-    id: number,
-    updates: Partial<UpdateOrderRequest>
-  ): Promise<Order> => {
-    return httpClient.patch<Order>(`/orders/${id}`, updates);
-  },
-
-  // Удалить заказ
-  deleteOrder: async (id: number): Promise<void> => {
-    await httpClient.delete(`/orders/${id}`);
-  },
-
-  // Получить заказы по пользователю
-  getOrdersByUser: async (userId: number): Promise<Order[]> => {
-    return httpClient.get<Order[]>(`/orders/user/${userId}`);
-  },
-
-  // Получить заказы по статусу
-  getOrdersByStatus: async (status: Order['status']): Promise<Order[]> => {
-    return httpClient.get<Order[]>(`/orders/status/${status}`);
-  },
-
-  // Поиск заказов
-  searchOrders: async (query: string): Promise<Order[]> => {
-    return httpClient.get<Order[]>(
-      `/orders/search?q=${encodeURIComponent(query)}`
-    );
+  // Получить историю заказа
+  getOrderHistory: async (id: number): Promise<{ history: any[] }> => {
+    return httpClient.get<{ history: any[] }>(`/orders/${id}/history`);
   },
 };

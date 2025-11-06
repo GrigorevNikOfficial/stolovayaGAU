@@ -8,7 +8,10 @@ import { httpClient } from '../http-client';
 export const itemsApi = {
   // Получить все товары
   getItems: async (): Promise<Item[]> => {
-    return httpClient.get<Item[]>('/items');
+    const response = await httpClient.get<{ items: Item[]; total: number }>(
+      '/items'
+    );
+    return response.items;
   },
 
   // Получить товар по ID
@@ -18,12 +21,20 @@ export const itemsApi = {
 
   // Создать товар
   createItem: async (item: CreateItemRequest): Promise<Item> => {
-    return httpClient.post<Item>('/items', item);
+    const response = await httpClient.post<{ item: Item; message: string }>(
+      '/items',
+      item
+    );
+    return response.item;
   },
 
   // Обновить товар
   updateItem: async (item: UpdateItemRequest): Promise<Item> => {
-    return httpClient.put<Item>(`/items/${item.id}`, item);
+    const response = await httpClient.put<{ item: Item; message: string }>(
+      `/items/${item.id}`,
+      item
+    );
+    return response.item;
   },
 
   // Частичное обновление товара
@@ -31,7 +42,11 @@ export const itemsApi = {
     id: number,
     updates: Partial<UpdateItemRequest>
   ): Promise<Item> => {
-    return httpClient.patch<Item>(`/items/${id}`, updates);
+    const response = await httpClient.patch<{ item: Item; message: string }>(
+      `/items/${id}`,
+      updates
+    );
+    return response.item;
   },
 
   // Удалить товар
@@ -41,13 +56,19 @@ export const itemsApi = {
 
   // Получить товары по категории
   getItemsByCategory: async (category: string): Promise<Item[]> => {
-    return httpClient.get<Item[]>(`/items/category/${category}`);
+    const response = await httpClient.get<{
+      category: string;
+      items: Item[];
+      total: number;
+    }>(`/items/category/${category}`);
+    return response.items;
   },
 
   // Поиск товаров
   searchItems: async (query: string): Promise<Item[]> => {
-    return httpClient.get<Item[]>(
+    const response = await httpClient.get<{ items: Item[]; total: number }>(
       `/items/search?q=${encodeURIComponent(query)}`
     );
+    return response.items;
   },
 };

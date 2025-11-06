@@ -1,9 +1,19 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
 import { $currentUser, logoutUser } from '../models/users';
+import { OrdersList } from '../components/OrdersList';
+import { loadOrders } from '../models/orders';
 
 export const ProfilePage: React.FC = () => {
-  const [currentUser, handleLogout] = useUnit([$currentUser, logoutUser]);
+  const [currentUser, handleLogout, handleLoadOrders] = useUnit([
+    $currentUser,
+    logoutUser,
+    loadOrders,
+  ]);
+
+  React.useEffect(() => {
+    handleLoadOrders();
+  }, [handleLoadOrders]);
 
   const handleBackToHome = () => {
     window.location.href = '/';
@@ -11,7 +21,6 @@ export const ProfilePage: React.FC = () => {
 
   const handleLogoutClick = () => {
     handleLogout();
-    // После выхода сразу перенаправляем на главную
     setTimeout(() => {
       window.location.href = '/';
     }, 100);
@@ -37,8 +46,8 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="bg-white shadow rounded-lg p-6">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -48,7 +57,7 @@ export const ProfilePage: React.FC = () => {
                 onClick={handleBackToHome}
                 className="text-indigo-600 hover:text-indigo-500 text-sm mt-2"
               >
-                ← Назад на главную
+                ← Назад в меню
               </button>
             </div>
             <div className="flex gap-2">
@@ -56,7 +65,7 @@ export const ProfilePage: React.FC = () => {
                 onClick={handleBackToHome}
                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
               >
-                На главную
+                В меню
               </button>
               <button
                 onClick={handleLogoutClick}
@@ -67,7 +76,6 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Остальной код профиля остается без изменений */}
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -122,25 +130,24 @@ export const ProfilePage: React.FC = () => {
                 </span>
               </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                ID
-              </label>
-              <p className="mt-1 text-sm text-gray-900">{currentUser.id}</p>
-            </div>
-
-            {currentUser.created_at && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Дата регистрации
-                </label>
-                <p className="mt-1 text-sm text-gray-900">
-                  {new Date(currentUser.created_at).toLocaleDateString('ru-RU')}
-                </p>
-              </div>
-            )}
           </div>
+        </div>
+
+        {/* Блок заказов */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              {currentUser.role === 'admin' ? 'Все заказы' : 'Мои заказы'}
+            </h2>
+            <button
+              onClick={handleLoadOrders}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm"
+            >
+              Обновить
+            </button>
+          </div>
+
+          <OrdersList />
         </div>
       </div>
     </div>
