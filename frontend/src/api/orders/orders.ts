@@ -26,12 +26,12 @@ export const ordersApi = {
     return httpClient.put<Order>(`/orders/${order.id}`, order);
   },
 
-  // Обновить статус заказа
-  updateOrderStatus: async (
+  // Частичное обновление заказа
+  patchOrder: async (
     id: number,
-    status: Order['status']
+    updates: Partial<UpdateOrderRequest>
   ): Promise<Order> => {
-    return httpClient.patch<Order>(`/orders/${id}`, { status });
+    return httpClient.patch<Order>(`/orders/${id}`, updates);
   },
 
   // Удалить заказ
@@ -39,8 +39,8 @@ export const ordersApi = {
     await httpClient.delete(`/orders/${id}`);
   },
 
-  // Получить заказы пользователя
-  getUserOrders: async (userId: number): Promise<Order[]> => {
+  // Получить заказы по пользователю
+  getOrdersByUser: async (userId: number): Promise<Order[]> => {
     return httpClient.get<Order[]>(`/orders/user/${userId}`);
   },
 
@@ -49,8 +49,10 @@ export const ordersApi = {
     return httpClient.get<Order[]>(`/orders/status/${status}`);
   },
 
-  // Отменить заказ
-  cancelOrder: async (id: number): Promise<Order> => {
-    return httpClient.patch<Order>(`/orders/${id}/cancel`);
+  // Поиск заказов
+  searchOrders: async (query: string): Promise<Order[]> => {
+    return httpClient.get<Order[]>(
+      `/orders/search?q=${encodeURIComponent(query)}`
+    );
   },
 };
