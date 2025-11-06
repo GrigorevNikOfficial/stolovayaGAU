@@ -1,6 +1,6 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
-import { $items, $isLoading, loadItems, loadItemsFx } from '../models/items';
+import { $items, $isLoading, loadItems } from '../models/items';
 import { addToCart } from '../models/cart';
 
 export const ItemsList: React.FC = () => {
@@ -34,7 +34,9 @@ export const ItemsList: React.FC = () => {
   console.log('ItemsList: отрисовываем товары', itemsArray);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div>
+      {' '}
+      {/* Убираем max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 */}
       {/* Сетка товаров */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {itemsArray.map(item => (
@@ -92,7 +94,6 @@ export const ItemsList: React.FC = () => {
           </div>
         ))}
       </div>
-
       {itemsArray.length === 0 && !isLoading && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">Товары не найдены</p>

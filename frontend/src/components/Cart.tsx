@@ -129,7 +129,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
-                {/* Остальной код корзины без изменений */}
+                {/* Список товаров */}
                 <div className="mt-8">
                   <div className="flow-root">
                     {cart.length === 0 ? (

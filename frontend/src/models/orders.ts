@@ -9,6 +9,7 @@ import { ordersApi } from '../api/orders/orders';
 import type {
   CreateOrderRequest,
   Order,
+  OrderWithDetails,
   UpdateOrderRequest,
 } from '../types/order';
 import { $currentUser } from './users';
@@ -19,6 +20,7 @@ export const createOrder = createEvent<CreateOrderRequest>();
 export const updateOrderStatus = createEvent<UpdateOrderRequest>();
 export const cancelOrder = createEvent<number>();
 export const clearOrders = createEvent();
+export const refreshOrders = createEvent(); // Новое событие для принудительного обновления
 
 // Effects
 export const loadOrdersFx = createEffect(async (): Promise<Order[]> => {
@@ -32,12 +34,13 @@ export const createOrderFx = createEffect(
   ): Promise<{
     order: Order;
     order_number: string;
+    tracking_number: string;
   }> => {
     const response = await ordersApi.createOrder(order);
     return {
       order: response.order,
       order_number: response.order_number,
-      // Убираем tracking_number, так как его больше нет в ответе
+      tracking_number: response.tracking_number,
     };
   }
 );
@@ -105,11 +108,22 @@ export const $orderError = createStore<string | null>(null)
   .on(createOrderFx.fail, (_, { error }) => error.message)
   .on(updateOrderStatusFx.fail, (_, { error }) => error.message)
   .on(cancelOrderFx.fail, (_, { error }) => error.message)
-  .reset([loadOrders, createOrder, updateOrderStatus, cancelOrder]);
+  .reset([
+    loadOrders,
+    createOrder,
+    updateOrderStatus,
+    cancelOrder,
+    refreshOrders,
+  ]);
 
 // Samples
 sample({
   clock: loadOrders,
+  target: loadOrdersFx,
+});
+
+sample({
+  clock: refreshOrders, // Новый sample для принудительного обновления
   target: loadOrdersFx,
 });
 
@@ -134,4 +148,22 @@ sample({
   source: $currentUser,
   filter: user => user !== null,
   target: loadOrders,
+});
+
+// Автоматическое обновление списка заказов после создания нового заказа
+sample({
+  clock: createOrderFx.done,
+  target: refreshOrders,
+});
+
+// Автоматическое обновление списка заказов после изменения статуса
+sample({
+  clock: updateOrderStatusFx.done,
+  target: refreshOrders,
+});
+
+// Автоматическое обновление списка заказов после отмены
+sample({
+  clock: cancelOrderFx.done,
+  target: refreshOrders,
 });

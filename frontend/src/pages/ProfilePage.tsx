@@ -11,19 +11,26 @@ export const ProfilePage: React.FC = () => {
     loadOrders,
   ]);
 
+  // Загружаем заказы ТОЛЬКО при загрузке страницы профиля
   React.useEffect(() => {
-    handleLoadOrders();
-  }, [handleLoadOrders]);
+    if (currentUser) {
+      console.log(
+        'ProfilePage: загружаем заказы для пользователя',
+        currentUser.id
+      );
+      handleLoadOrders();
+    }
+  }, [currentUser, handleLoadOrders]);
 
   const handleBackToHome = () => {
-    window.location.href = '/';
+    window.history.pushState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const handleLogoutClick = () => {
     handleLogout();
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 100);
+    window.history.pushState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   if (!currentUser) {
@@ -135,18 +142,6 @@ export const ProfilePage: React.FC = () => {
 
         {/* Блок заказов */}
         <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
-              {currentUser.role === 'admin' ? 'Все заказы' : 'Мои заказы'}
-            </h2>
-            <button
-              onClick={handleLoadOrders}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm"
-            >
-              Обновить
-            </button>
-          </div>
-
           <OrdersList />
         </div>
       </div>

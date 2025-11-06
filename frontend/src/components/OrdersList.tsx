@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useUnit } from 'effector-react';
 import {
   $displayedOrders,
   $isLoading,
   updateOrderStatus,
   cancelOrder,
+  refreshOrders, // Добавляем refreshOrders
 } from '../models/orders';
 import { $currentUser } from '../models/users';
 
@@ -15,13 +16,24 @@ export const OrdersList: React.FC = () => {
     currentUser,
     handleUpdateStatus,
     handleCancelOrder,
+    handleRefreshOrders, // Добавляем обработчик обновления
   ] = useUnit([
     $displayedOrders,
     $isLoading,
     $currentUser,
     updateOrderStatus,
     cancelOrder,
+    refreshOrders,
   ]);
+
+  // Автоматическое обновление каждые 30 секунд
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleRefreshOrders();
+    }, 30000); // 30 секунд
+
+    return () => clearInterval(interval);
+  }, [handleRefreshOrders]);
 
   const statusColors = {
     pending: 'bg-yellow-100 text-yellow-800',
@@ -64,6 +76,19 @@ export const OrdersList: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Кнопка ручного обновления */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">
+          {currentUser?.role === 'admin' ? 'Все заказы' : 'Мои заказы'}
+        </h3>
+        <button
+          onClick={handleRefreshOrders}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm transition-colors"
+        >
+          Обновить
+        </button>
+      </div>
+
       {orders.map(order => (
         <div key={order.id} className="bg-white shadow rounded-lg p-6 border">
           <div className="flex justify-between items-start mb-4">
@@ -79,12 +104,14 @@ export const OrdersList: React.FC = () => {
                   Пользователь ID: {order.user_id}
                 </p>
               )}
-              <p className="text-sm text-gray-500">
-                Способ:{' '}
-                {order.delivery_method === 'delivery'
-                  ? 'Доставка'
-                  : 'Самовывоз'}
-              </p>
+              {order.tracking_number && (
+                <p className="text-sm text-gray-500">
+                  Трек номер: {order.tracking_number}
+                </p>
+              )}
+              {order.address && (
+                <p className="text-sm text-gray-500">Адрес: {order.address}</p>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <span
