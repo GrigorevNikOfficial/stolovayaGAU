@@ -1,32 +1,24 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
-import { $items, $isLoading, loadItems } from '../models/items';
+import { $items, $itemsError, loadItems } from '../models/items';
 import { addToCart } from '../models/cart';
 
 export const ItemsList: React.FC = () => {
-  const [items, isLoading, handleLoadItems, handleAddToCart] = useUnit([
+  const [items, itemsError, handleLoadItems, handleAddToCart] = useUnit([
     $items,
-    $isLoading,
+    $itemsError,
     loadItems,
     addToCart,
   ]);
 
   React.useEffect(() => {
     console.log('ItemsList: начата загрузка товаров');
-    handleLoadItems();
+    handleLoadItems({});
   }, [handleLoadItems]);
 
   React.useEffect(() => {
     console.log('ItemsList: получены товары', items);
   }, [items]);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
 
   // Проверяем что items - массив перед использованием map
   const itemsArray = Array.isArray(items) ? items : [];
@@ -35,15 +27,27 @@ export const ItemsList: React.FC = () => {
 
   return (
     <div>
-      {' '}
-      {/* Убираем max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 */}
+      {/* Сообщение об ошибке */}
+      {itemsError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {itemsError}
+        </div>
+      )}
+
       {/* Сетка товаров */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {itemsArray.map(item => (
           <div
-            key={item.id}
+            key={item._id}
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
           >
+            {item.image_url && (
+              <img
+                src={item.image_url}
+                alt={item.name}
+                className="w-full h-48 object-cover"
+              />
+            )}
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {item.name}
@@ -59,16 +63,19 @@ export const ItemsList: React.FC = () => {
                 <span className="text-2xl font-bold text-gray-900">
                   {item.price} ₽
                 </span>
-                {item.category && (
+                {item.category_slug && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {item.category}
+                    {item.category_slug}
                   </span>
                 )}
               </div>
 
               {/* Дополнительная информация */}
               <div className="space-y-1 text-xs text-gray-500 mb-4">
-                {item.cal && <div>Калории: {item.cal}</div>}
+                {item.calories && <div>Калории: {item.calories}</div>}
+                {item.preparation_time && (
+                  <div>Время приготовления: {item.preparation_time} мин</div>
+                )}
                 {item.number_pribors && (
                   <div>Приборы: {item.number_pribors}</div>
                 )}
@@ -77,13 +84,16 @@ export const ItemsList: React.FC = () => {
               <button
                 onClick={() =>
                   handleAddToCart({
-                    id: item.id,
+                    _id: item._id,
+                    uniq_nom: item.uniq_nom || item._id,
                     name: item.name,
                     price: item.price,
                     description: item.description,
-                    category: item.category,
-                    cal: item.cal,
+                    category_slug: item.category_slug,
+                    calories: item.calories,
                     number_pribors: item.number_pribors,
+                    image_url: item.image_url,
+                    preparation_time: item.preparation_time,
                   })
                 }
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
@@ -94,14 +104,14 @@ export const ItemsList: React.FC = () => {
           </div>
         ))}
       </div>
-      {itemsArray.length === 0 && !isLoading && (
+      {itemsArray.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">Товары не найдены</p>
           <p className="text-sm text-gray-400 mt-2">
             Проверьте подключение к бэкенду или наличие товаров в базе
           </p>
           <button
-            onClick={() => handleLoadItems()}
+            onClick={() => handleLoadItems({})}
             className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md"
           >
             Попробовать снова

@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:3002/api',
+  BASE_URL: 'http://localhost:5000/api',
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json',
   },

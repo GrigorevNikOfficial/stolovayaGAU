@@ -1,0 +1,26 @@
+// types/user.ts
+export interface RegisterRequest {
+  first_name: string;
+  last_name: string;
+  phone: string;
+  mail: string; // Используем mail как в бэкенде
+  password: string;
+}
+
+export interface UpdateProfileRequest {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  mail?: string; // Используем mail как в бэкенде
+}
+
+export interface User {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  mail: string; // Используем mail как в бэкенде
+  role: 'user' | 'admin';
+  created_at: string;
+  updated_at?: string;
+}

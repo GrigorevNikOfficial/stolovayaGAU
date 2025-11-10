@@ -1,223 +1,167 @@
-import { pool } from '../config/database.js';
+import { Item } from '../models/Item.js';
 
-// Получить все блюда
 export const getItems = async (req, res) => {
-  try {
-    const { category, available } = req.query;
+    try {
+        const { category_slug, available } = req.query;
 
-    let query = `
-      SELECT id, uniq_nom, name, description, price, category, 
-             cal, number_pribors, image_url, is_available
-      FROM items 
-      WHERE 1=1
-    `;
-    const params = [];
+        console.log('Query params:', { category_slug, available });
 
-    if (category) {
-      query += ' AND category = ?';
-      params.push(category);
+        const filter = {};
+        if (category_slug) filter.category_slug = category_slug;
+        if (available === 'true') filter.is_available = true;
+
+        console.log('MongoDB filter:', filter);
+
+        const items = await Item.find(filter).sort({ category_slug: 1, name: 1 });
+
+        console.log('Items found in DB:', items.length);
+
+        res.json({
+            items,
+            total: items.length
+        });
+
+    } catch (error) {
+        console.error('Get items error:', error);
+        res.status(500).json({ error: 'Ошибка при получении блюд' });
     }
-
-    if (available === 'true') {
-      query += ' AND is_available = TRUE';
-    }
-
-    query += ' ORDER BY category, name';
-
-    const [items] = await pool.execute(query, params);
-
-    res.json({
-      items,
-      total: items.length
-    });
-
-  } catch (error) {
-    console.error('Get items error:', error);
-    res.status(500).json({ error: 'Ошибка при получении блюд' });
-  }
 };
 
-// Получить блюдо по ID
 export const getItemById = async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+        const item = await Item.findById(req.params.id);
 
-    const [items] = await pool.execute(
-        `SELECT id, uniq_nom, name, description, price, category, 
-              cal, number_pribors, image_url, is_available
-       FROM items WHERE id = ?`,
-        [id]
-    );
+        if (!item) {
+            return res.status(404).json({ error: 'Блюдо не найдено' });
+        }
 
-    if (items.length === 0) {
-      return res.status(404).json({ error: 'Блюдо не найдено' });
+        res.json(item);
+
+    } catch (error) {
+        console.error('Get item by id error:', error);
+        res.status(500).json({ error: 'Ошибка при получении блюда' });
     }
-
-    res.json(items[0]);
-
-  } catch (error) {
-    console.error('Get item by id error:', error);
-    res.status(500).json({ error: 'Ошибка при получении блюда' });
-  }
 };
 
-// Получить блюда по категории
 export const getItemsByCategory = async (req, res) => {
-  try {
-    const { category } = req.params;
+    try {
+        const { category_slug } = req.params;
 
-    const [items] = await pool.execute(
-        `SELECT id, uniq_nom, name, description, price, 
-              cal, number_pribors, image_url
-       FROM items 
-       WHERE category = ? AND is_available = TRUE
-       ORDER BY name`,
-        [category]
-    );
+        const items = await Item.find({
+            category_slug: category_slug,
+            is_available: true
+        }).sort({ name: 1 });
 
-    res.json({
-      category,
-      items,
-      total: items.length
-    });
+        res.json({
+            category: category_slug,
+            items,
+            total: items.length
+        });
 
-  } catch (error) {
-    console.error('Get items by category error:', error);
-    res.status(500).json({ error: 'Ошибка при получении блюд по категории' });
-  }
+    } catch (error) {
+        console.error('Get items by category error:', error);
+        res.status(500).json({ error: 'Ошибка при получении блюд по категории' });
+    }
 };
 
-// Создать новое блюдо (только админ)
 export const createItem = async (req, res) => {
-  try {
-    const { uniq_nom, name, description, price, category, cal, number_pribors, image_url, is_available } = req.body;
+    try {
+        const {
+            uniq_nom,
+            name,
+            description,
+            price,
+            category_slug,
+            calories,  // ← ИЗМЕНИТЕ cal на calories
+            number_pribors,
+            is_available,
+            ingredients,
+            allergens,
+            preparation_time,
+            nutrition,
+            sort_order
+        } = req.body;
 
-    if (!uniq_nom || !name || !description || !price) {
-      return res.status(400).json({ error: 'Необходимо указать: uniq_nom, name, description, price' });
+        if (!uniq_nom || !name || !description || !price || !category_slug) {
+            return res.status(400).json({ error: 'Необходимо указать: uniq_nom, name, description, price, category_slug' });
+        }
+
+        const item = new Item({
+            uniq_nom,
+            name,
+            description,
+            price,
+            category_slug,
+            calories: calories || null,  // ← ИЗМЕНИТЕ cal на calories
+            number_pribors: number_pribors || null,
+            is_available: is_available !== undefined ? is_available : true,
+            ingredients: ingredients || [],
+            allergens: allergens || [],
+            preparation_time: preparation_time || 5,
+            nutrition: nutrition || {},
+            sort_order: sort_order || 0
+        });
+
+        await item.save();
+
+        res.status(201).json({
+            message: 'Блюдо успешно создано',
+            item: item
+        });
+
+    } catch (error) {
+        console.error('Create item error:', error);
+        if (error.code === 11000) {
+            return res.status(409).json({ error: 'Блюдо с таким uniq_nom уже существует' });
+        }
+        res.status(500).json({ error: 'Ошибка при создании блюда' });
     }
-
-    const [result] = await pool.execute(
-        `INSERT INTO items (uniq_nom, name, description, price, category, cal, number_pribors, image_url, is_available)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [uniq_nom, name, description, price, category || null, cal || null, number_pribors || null, image_url || null, is_available !== undefined ? is_available : true]
-    );
-
-    const [newItem] = await pool.execute(
-        'SELECT * FROM items WHERE id = ?',
-        [result.insertId]
-    );
-
-    res.status(201).json({
-      message: 'Блюдо успешно создано',
-      item: newItem[0]
-    });
-
-  } catch (error) {
-    console.error('Create item error:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'Блюдо с таким uniq_nom уже существует' });
-    }
-    res.status(500).json({ error: 'Ошибка при создании блюда' });
-  }
 };
 
-// Обновить блюдо (только админ)
 export const updateItem = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { uniq_nom, name, description, price, category, cal, number_pribors, image_url, is_available } = req.body;
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
 
-    // Проверяем существование блюда
-    const [existing] = await pool.execute('SELECT id FROM items WHERE id = ?', [id]);
-    if (existing.length === 0) {
-      return res.status(404).json({ error: 'Блюдо не найдено' });
-    }
+        const item = await Item.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
 
-    const updateFields = [];
-    const updateValues = [];
+        if (!item) {
+            return res.status(404).json({ error: 'Блюдо не найдено' });
+        }
 
-    if (uniq_nom !== undefined) {
-      updateFields.push('uniq_nom = ?');
-      updateValues.push(uniq_nom);
-    }
-    if (name !== undefined) {
-      updateFields.push('name = ?');
-      updateValues.push(name);
-    }
-    if (description !== undefined) {
-      updateFields.push('description = ?');
-      updateValues.push(description);
-    }
-    if (price !== undefined) {
-      updateFields.push('price = ?');
-      updateValues.push(price);
-    }
-    if (category !== undefined) {
-      updateFields.push('category = ?');
-      updateValues.push(category);
-    }
-    if (cal !== undefined) {
-      updateFields.push('cal = ?');
-      updateValues.push(cal);
-    }
-    if (number_pribors !== undefined) {
-      updateFields.push('number_pribors = ?');
-      updateValues.push(number_pribors);
-    }
-    if (image_url !== undefined) {
-      updateFields.push('image_url = ?');
-      updateValues.push(image_url);
-    }
-    if (is_available !== undefined) {
-      updateFields.push('is_available = ?');
-      updateValues.push(is_available);
-    }
+        res.json({
+            message: 'Блюдо успешно обновлено',
+            item: item
+        });
 
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'Не указаны поля для обновления' });
+    } catch (error) {
+        console.error('Update item error:', error);
+        if (error.code === 11000) {
+            return res.status(409).json({ error: 'Блюдо с таким uniq_nom уже существует' });
+        }
+        res.status(500).json({ error: 'Ошибка при обновлении блюда' });
     }
-
-    updateValues.push(id);
-
-    await pool.execute(
-        `UPDATE items SET ${updateFields.join(', ')} WHERE id = ?`,
-        updateValues
-    );
-
-    const [updatedItem] = await pool.execute('SELECT * FROM items WHERE id = ?', [id]);
-
-    res.json({
-      message: 'Блюдо успешно обновлено',
-      item: updatedItem[0]
-    });
-
-  } catch (error) {
-    console.error('Update item error:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'Блюдо с таким uniq_nom уже существует' });
-    }
-    res.status(500).json({ error: 'Ошибка при обновлении блюда' });
-  }
 };
 
-// Удалить блюдо (только админ)
 export const deleteItem = async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    const [existing] = await pool.execute('SELECT id FROM items WHERE id = ?', [id]);
-    if (existing.length === 0) {
-      return res.status(404).json({ error: 'Блюдо не найдено' });
+        const item = await Item.findByIdAndDelete(id);
+        if (!item) {
+            return res.status(404).json({ error: 'Блюдо не найдено' });
+        }
+
+        res.json({
+            message: 'Блюдо успешно удалено'
+        });
+
+    } catch (error) {
+        console.error('Delete item error:', error);
+        res.status(500).json({ error: 'Ошибка при удалении блюда' });
     }
-
-    await pool.execute('DELETE FROM items WHERE id = ?', [id]);
-
-    res.json({
-      message: 'Блюдо успешно удалено'
-    });
-
-  } catch (error) {
-    console.error('Delete item error:', error);
-    res.status(500).json({ error: 'Ошибка при удалении блюда' });
-  }
 };

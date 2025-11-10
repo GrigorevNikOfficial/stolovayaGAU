@@ -1,32 +1,18 @@
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import mysql from 'mysql2/promise';
 
 dotenv.config();
 
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'qwerty',
-  database: process.env.DB_NAME || 'stolovaya_gau',
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  charset: 'utf8mb4'
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stolovayaGAU');
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`Database Name: ${conn.connection.name}`);
+    console.log(`Collections: ${Object.keys(conn.connection.collections)}`);
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
 };
 
-const pool = mysql.createPool(dbConfig);
-
-async function testConnection() {
-  try {
-    const connection = await pool.getConnection();
-    console.log('✅ Database connected successfully');
-    connection.release();
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    return false;
-  }
-}
-
-export { pool, testConnection };
+export default connectDB;

@@ -5,7 +5,7 @@ import {
   sample,
   combine,
 } from 'effector';
-import { ordersApi } from '../api/orders/orders';
+import { ordersApi } from '../api/orders';
 import type {
   CreateOrderRequest,
   Order,
@@ -14,36 +14,27 @@ import type {
 } from '../types/order';
 import { $currentUser } from './users';
 
-// Events
+// Events (остаются те же)
 export const loadOrders = createEvent();
 export const createOrder = createEvent<CreateOrderRequest>();
 export const updateOrderStatus = createEvent<UpdateOrderRequest>();
-export const cancelOrder = createEvent<number>();
+export const cancelOrder = createEvent<string>(); // Из number в string
 export const clearOrders = createEvent();
-export const refreshOrders = createEvent(); // Новое событие для принудительного обновления
+export const refreshOrders = createEvent();
 
-// Effects
+// Effects с обновленными типами
 export const loadOrdersFx = createEffect(async (): Promise<Order[]> => {
   const response = await ordersApi.getOrders();
   return response.orders;
 });
 
-export const createOrderFx = createEffect(
-  async (
-    order: CreateOrderRequest
-  ): Promise<{
-    order: Order;
-    order_number: string;
-    tracking_number: string;
-  }> => {
-    const response = await ordersApi.createOrder(order);
-    return {
-      order: response.order,
-      order_number: response.order_number,
-      tracking_number: response.tracking_number,
-    };
-  }
-);
+export const createOrderFx = createEffect(async (order: CreateOrderRequest) => {
+  const response = await ordersApi.createOrder(order);
+  return {
+    order: response.order,
+    order_number: response.order_number,
+  };
+});
 
 export const updateOrderStatusFx = createEffect(
   async (order: UpdateOrderRequest): Promise<Order> => {
@@ -53,27 +44,35 @@ export const updateOrderStatusFx = createEffect(
 );
 
 export const cancelOrderFx = createEffect(
-  async (orderId: number): Promise<Order> => {
+  async (orderId: string): Promise<Order> => {
+    // Из number в string
     console.log('Cancelling order:', orderId);
-    return await ordersApi.updateOrder({ id: orderId, status: 'cancelled' });
+    return await ordersApi.updateOrder({
+      id: orderId,
+      status: 'cancelled',
+    });
   }
 );
 
-// Stores
+// Stores (остаются те же, но работают с новыми типами)
 export const $orders = createStore<Order[]>([])
   .on(loadOrdersFx.doneData, (_, orders) => orders)
   .on(createOrderFx.doneData, (state, { order }) => [order, ...state])
-  .on(updateOrderStatusFx.doneData, (state, updatedOrder) =>
-    state.map(order => (order.id === updatedOrder.id ? updatedOrder : order))
+  .on(
+    updateOrderStatusFx.doneData,
+    (state, updatedOrder) =>
+      state.map(order =>
+        order._id === updatedOrder._id ? updatedOrder : order
+      ) // _id вместо id
   )
   .on(cancelOrderFx.doneData, (state, cancelledOrder) =>
-    state.map(order =>
-      order.id === cancelledOrder.id ? cancelledOrder : order
+    state.map(
+      order => (order._id === cancelledOrder._id ? cancelledOrder : order) // _id вместо id
     )
   )
   .reset(clearOrders);
 
-// Store для отображаемых заказов (зависит от роли пользователя)
+// Store для отображаемых заказов
 export const $displayedOrders = combine(
   $orders,
   $currentUser,
@@ -81,16 +80,14 @@ export const $displayedOrders = combine(
     if (!currentUser) return [];
 
     if (currentUser.role === 'admin') {
-      // Админы видят все заказы
       return orders;
     } else {
-      // Пользователи видят только свои заказы
-      return orders.filter(order => order.user_id === currentUser.id);
+      return orders.filter(order => order.user_id === currentUser._id); // _id вместо id
     }
   }
 );
 
-// Stores для UI состояния
+// Остальные stores и samples остаются без изменений
 export const $isLoading = createStore(false).on(
   loadOrdersFx.pending,
   (_, pending) => pending
@@ -118,14 +115,14 @@ export const $orderError = createStore<string | null>(null)
     refreshOrders,
   ]);
 
-// Samples
+// Samples (остаются те же)
 sample({
   clock: loadOrders,
   target: loadOrdersFx,
 });
 
 sample({
-  clock: refreshOrders, // Новый sample для принудительного обновления
+  clock: refreshOrders,
   target: loadOrdersFx,
 });
 
@@ -144,7 +141,6 @@ sample({
   target: cancelOrderFx,
 });
 
-// Автоматическая загрузка заказов при изменении пользователя
 sample({
   clock: $currentUser.updates,
   source: $currentUser,
@@ -152,19 +148,16 @@ sample({
   target: loadOrders,
 });
 
-// Автоматическое обновление списка заказов после создания нового заказа
 sample({
   clock: createOrderFx.done,
   target: refreshOrders,
 });
 
-// Автоматическое обновление списка заказов после изменения статуса
 sample({
   clock: updateOrderStatusFx.done,
   target: refreshOrders,
 });
 
-// Автоматическое обновление списка заказов после отмены
 sample({
   clock: cancelOrderFx.done,
   target: refreshOrders,

@@ -17,7 +17,9 @@ interface CartProps {
 }
 
 export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
-  const [deliveryMethod, setDeliveryMethod] = useState('pickup');
+  const [deliveryMethod, setDeliveryMethod] = useState<
+    'dine_in' | 'pickup' | 'delivery'
+  >('pickup');
   const [
     cart,
     cartTotal,
@@ -46,7 +48,13 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    handleCreateOrder(deliveryMethod);
+    handleCreateOrder({
+      delivery_method: deliveryMethod,
+      ...(deliveryMethod === 'dine_in' && { table_number: 1 }),
+      ...(deliveryMethod === 'delivery' && {
+        delivery_address: 'Адрес доставки',
+      }),
+    });
   };
 
   if (!isOpen) return null;
@@ -97,7 +105,9 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                           type="radio"
                           value="pickup"
                           checked={deliveryMethod === 'pickup'}
-                          onChange={e => setDeliveryMethod(e.target.value)}
+                          onChange={e =>
+                            setDeliveryMethod(e.target.value as 'pickup')
+                          }
                           className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
                         />
                         <span className="ml-2 text-sm text-gray-700">
@@ -107,9 +117,25 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                       <label className="flex items-center">
                         <input
                           type="radio"
+                          value="dine_in"
+                          checked={deliveryMethod === 'dine_in'}
+                          onChange={e =>
+                            setDeliveryMethod(e.target.value as 'dine_in')
+                          }
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">
+                          В зале
+                        </span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
                           value="delivery"
                           checked={deliveryMethod === 'delivery'}
-                          onChange={e => setDeliveryMethod(e.target.value)}
+                          onChange={e =>
+                            setDeliveryMethod(e.target.value as 'delivery')
+                          }
                           className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
                         />
                         <span className="ml-2 text-sm text-gray-700">
@@ -139,7 +165,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                     ) : (
                       <ul className="-my-6 divide-y divide-gray-200">
                         {cart.map(({ item, quantity }) => (
-                          <li key={item.id} className="py-6 flex">
+                          <li key={item._id} className="py-6 flex">
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between">
                                 <h3 className="text-sm font-medium text-gray-900">
@@ -158,7 +184,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                                 <button
                                   onClick={() =>
                                     handleUpdateQuantity({
-                                      id: item.id,
+                                      id: item._id,
                                       quantity: quantity - 1,
                                     })
                                   }
@@ -172,7 +198,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                                 <button
                                   onClick={() =>
                                     handleUpdateQuantity({
-                                      id: item.id,
+                                      id: item._id,
                                       quantity: quantity + 1,
                                     })
                                   }
@@ -181,7 +207,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                                   +
                                 </button>
                                 <button
-                                  onClick={() => handleRemoveFromCart(item.id)}
+                                  onClick={() => handleRemoveFromCart(item._id)}
                                   className="ml-4 text-sm text-red-600 hover:text-red-500"
                                 >
                                   Удалить
@@ -205,7 +231,9 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
                   <p className="mt-0.5 text-sm text-gray-500">
                     {deliveryMethod === 'pickup'
                       ? 'Самовывоз из ресторана'
-                      : 'Доставка временно недоступна'}
+                      : deliveryMethod === 'dine_in'
+                        ? 'Потребление в зале'
+                        : 'Доставка временно недоступна'}
                   </p>
                   <div className="mt-6 space-y-2">
                     <button

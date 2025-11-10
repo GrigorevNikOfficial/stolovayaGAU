@@ -1,6 +1,6 @@
 export interface Order {
-  id: number;
-  user_id: number;
+  _id: string; // Из number в string (ObjectId)
+  user_id: string; // Из number в string
   order_number: string;
   total_amount: number;
   status:
@@ -11,24 +11,31 @@ export interface Order {
     | 'delivering'
     | 'delivered'
     | 'cancelled'
-    | 'completed'; // Добавляем новый статус для самовывоза
-  delivery_method: 'pickup' | 'delivery'; // Добавляем поле способа доставки
-  tracking_number?: string;
-  delivery_status?: string;
-  address?: string;
+    | 'completed';
+  delivery_method: 'dine_in' | 'pickup' | 'delivery'; // Добавили dine_in
+  table_number?: number; // Новое поле для dine_in
+  delivery_address?: string;
   created_at: string;
   updated_at?: string;
+  // Новые поля из MongoDB
+  user_info?: {
+    first_name: string;
+    last_name: string;
+    phone: string;
+    email: string;
+  };
+  status_history?: OrderHistory[]; // Встроенная история
 }
 
 export interface OrderItem {
-  id: number;
-  order_id: number;
-  item_id: number;
+  _id: string; // Из number в string
+  order_id: string; // Из number в string
+  item_id: string; // Из number в string
+  uniq_nom: string; // Новое поле
+  name: string;
   quantity: number;
   price_at_time: number;
-  name?: string;
-  image_url?: string;
-  description?: string;
+  // image_url и description теперь не нужны, т.к. есть в items
 }
 
 export interface OrderWithDetails extends Order {
@@ -37,8 +44,8 @@ export interface OrderWithDetails extends Order {
 }
 
 export interface OrderHistory {
-  id: number;
-  order_id: number;
+  _id: string; // Из number в string
+  order_id: string; // Из number в string
   status: string;
   notes: string;
   changed_at: string;
@@ -46,13 +53,15 @@ export interface OrderHistory {
 
 export interface CreateOrderRequest {
   items: Array<{
-    id: number;
+    id: string; // Из number в string
     quantity: number;
   }>;
-  deliveryMethod: 'pickup' | 'delivery'; // Заменяем address на deliveryMethod
+  delivery_method: 'dine_in' | 'pickup' | 'delivery';
+  table_number?: number; // Для dine_in
+  delivery_address?: string; // Для delivery
 }
 
 export interface UpdateOrderRequest {
-  id: number;
+  id: string; // Из number в string
   status: Order['status'];
 }

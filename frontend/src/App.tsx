@@ -1,24 +1,22 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
-import { $isAuthenticated, $currentUser, getMe } from './models/users';
+import { $currentUser, getMeFx } from './models/users';
 import { HomePage } from './pages/HomePage';
 import { AuthForm } from './components/AuthForm';
 import { ProfilePage } from './pages/ProfilePage';
 
 function App() {
-  const [isAuthenticated, currentUser, handleGetMe] = useUnit([
-    $isAuthenticated,
-    $currentUser,
-    getMe,
-  ]);
+  const [currentUser, handleGetMe] = useUnit([$currentUser, getMeFx]);
 
   const [currentPath, setCurrentPath] = React.useState(
     window.location.pathname
   );
 
+  // Проверяем авторизацию при загрузке приложения
   React.useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token && !currentUser) {
+      console.log('App: проверка авторизации по токену');
       handleGetMe();
     }
   }, [currentUser, handleGetMe]);
@@ -33,11 +31,43 @@ function App() {
     return () => window.removeEventListener('popstate', handleLocationChange);
   }, []);
 
-  const getCurrentPage = () => {
+  // Функция для навигации
+  const navigate = React.useCallback((path: string) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+  }, []);
+
+  // Перенаправления
+  React.useEffect(() => {
     if (currentPath === '/login' || currentPath === '/register') {
+      // Если пользователь уже авторизован, перенаправляем на главную
+      if (currentUser) {
+        navigate('/');
+      }
+    } else if (currentPath === '/profile') {
+      // Если пользователь не авторизован, перенаправляем на логин
+      if (!currentUser) {
+        navigate('/login');
+      }
+    }
+  }, [currentPath, currentUser, navigate]);
+
+  // Рендер текущей страницы
+  const getCurrentPage = () => {
+    console.log('App: текущий путь', currentPath, 'пользователь', currentUser);
+
+    if (currentPath === '/login' || currentPath === '/register') {
+      // Если пользователь уже авторизован, показываем главную
+      if (currentUser) {
+        return <HomePage />;
+      }
       return <AuthForm />;
     } else if (currentPath === '/profile') {
-      return isAuthenticated ? <ProfilePage /> : <HomePage />;
+      // Если пользователь не авторизован, показываем форму авторизации
+      if (!currentUser) {
+        return <AuthForm />;
+      }
+      return <ProfilePage />;
     } else {
       return <HomePage />;
     }

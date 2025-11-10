@@ -1,0 +1,55 @@
+import type {
+  CreateOrderRequest,
+  Order,
+  OrderWithDetails,
+  UpdateOrderRequest,
+} from '../types/order';
+import { httpClient } from './http-client.ts';
+
+export const ordersApi = {
+  // Получить все заказы
+  getOrders: async (): Promise<{ orders: Order[] }> => {
+    const response = await httpClient.get<{ orders: Order[] }>('/orders');
+    return response;
+  },
+
+  // Получить заказ по ID
+  getOrder: async (id: string): Promise<OrderWithDetails> => {
+    // id теперь string
+    const response = await httpClient.get<OrderWithDetails>(`/orders/${id}`);
+    return response;
+  },
+
+  // Создать заказ
+  createOrder: async (
+    order: CreateOrderRequest
+  ): Promise<{
+    message: string;
+    order: Order;
+    order_number: string;
+  }> => {
+    const response = await httpClient.post<{
+      message: string;
+      order: Order;
+      order_number: string;
+    }>('/orders', order);
+    return response;
+  },
+
+  // Обновить статус заказа
+  updateOrder: async (order: UpdateOrderRequest): Promise<Order> => {
+    const response = await httpClient.put<Order>(
+      `/orders/${order.id}/status`, // Изменился endpoint
+      { status: order.status }
+    );
+    return response;
+  },
+
+  // Получить историю заказа
+  getOrderHistory: async (id: string): Promise<{ history: OrderHistory[] }> => {
+    const response = await httpClient.get<{ history: OrderHistory[] }>(
+      `/orders/${id}/history`
+    );
+    return response;
+  },
+};

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useUnit } from 'effector-react';
 import {
-  $isLoggingIn,
+  $isLoading,
   $authError,
-  loginUser,
-  registerUser,
+  login,
+  register,
   $currentUser,
 } from '../models/users';
 
@@ -18,22 +18,74 @@ export const AuthForm: React.FC = () => {
     password: '',
     confirmPassword: '',
   });
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const [isLoggingIn, authError, currentUser, handleLogin, handleRegister] =
-    useUnit([$isLoggingIn, $authError, $currentUser, loginUser, registerUser]);
+  const [isLoading, authError, currentUser, handleLogin, handleRegister] =
+    useUnit([$isLoading, $authError, $currentUser, login, register]);
 
-  // Автоматическое перенаправление после успешной авторизации
-  useEffect(() => {
-    if (currentUser) {
-      setShowSuccess(true);
-      const timer = setTimeout(() => {
-        window.location.href = '/';
-      }, 2000);
+  // Валидация формы
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {};
 
-      return () => clearTimeout(timer);
+    if (!isLogin) {
+      if (!formData.firstName.trim()) errors.firstName = 'Имя обязательно';
+      if (!formData.lastName.trim()) errors.lastName = 'Фамилия обязательна';
+      if (!formData.email.trim()) {
+        errors.email = 'Email обязателен';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = 'Введите корректный email';
+      }
     }
-  }, [currentUser]);
+
+    if (!formData.phone.trim()) {
+      errors.phone = 'Телефон обязателен';
+    } else if (!/^[\d\+][\d\(\)\ -]{4,14}\d$/.test(formData.phone)) {
+      errors.phone = 'Введите корректный номер телефона';
+    }
+
+    if (!formData.password) {
+      errors.password = 'Пароль обязателен';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Пароль должен быть не менее 6 символов';
+    }
+
+    if (!isLogin) {
+      if (!formData.confirmPassword) {
+        errors.confirmPassword = 'Подтвердите пароль';
+      } else if (formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = 'Пароли не совпадают';
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    if (isLogin) {
+      handleLogin({
+        phone: formData.phone,
+        password: formData.password,
+      });
+    } else {
+      // Используем mail вместо email
+      handleRegister({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone: formData.phone,
+        mail: formData.email, // Ключевое изменение: mail вместо email
+        password: formData.password,
+        role: 'user',
+      });
+    }
+  };
 
   // Если пользователь авторизован, показываем сообщение о успехе
   if (showSuccess && currentUser) {
@@ -75,28 +127,6 @@ export const AuthForm: React.FC = () => {
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (isLogin) {
-      handleLogin({ phone: formData.phone, password: formData.password });
-    } else {
-      if (formData.password !== formData.confirmPassword) {
-        alert('Пароли не совпадают');
-        return;
-      }
-
-      handleRegister({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        email: formData.email, // ПЕРЕДАЕМ EMAIL
-        password: formData.password,
-        role: 'user',
-      });
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -123,36 +153,60 @@ export const AuthForm: React.FC = () => {
                   <input
                     type="text"
                     required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                      formErrors.firstName
+                        ? 'border-red-500'
+                        : 'border-gray-300'
+                    }`}
                     placeholder="Имя"
                     value={formData.firstName}
                     onChange={e =>
                       setFormData({ ...formData, firstName: e.target.value })
                     }
                   />
+                  {formErrors.firstName && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <input
                     type="text"
                     required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                      formErrors.lastName ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="Фамилия"
                     value={formData.lastName}
                     onChange={e =>
                       setFormData({ ...formData, lastName: e.target.value })
                     }
                   />
+                  {formErrors.lastName && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.lastName}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <input
                     type="email"
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Email (необязательно)"
+                    required
+                    className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                      formErrors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Email"
                     value={formData.email}
                     onChange={e =>
                       setFormData({ ...formData, email: e.target.value })
                     }
                   />
+                  {formErrors.email && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.email}
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -160,32 +214,48 @@ export const AuthForm: React.FC = () => {
               <input
                 type="tel"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                  formErrors.phone ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Телефон"
                 value={formData.phone}
                 onChange={e =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
               />
+              {formErrors.phone && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>
+              )}
             </div>
             <div>
               <input
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                  formErrors.password ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Пароль"
                 value={formData.password}
                 onChange={e =>
                   setFormData({ ...formData, password: e.target.value })
                 }
               />
+              {formErrors.password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.password}
+                </p>
+              )}
             </div>
             {!isLogin && (
               <div>
                 <input
                   type="password"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                    formErrors.confirmPassword
+                      ? 'border-red-500'
+                      : 'border-gray-300'
+                  }`}
                   placeholder="Подтвердите пароль"
                   value={formData.confirmPassword}
                   onChange={e =>
@@ -195,6 +265,11 @@ export const AuthForm: React.FC = () => {
                     })
                   }
                 />
+                {formErrors.confirmPassword && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.confirmPassword}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -202,10 +277,10 @@ export const AuthForm: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={isLoggingIn}
+              disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {isLoggingIn
+              {isLoading
                 ? 'Загрузка...'
                 : isLogin
                   ? 'Войти'
@@ -227,6 +302,7 @@ export const AuthForm: React.FC = () => {
                   password: '',
                   confirmPassword: '',
                 });
+                setFormErrors({});
               }}
             >
               {isLogin

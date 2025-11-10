@@ -1,6 +1,6 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
-import { $currentUser, logoutUser } from '../models/users';
+import { $currentUser, logout } from '../models/users';
 import { $cartItemsCount, setCartOpen } from '../models/cart';
 
 interface HeaderProps {
@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onCartClick }) => {
   const [currentUser, handleLogout, cartItemsCount, handleSetCartOpen] =
-    useUnit([$currentUser, logoutUser, $cartItemsCount, setCartOpen]);
+    useUnit([$currentUser, logout, $cartItemsCount, setCartOpen]);
 
   const handleCartClick = () => {
     handleSetCartOpen(true);

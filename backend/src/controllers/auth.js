@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { pool } from '../config/database.js';
+import { User } from '../models/User.js';
 
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -12,25 +12,21 @@ export const authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const [users] = await pool.execute(
-        'SELECT id, first_name, last_name, phone, mail, role, created_at FROM users WHERE id = ?',
-        [decoded.userId]
-    );
+    const user = await User.findById(decoded.userId).select('-password');
 
-
-    if (users.length === 0) {
+    if (!user) {
       return res.status(401).json({ error: 'Пользователь не найден' });
     }
 
-    req.user = users[0];
+    req.user = user;
     next();
   } catch (error) {
     console.error('Auth error:', error);
-    
+
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Неверный токен' });
     }
-    
+
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Токен истек' });
     }
@@ -41,13 +37,12 @@ export const authenticateToken = async (req, res, next) => {
 
 export const generateToken = (userId) => {
   return jwt.sign(
-    { userId }, 
-    process.env.JWT_SECRET, 
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { userId: userId }, // Явно указываем поле userId
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
 
-// Middleware для проверки роли админа
 export const requireAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Требуется аутентификация' });

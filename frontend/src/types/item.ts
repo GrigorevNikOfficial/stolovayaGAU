@@ -1,33 +1,58 @@
+import type { Category } from './category'; // Импортируем из отдельного файла
+
 export interface Item {
-  id: number;
+  _id: string;
   uniq_nom: string;
   name: string;
-  description?: string;
+  description: string;
   price: number;
-  category?: string | number;
-  cal?: number;
-  number_pribors?: number;
-  createdAt: string;
-  updatedAt?: string;
+  category_slug: string;
+  calories: number;
+  number_pribors: number;
+  image_url?: string;
+  is_available: boolean;
+  ingredients: string[];
+  allergens: string[];
+  preparation_time: number;
+  nutrition: {
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+  };
+  sort_order: number;
+  created_at: string;
+  updated_at?: string;
 }
 
+// Остальные интерфейсы остаются без Category
 export interface CreateItemRequest {
   uniq_nom: string;
   name: string;
-  description?: string;
+  description: string;
   price: number;
-  category?: string | number;
-  cal?: number;
+  category_slug: string;
+  calories?: number;
   number_pribors?: number;
+  is_available?: boolean;
+  ingredients?: string[];
+  allergens?: string[];
+  preparation_time?: number;
+  nutrition?: object;
+  sort_order?: number;
 }
 
 export interface UpdateItemRequest {
-  id: number;
-  uniq_nom: string;
-  name: string;
+  uniq_nom?: string;
+  name?: string;
   description?: string;
-  price: number;
-  category?: string | number;
-  cal?: number;
+  price?: number;
+  category_slug?: string;
+  calories?: number;
   number_pribors?: number;
+  is_available?: boolean;
+  ingredients?: string[];
+  allergens?: string[];
+  preparation_time?: number;
+  nutrition?: object;
+  sort_order?: number;
 }

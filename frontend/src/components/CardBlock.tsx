@@ -12,7 +12,9 @@ import { $isCreating } from '../models/orders';
 import { $currentUser } from '../models/users';
 
 export const CartBlock: React.FC = () => {
-  const [deliveryMethod, setDeliveryMethod] = useState('pickup');
+  const [deliveryMethod, setDeliveryMethod] = useState<
+    'dine_in' | 'pickup' | 'delivery'
+  >('pickup');
   const [
     cart,
     cartTotal,
@@ -40,7 +42,14 @@ export const CartBlock: React.FC = () => {
       return;
     }
 
-    handleCreateOrder(deliveryMethod);
+    // Передаем данные в правильном формате
+    handleCreateOrder({
+      delivery_method: deliveryMethod,
+      ...(deliveryMethod === 'dine_in' && { table_number: 1 }), // Можно добавить выбор стола
+      ...(deliveryMethod === 'delivery' && {
+        delivery_address: 'Адрес доставки',
+      }), // Можно добавить ввод адреса
+    });
   };
 
   return (
@@ -58,7 +67,7 @@ export const CartBlock: React.FC = () => {
               type="radio"
               value="pickup"
               checked={deliveryMethod === 'pickup'}
-              onChange={e => setDeliveryMethod(e.target.value)}
+              onChange={e => setDeliveryMethod(e.target.value as 'pickup')}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
             />
             <span className="ml-3 text-sm text-gray-700">Самовывоз</span>
@@ -66,9 +75,19 @@ export const CartBlock: React.FC = () => {
           <label className="flex items-center">
             <input
               type="radio"
+              value="dine_in"
+              checked={deliveryMethod === 'dine_in'}
+              onChange={e => setDeliveryMethod(e.target.value as 'dine_in')}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+            />
+            <span className="ml-3 text-sm text-gray-700">В зале</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
               value="delivery"
               checked={deliveryMethod === 'delivery'}
-              onChange={e => setDeliveryMethod(e.target.value)}
+              onChange={e => setDeliveryMethod(e.target.value as 'delivery')}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
             />
             <span className="ml-3 text-sm text-gray-700">Доставка (скоро)</span>
@@ -97,7 +116,7 @@ export const CartBlock: React.FC = () => {
         ) : (
           <div className="space-y-4 h-full overflow-y-auto pr-2">
             {cart.map(({ item, quantity }) => (
-              <div key={item.id} className="bg-gray-50 rounded-lg p-4 border">
+              <div key={item._id} className="bg-gray-50 rounded-lg p-4 border">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <h3 className="text-base font-medium text-gray-900">
@@ -110,7 +129,7 @@ export const CartBlock: React.FC = () => {
                     )}
                   </div>
                   <button
-                    onClick={() => handleRemoveFromCart(item.id)}
+                    onClick={() => handleRemoveFromCart(item._id)}
                     className="text-red-500 hover:text-red-700 ml-3 text-lg font-bold"
                   >
                     ×
@@ -125,7 +144,7 @@ export const CartBlock: React.FC = () => {
                     <button
                       onClick={() =>
                         handleUpdateQuantity({
-                          id: item.id,
+                          id: item._id,
                           quantity: quantity - 1,
                         })
                       }
@@ -139,7 +158,7 @@ export const CartBlock: React.FC = () => {
                     <button
                       onClick={() =>
                         handleUpdateQuantity({
-                          id: item.id,
+                          id: item._id,
                           quantity: quantity + 1,
                         })
                       }

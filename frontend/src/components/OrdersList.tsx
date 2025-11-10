@@ -30,14 +30,14 @@ export const OrdersList: React.FC = () => {
   ]);
 
   const [selectedStatuses, setSelectedStatuses] = useState<{
-    [key: number]: string;
+    [key: string]: string;
   }>({});
 
   // Инициализируем selectedStatuses текущими статусами заказов
   useEffect(() => {
-    const initialStatuses: { [key: number]: string } = {};
+    const initialStatuses: { [key: string]: string } = {};
     orders.forEach(order => {
-      initialStatuses[order.id] = order.status;
+      initialStatuses[order._id] = order.status;
     });
     setSelectedStatuses(initialStatuses);
   }, [orders]);
@@ -98,7 +98,7 @@ export const OrdersList: React.FC = () => {
     }
   };
 
-  const handleStatusChange = (orderId: number, newStatus: string) => {
+  const handleStatusChange = (orderId: string, newStatus: string) => {
     console.log(`Changing order ${orderId} status to:`, newStatus);
 
     // Сразу обновляем локальное состояние
@@ -114,7 +114,7 @@ export const OrdersList: React.FC = () => {
     });
   };
 
-  const handleCancel = (orderId: number) => {
+  const handleCancel = (orderId: string) => {
     console.log(`Cancelling order:`, orderId);
     handleCancelOrder(orderId);
   };
@@ -144,10 +144,15 @@ export const OrdersList: React.FC = () => {
 
       {orders.map(order => {
         const availableStatuses = getAvailableStatuses(order);
-        const currentStatusLabel = statusLabels[order.status];
+        const currentStatusLabel =
+          statusLabels[order.status as keyof typeof statusLabels] ||
+          order.status;
 
         return (
-          <div key={order.id} className="bg-white shadow rounded-lg p-6 border">
+          <div
+            key={order._id}
+            className="bg-white shadow rounded-lg p-6 border"
+          >
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -165,12 +170,24 @@ export const OrdersList: React.FC = () => {
                   Способ:{' '}
                   {order.delivery_method === 'delivery'
                     ? 'Доставка'
-                    : 'Самовывоз'}
+                    : order.delivery_method === 'dine_in'
+                      ? 'В зале'
+                      : 'Самовывоз'}
                 </p>
+                {order.table_number && (
+                  <p className="text-sm text-gray-500">
+                    Стол: {order.table_number}
+                  </p>
+                )}
+                {order.delivery_address && (
+                  <p className="text-sm text-gray-500">
+                    Адрес: {order.delivery_address}
+                  </p>
+                )}
               </div>
               <div className="flex items-center space-x-2">
                 <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[order.status]}`}
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[order.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}
                 >
                   {currentStatusLabel}
                 </span>
@@ -178,7 +195,7 @@ export const OrdersList: React.FC = () => {
                 {order.status === 'pending' &&
                   currentUser?.role !== 'admin' && (
                     <button
-                      onClick={() => handleCancel(order.id)}
+                      onClick={() => handleCancel(order._id)}
                       className="text-red-600 hover:text-red-500 text-sm font-medium"
                     >
                       Отменить
@@ -186,6 +203,25 @@ export const OrdersList: React.FC = () => {
                   )}
               </div>
             </div>
+
+            {/* Список товаров в заказе */}
+            {order.items && order.items.length > 0 && (
+              <div className="border-t pt-4 mb-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">
+                  Состав заказа:
+                </h4>
+                <ul className="space-y-1">
+                  {order.items.map((orderItem: any, index: number) => (
+                    <li key={index} className="flex justify-between text-sm">
+                      <span>{orderItem.name || `Товар ${index + 1}`}</span>
+                      <span>
+                        {orderItem.quantity} × {orderItem.price} ₽
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="border-t pt-4">
               <div className="flex justify-between items-center">
@@ -199,9 +235,9 @@ export const OrdersList: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">Статус:</span>
                       <select
-                        value={selectedStatuses[order.id] || order.status}
+                        value={selectedStatuses[order._id] || order.status}
                         onChange={e =>
-                          handleStatusChange(order.id, e.target.value)
+                          handleStatusChange(order._id, e.target.value)
                         }
                         disabled={isUpdating}
                         className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50"
@@ -222,7 +258,7 @@ export const OrdersList: React.FC = () => {
                       order.status !== 'delivered' &&
                       order.status !== 'cancelled' && (
                         <button
-                          onClick={() => handleCancel(order.id)}
+                          onClick={() => handleCancel(order._id)}
                           disabled={isUpdating}
                           className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded text-sm transition-colors"
                         >

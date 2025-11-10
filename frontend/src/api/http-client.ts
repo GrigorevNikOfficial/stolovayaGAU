@@ -1,10 +1,9 @@
-const API_BASE = 'http://localhost:3002/api';
+const API_BASE = 'http://localhost:5000/api';
 
 export const httpClient = {
   async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     const token = localStorage.getItem('authToken');
 
-    // Исправление типов для headers
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
@@ -14,9 +13,24 @@ export const httpClient = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // Логируем запрос
+    console.log('🚀 HTTP Request:', {
+      url: `${API_BASE}${url}`,
+      method: options.method,
+      headers,
+      body: options.body ? JSON.parse(options.body as string) : undefined,
+    });
+
     const response = await fetch(`${API_BASE}${url}`, {
       ...options,
       headers,
+    });
+
+    // Логируем ответ
+    console.log('📨 HTTP Response:', {
+      url: `${API_BASE}${url}`,
+      status: response.status,
+      statusText: response.statusText,
     });
 
     if (!response.ok) {
@@ -25,15 +39,19 @@ export const httpClient = {
 
       try {
         const errorData = JSON.parse(errorText);
-        errorMessage = errorData.error || errorMessage;
+        errorMessage = errorData.message || errorData.error || errorMessage;
+        console.log('❌ Error details:', errorData);
       } catch {
         errorMessage = errorText || errorMessage;
+        console.log('❌ Error text:', errorText);
       }
 
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    const responseData = await response.json();
+    console.log('✅ Response data:', responseData);
+    return responseData;
   },
 
   get<T>(url: string): Promise<T> {

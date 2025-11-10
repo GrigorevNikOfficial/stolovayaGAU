@@ -1,121 +1,117 @@
-import { pool } from '../config/database.js';
-import { generateOrderNumber } from '../utils/helpers.js';
-import { processOrderStatus } from '../services/orderService.js';
+import { Order } from '../models/Order.js';
+import { Item } from '../models/Item.js';
 
 export const createOrder = async (req, res) => {
   try {
-    const { items, deliveryMethod = 'pickup' } = req.body;
-    const userId = req.user.id;
+    const { items, delivery_method = 'pickup', table_number, delivery_address } = req.body;
+    const userId = req.user._id;
 
+    // Валидация входных данных
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Корзина пуста' });
     }
 
-    // Убираем проверку адреса для самовывоза
-    if (deliveryMethod === 'delivery') {
+    // Временно отключаем доставку
+    if (delivery_method === 'delivery') {
       return res.status(400).json({
-        error: 'Доставка временно недоступна. Пожалуйста, выберите самовывоз.'
+        error: 'Доставка временно недоступна. Пожалуйста, выберите самовывоз или поесть на месте.'
       });
     }
 
-    const connection = await pool.getConnection();
-    await connection.beginTransaction();
+    // Валидация для dine_in
+    if (delivery_method === 'dine_in' && !table_number) {
+      return res.status(400).json({
+        error: 'Для заказа на месте необходимо указать номер стола'
+      });
+    }
 
-    try {
-      let totalAmount = 0;
-      for (const item of items) {
-        const [itemData] = await connection.execute(
-            'SELECT price, is_available FROM items WHERE id = ?',
-            [item.id]
-        );
+    let totalAmount = 0;
+    const orderItems = [];
 
-        if (itemData.length === 0) {
-          throw new Error(`Блюдо с ID ${item.id} не найдено`);
-        }
+    // Проверяем товары и рассчитываем итог
+    for (const item of items) {
+      const product = await Item.findById(item.id);
 
-        if (!itemData[0].is_available) {
-          throw new Error(`Блюдо "${item.id}" временно недоступно`);
-        }
-
-        if (!item.quantity || item.quantity < 1) {
-          throw new Error(`Некорректное количество для блюда ${item.id}`);
-        }
-
-        totalAmount += itemData[0].price * item.quantity;
+      if (!product) {
+        return res.status(400).json({
+          error: `Блюдо с ID ${item.id} не найдено`
+        });
       }
 
-      // Генерируем уникальный номер заказа
-      let orderNumber = generateOrderNumber();
-      let attempts = 0;
-      while (attempts < 10) {
-        const [existing] = await connection.execute(
-            'SELECT id FROM orders WHERE order_number = ?',
-            [orderNumber]
-        );
-        if (existing.length === 0) break;
-        orderNumber = generateOrderNumber();
-        attempts++;
+      if (!product.is_available) {
+        return res.status(400).json({
+          error: `Блюдо "${product.name}" временно недоступно`
+        });
       }
 
-      // Создаем заказ со статусом 'pending' и методом доставки
-      const [orderResult] = await connection.execute(
-          'INSERT INTO orders (user_id, order_number, total_amount, status, delivery_method) VALUES (?, ?, ?, ?, ?)',
-          [userId, orderNumber, totalAmount, 'pending', deliveryMethod]
-      );
-
-      const orderId = orderResult.insertId;
-
-      // Сохраняем историю создания заказа
-      await connection.execute(
-          'INSERT INTO order_history (order_id, status, notes) VALUES (?, ?, ?)',
-          [orderId, 'pending', 'Заказ создан']
-      );
-
-      // Добавляем товары в заказ
-      for (const item of items) {
-        const [itemData] = await connection.execute(
-            'SELECT price FROM items WHERE id = ?',
-            [item.id]
-        );
-
-        await connection.execute(
-            'INSERT INTO order_items (order_id, item_id, quantity, price_at_time) VALUES (?, ?, ?, ?)',
-            [orderId, item.id, item.quantity, itemData[0].price]
-        );
+      if (!item.quantity || item.quantity < 1) {
+        return res.status(400).json({
+          error: `Некорректное количество для блюда "${product.name}"`
+        });
       }
 
-      // УБИРАЕМ создание доставки для самовывоза
-
-      // Автоматически переводим заказ в статус 'confirmed'
-      setTimeout(async () => {
-        try {
-          await processOrderStatus(orderId);
-        } catch (err) {
-          console.error('Error auto-confirming order:', err);
-        }
-      }, 5000);
-
-      await connection.commit();
-
-      // Обновляем запрос - убираем JOIN с deliveries
-      const [order] = await pool.execute(`
-        SELECT o.*
-        FROM orders o 
-        WHERE o.id = ?
-      `, [orderId]);
-
-      res.status(201).json({
-        message: 'Заказ успешно создан',
-        order: order[0],
-        order_number: orderNumber
+      orderItems.push({
+        item_id: product._id,
+        uniq_nom: product.uniq_nom,
+        name: product.name,
+        quantity: item.quantity,
+        price_at_time: product.price
       });
 
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
+      totalAmount += product.price * item.quantity;
     }
+
+    // Генерируем номер заказа
+    const orderNumber = await Order.generateOrderNumber();
+
+    // Создаем заказ
+    const order = new Order({
+      order_number: orderNumber,
+      user_id: userId,
+      user_info: {
+        first_name: req.user.first_name,
+        last_name: req.user.last_name,
+        phone: req.user.phone,
+        email: req.user.email
+      },
+      items: orderItems,
+      total_amount: totalAmount,
+      status: 'pending',
+      delivery_method: delivery_method,
+      table_number: delivery_method === 'dine_in' ? table_number : null,
+      delivery_address: delivery_method === 'delivery' ? delivery_address : null
+    });
+
+    await order.save();
+
+    // Автоматически подтверждаем заказ через 5 секунд
+    setTimeout(async () => {
+      try {
+        const updatedOrder = await Order.findByIdAndUpdate(
+            order._id,
+            {
+              status: 'confirmed',
+              $push: {
+                status_history: {
+                  status: 'confirmed',
+                  notes: 'Заказ автоматически подтвержден',
+                  changed_at: new Date()
+                }
+              }
+            },
+            { new: true }
+        );
+        console.log(`Order ${orderNumber} auto-confirmed`);
+      } catch (err) {
+        console.error('Error auto-confirming order:', err);
+      }
+    }, 5000);
+
+    res.status(201).json({
+      message: 'Заказ успешно создан',
+      order: order,
+      order_number: orderNumber
+    });
 
   } catch (error) {
     console.error('Create order error:', error);
@@ -123,26 +119,19 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// Получить свои заказы (обычный пользователь) или все заказы (админ)
 export const getMyOrders = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const userRole = req.user.role;
 
-    let query = `
-      SELECT o.*
-      FROM orders o 
-    `;
-    const params = [];
-
+    let filter = {};
     if (userRole !== 'admin') {
-      query += ' WHERE o.user_id = ?';
-      params.push(userId);
+      filter.user_id = userId;
     }
 
-    query += ' ORDER BY o.created_at DESC';
-
-    const [orders] = await pool.execute(query, params);
+    const orders = await Order.find(filter)
+        .populate('user_id', 'first_name last_name phone email')
+        .sort({ created_at: -1 });
 
     res.json({ orders });
 
@@ -152,34 +141,24 @@ export const getMyOrders = async (req, res) => {
   }
 };
 
-// Получить историю заказа (изменения статусов) - ДОБАВЛЯЕМ ЭКСПОРТ
 export const getOrderHistory = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
     const userRole = req.user.role;
 
     // Проверяем доступ к заказу
-    let accessQuery = 'SELECT id, user_id FROM orders WHERE id = ?';
-    const accessParams = [id];
-
+    let filter = { _id: id };
     if (userRole !== 'admin') {
-      accessQuery += ' AND user_id = ?';
-      accessParams.push(userId);
+      filter.user_id = userId;
     }
 
-    const [orders] = await pool.execute(accessQuery, accessParams);
-
-    if (orders.length === 0) {
+    const order = await Order.findOne(filter);
+    if (!order) {
       return res.status(404).json({ error: 'Заказ не найден' });
     }
 
-    const [history] = await pool.execute(
-        'SELECT * FROM order_history WHERE order_id = ? ORDER BY changed_at ASC',
-        [id]
-    );
-
-    res.json({ history });
+    res.json({ history: order.status_history });
 
   } catch (error) {
     console.error('Get order history error:', error);
@@ -187,51 +166,28 @@ export const getOrderHistory = async (req, res) => {
   }
 };
 
-// Получить заказ по ID (пользователь видит только свои, админ - любые)
 export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
     const userRole = req.user.role;
 
-    let query = 'SELECT * FROM orders WHERE id = ?';
-    const params = [id];
-
-    // Обычные пользователи могут видеть только свои заказы
+    let filter = { _id: id };
     if (userRole !== 'admin') {
-      query += ' AND user_id = ?';
-      params.push(userId);
+      filter.user_id = userId;
     }
 
-    const [orders] = await pool.execute(query, params);
+    const order = await Order.findOne(filter)
+        .populate('user_id', 'first_name last_name phone email');
 
-    if (orders.length === 0) {
+    if (!order) {
       return res.status(404).json({ error: 'Заказ не найден' });
     }
 
-    // Убираем JOIN с deliveries
-    const [orderDetails] = await pool.execute(`
-      SELECT o.*
-      FROM orders o 
-      WHERE o.id = ?
-    `, [id]);
-
-    const [orderItems] = await pool.execute(`
-      SELECT oi.*, i.name, i.image_url, i.description
-      FROM order_items oi
-      LEFT JOIN items i ON oi.item_id = i.id
-      WHERE oi.order_id = ?
-    `, [id]);
-
-    const [orderHistory] = await pool.execute(
-        'SELECT * FROM order_history WHERE order_id = ? ORDER BY changed_at ASC',
-        [id]
-    );
-
     res.json({
-      order: orderDetails[0],
-      items: orderItems,
-      history: orderHistory
+      order: order,
+      items: order.items,
+      history: order.status_history
     });
 
   } catch (error) {
@@ -240,7 +196,6 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-// Обновить статус заказа
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -258,59 +213,71 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ error: 'Неверный статус заказа' });
     }
 
-    const connection = await pool.getConnection();
-
-    try {
-      // Проверяем существование заказа
-      const [orders] = await connection.execute(
-          'SELECT id FROM orders WHERE id = ?',
-          [id]
-      );
-
-      if (orders.length === 0) {
-        return res.status(404).json({ error: 'Заказ не найден' });
-      }
-
-      // Обновляем статус заказа
-      await connection.execute(
-          'UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?',
-          [status, id]
-      );
-
-      // Добавляем запись в историю
-      const statusNotes = {
-        pending: 'Заказ создан',
-        confirmed: 'Заказ подтвержден',
-        cooking: 'Заказ передан на кухню',
-        ready: 'Заказ готов',
-        delivering: 'Заказ передан курьеру',
-        delivered: 'Заказ доставлен',
-        completed: 'Заказ завершен',
-        cancelled: 'Заказ отменен'
-      };
-
-      await connection.execute(
-          'INSERT INTO order_history (order_id, status, notes) VALUES (?, ?, ?)',
-          [id, status, statusNotes[status] || `Статус изменен на ${status}`]
-      );
-
-      // Получаем обновленный заказ
-      const [updatedOrder] = await connection.execute(
-          'SELECT * FROM orders WHERE id = ?',
-          [id]
-      );
-
-      res.json(updatedOrder[0]);
-
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ error: 'Заказ не найден' });
     }
+
+    const statusNotes = {
+      pending: 'Заказ создан',
+      confirmed: 'Заказ подтвержден',
+      cooking: 'Заказ передан на кухню',
+      ready: 'Заказ готов',
+      delivering: 'Заказ передан курьеру',
+      delivered: 'Заказ доставлен',
+      completed: 'Заказ завершен',
+      cancelled: 'Заказ отменен'
+    };
+
+    // Обновляем статус и добавляем в историю
+    order.status = status;
+    order.status_history.push({
+      status: status,
+      notes: statusNotes[status] || `Статус изменен на ${status}`,
+      changed_at: new Date()
+    });
+
+    await order.save();
+
+    res.json(order);
 
   } catch (error) {
     console.error('Update order status error:', error);
     res.status(500).json({ error: 'Ошибка при обновлении статуса заказа' });
+  }
+};
+
+export const getAllOrders = async (req, res) => {
+  try {
+    const { status, delivery_method, page = 1, limit = 20 } = req.query;
+    const userRole = req.user.role;
+
+    // Только админы могут видеть все заказы
+    if (userRole !== 'admin') {
+      return res.status(403).json({ error: 'Недостаточно прав' });
+    }
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (delivery_method) filter.delivery_method = delivery_method;
+
+    const orders = await Order.find(filter)
+        .populate('user_id', 'first_name last_name phone email')
+        .sort({ created_at: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+    const total = await Order.countDocuments(filter);
+
+    res.json({
+      orders,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
+    });
+
+  } catch (error) {
+    console.error('Get all orders error:', error);
+    res.status(500).json({ error: 'Ошибка при получении заказов' });
   }
 };

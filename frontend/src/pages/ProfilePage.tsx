@@ -1,13 +1,13 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
-import { $currentUser, logoutUser } from '../models/users';
+import { $currentUser, logout } from '../models/users';
 import { OrdersList } from '../components/OrdersList';
 import { loadOrders } from '../models/orders';
 
 export const ProfilePage: React.FC = () => {
   const [currentUser, handleLogout, handleLoadOrders] = useUnit([
     $currentUser,
-    logoutUser,
+    logout,
     loadOrders,
   ]);
 
@@ -21,7 +21,7 @@ export const ProfilePage: React.FC = () => {
     if (currentUser) {
       console.log(
         'ProfilePage: загружаем заказы для пользователя',
-        currentUser.id
+        currentUser._id
       );
       handleLoadOrders();
     }
@@ -61,7 +61,6 @@ export const ProfilePage: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900">
                 Профиль пользователя
               </h1>
-              {/* УБРАНА СТРЕЛОЧКА И "Назад в меню" */}
             </div>
             <div className="flex gap-2">
               <button
@@ -133,11 +132,24 @@ export const ProfilePage: React.FC = () => {
                 </span>
               </p>
             </div>
+
+            {/* Дополнительная информация */}
+            {currentUser.created_at && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Дата регистрации
+                </label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {new Date(currentUser.created_at).toLocaleDateString('ru-RU')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Блок заказов */}
         <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Мои заказы</h2>
           <OrdersList />
         </div>
       </div>
