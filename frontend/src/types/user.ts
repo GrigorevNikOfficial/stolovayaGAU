@@ -7,6 +7,11 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface LoginRequest {
+  phone: string;
+  password: string;
+}
+
 export interface UpdateProfileRequest {
   first_name?: string;
   last_name?: string;

@@ -102,9 +102,3 @@ sample({
   clock: updateUserRole,
   target: updateUserRoleFx,
 });
-
-// Автозагрузка профиля при старте приложения
-sample({
-  clock: getMeFx.done,
-  target: getMeFx,
-});

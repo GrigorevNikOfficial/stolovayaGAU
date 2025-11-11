@@ -9,10 +9,14 @@ import { ordersApi } from '../api/orders';
 import type {
   CreateOrderRequest,
   Order,
-  OrderWithDetails,
   UpdateOrderRequest,
 } from '../types/order';
+import type { User } from '../types/user';
 import { $currentUser } from './users';
+
+type LoadOrdersParams = {
+  role: 'admin' | 'user';
+};
 
 // Events (остаются те же)
 export const loadOrders = createEvent();
@@ -23,10 +27,17 @@ export const clearOrders = createEvent();
 export const refreshOrders = createEvent();
 
 // Effects с обновленными типами
-export const loadOrdersFx = createEffect(async (): Promise<Order[]> => {
-  const response = await ordersApi.getOrders();
-  return response.orders;
-});
+export const loadOrdersFx = createEffect(
+  async ({ role }: LoadOrdersParams): Promise<Order[]> => {
+    if (role === 'admin') {
+      const response = await ordersApi.getOrders();
+      return response.orders;
+    }
+
+    const response = await ordersApi.getMyOrders();
+    return response.orders;
+  }
+);
 
 export const createOrderFx = createEffect(async (order: CreateOrderRequest) => {
   const response = await ordersApi.createOrder(order);
@@ -118,11 +129,17 @@ export const $orderError = createStore<string | null>(null)
 // Samples (остаются те же)
 sample({
   clock: loadOrders,
+  source: $currentUser,
+  filter: (user): user is User => user !== null,
+  fn: user => ({ role: user!.role }),
   target: loadOrdersFx,
 });
 
 sample({
   clock: refreshOrders,
+  source: $currentUser,
+  filter: (user): user is User => user !== null,
+  fn: user => ({ role: user!.role }),
   target: loadOrdersFx,
 });
 
@@ -143,9 +160,9 @@ sample({
 
 sample({
   clock: $currentUser.updates,
-  source: $currentUser,
-  filter: user => user !== null,
-  target: loadOrders,
+  filter: (user): user is User => user !== null,
+  fn: user => ({ role: user!.role }),
+  target: loadOrdersFx,
 });
 
 sample({
