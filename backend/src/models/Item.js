@@ -50,6 +50,13 @@ const itemSchema = new mongoose.Schema({
     sort_order: {
         type: Number,
         default: 0
+    },
+    image: {
+        key: {
+            type: String,
+            required: true,
+            default: 'item-pics/item_placeholder.webp'
+        }
     }
 }, {
     timestamps: true

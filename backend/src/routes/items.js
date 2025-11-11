@@ -5,9 +5,11 @@ import {
     getItemsByCategory,
     createItem,
     updateItem,
-    deleteItem
+    deleteItem,
+    uploadItemImage
 } from '../controllers/itemController.js';
 import { authenticateToken, requireAdmin } from '../controllers/auth.js';
+import { singleImageUpload } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -20,5 +22,6 @@ router.get('/category/:category_slug', getItemsByCategory);
 router.post('/', authenticateToken, requireAdmin, createItem);
 router.put('/:id', authenticateToken, requireAdmin, updateItem);
 router.delete('/:id', authenticateToken, requireAdmin, deleteItem);
+router.post('/:id/image', authenticateToken, requireAdmin, singleImageUpload('image'), uploadItemImage);
 
 export { router };
