@@ -42,105 +42,111 @@ export const CartBlock: React.FC = () => {
       return;
     }
 
-    // Передаем данные в правильном формате
     handleCreateOrder({
       delivery_method: deliveryMethod,
-      ...(deliveryMethod === 'dine_in' && { table_number: 1 }), // Можно добавить выбор стола
+      ...(deliveryMethod === 'dine_in' && { table_number: 1 }),
       ...(deliveryMethod === 'delivery' && {
         delivery_address: 'Адрес доставки',
-      }), // Можно добавить ввод адреса
+      }),
     });
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-full min-h-[600px] flex flex-col">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">Корзина</h2>
-
-      {/* Выбор способа получения */}
-      <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Способ получения
-        </label>
-        <div className="space-y-3">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="pickup"
-              checked={deliveryMethod === 'pickup'}
-              onChange={e => setDeliveryMethod(e.target.value as 'pickup')}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-            />
-            <span className="ml-3 text-sm text-gray-700">Самовывоз</span>
+    <div className="bg-white rounded-lg shadow-lg p-4 h-full flex flex-col">
+      {' '}
+      {/* Уменьшил padding */}
+      <h2 className="text-lg font-bold text-gray-900 mb-4">Корзина</h2>{' '}
+      {/* Уменьшил размер заголовка */}
+      {/* Выбор способа получения - компактный вариант */}
+      {cart.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Способ получения
           </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="dine_in"
-              checked={deliveryMethod === 'dine_in'}
-              onChange={e => setDeliveryMethod(e.target.value as 'dine_in')}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-            />
-            <span className="ml-3 text-sm text-gray-700">В зале</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="delivery"
-              checked={deliveryMethod === 'delivery'}
-              onChange={e => setDeliveryMethod(e.target.value as 'delivery')}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-            />
-            <span className="ml-3 text-sm text-gray-700">Доставка (скоро)</span>
-          </label>
-        </div>
-
-        {deliveryMethod === 'delivery' && (
-          <div className="mt-3 p-3 bg-yellow-50 rounded-md">
-            <p className="text-sm text-yellow-700">
-              🚚 Функционал доставки будет добавлен позже
-            </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setDeliveryMethod('pickup')}
+              className={`flex-1 py-2 px-3 text-xs rounded-md transition-colors ${
+                deliveryMethod === 'pickup'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Самовывоз
+            </button>
+            <button
+              onClick={() => setDeliveryMethod('dine_in')}
+              className={`flex-1 py-2 px-3 text-xs rounded-md transition-colors ${
+                deliveryMethod === 'dine_in'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              В зале
+            </button>
+            <button
+              onClick={() => setDeliveryMethod('delivery')}
+              disabled
+              className="flex-1 py-2 px-3 text-xs rounded-md bg-gray-100 text-gray-400 cursor-not-allowed"
+            >
+              Доставка
+            </button>
           </div>
-        )}
-      </div>
-
-      {/* Список товаров - занимает все доступное пространство */}
-      <div className="flex-1 mb-6">
+        </div>
+      )}
+      {/* Список товаров с прокруткой */}
+      <div className="flex-1 overflow-y-auto mb-4">
+        {' '}
+        {/* Добавил прокрутку */}
         {cart.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-5xl mb-4">🛒</div>
-            <p className="text-gray-500 text-lg">Корзина пуста</p>
-            <p className="text-gray-400 text-sm mt-2">
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-3">🛒</div>{' '}
+            {/* Уменьшил иконку */}
+            <p className="text-gray-500 text-sm">Корзина пуста</p>{' '}
+            {/* Уменьшил текст */}
+            <p className="text-gray-400 text-xs mt-1">
               Добавьте товары из меню
             </p>
           </div>
         ) : (
-          <div className="space-y-4 h-full overflow-y-auto pr-2">
+          <div className="space-y-3">
+            {' '}
+            {/* Уменьшил отступы между товарами */}
             {cart.map(({ item, quantity }) => (
-              <div key={item._id} className="bg-gray-50 rounded-lg p-4 border">
-                <div className="flex justify-between items-start mb-3">
+              <div key={item._id} className="bg-gray-50 rounded-lg p-3 border">
+                {' '}
+                {/* Уменьшил padding */}
+                <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
-                    <h3 className="text-base font-medium text-gray-900">
+                    <h3 className="text-sm font-medium text-gray-900">
+                      {' '}
+                      {/* Уменьшил текст */}
                       {item.name}
                     </h3>
                     {item.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                        {' '}
+                        {/* Уменьшил и обрезал описание */}
                         {item.description}
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => handleRemoveFromCart(item._id)}
-                    className="text-red-500 hover:text-red-700 ml-3 text-lg font-bold"
+                    className="text-red-500 hover:text-red-700 ml-2 text-md font-bold"
                   >
                     ×
                   </button>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-gray-700">
+                    {' '}
+                    {/* Уменьшил текст цены */}
                     {item.price * quantity} ₽
                   </p>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    {' '}
+                    {/* Уменьшил отступы */}
                     <button
                       onClick={() =>
                         handleUpdateQuantity({
@@ -148,11 +154,13 @@ export const CartBlock: React.FC = () => {
                           quantity: quantity - 1,
                         })
                       }
-                      className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400"
+                      className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400 text-xs" /* Уменьшил кнопки */
                     >
                       -
                     </button>
-                    <span className="text-lg font-medium text-gray-900 w-8 text-center">
+                    <span className="text-sm font-medium text-gray-900 w-6 text-center">
+                      {' '}
+                      {/* Уменьшил счетчик */}
                       {quantity}
                     </span>
                     <button
@@ -162,7 +170,7 @@ export const CartBlock: React.FC = () => {
                           quantity: quantity + 1,
                         })
                       }
-                      className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400"
+                      className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400 text-xs" /* Уменьшил кнопки */
                     >
                       +
                     </button>
@@ -173,32 +181,34 @@ export const CartBlock: React.FC = () => {
           </div>
         )}
       </div>
-
       {/* Футер с общей суммой и кнопками */}
       {cart.length > 0 && (
-        <div className="border-t border-gray-200 pt-6">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-lg font-medium text-gray-900">Итого:</span>
-            <span className="text-xl font-bold text-gray-900">
+        <div className="border-t border-gray-200 pt-4">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-base font-medium text-gray-900">Итого:</span>{' '}
+            {/* Уменьшил текст */}
+            <span className="text-lg font-bold text-gray-900">
+              {' '}
+              {/* Уменьшил текст */}
               {cartTotal} ₽
             </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <button
               onClick={handleSubmitOrder}
               disabled={isCreating || deliveryMethod === 'delivery'}
-              className="w-full bg-indigo-600 border border-transparent rounded-lg py-3 px-4 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-indigo-600 border border-transparent rounded-lg py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" /* Уменьшил кнопку */
             >
               {isCreating
                 ? 'Оформление...'
                 : deliveryMethod === 'delivery'
-                  ? 'Доставка временно недоступна'
+                  ? 'Доставка недоступна'
                   : 'Оформить заказ'}
             </button>
             <button
               onClick={handleClearCart}
-              className="w-full bg-white border border-gray-300 rounded-lg py-3 px-4 text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              className="w-full bg-white border border-gray-300 rounded-lg py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" /* Уменьшил кнопку */
             >
               Очистить корзину
             </button>
