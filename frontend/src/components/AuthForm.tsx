@@ -24,6 +24,42 @@ export const AuthForm: React.FC = () => {
   const [isLoading, authError, currentUser, handleLogin, handleRegister] =
     useUnit([$isLoading, $authError, $currentUser, login, register]);
 
+  // Функция для форматирования телефона с +7
+  const formatPhone = (value: string): string => {
+    // Убираем все нецифровые символы кроме +
+    let cleaned = value.replace(/[^\d+]/g, '');
+    
+    // Если начинается с +, оставляем как есть
+    if (cleaned.startsWith('+')) {
+      // Убираем + для обработки
+      cleaned = cleaned.substring(1);
+    }
+    
+    // Если номер начинается с 8, заменяем на 7
+    if (cleaned.startsWith('8')) {
+      cleaned = '7' + cleaned.substring(1);
+    }
+    
+    // Если номер не начинается с 7, добавляем 7
+    if (cleaned && !cleaned.startsWith('7')) {
+      cleaned = '7' + cleaned;
+    }
+    
+    // Ограничиваем длину до 12 цифр (7 + 10 цифр)
+    if (cleaned.length > 12) {
+      cleaned = cleaned.substring(0, 12);
+    }
+    
+    // Возвращаем с +7
+    return cleaned ? '+' + cleaned : '';
+  };
+
+  // Обработчик изменения телефона
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setFormData({ ...formData, phone: formatted });
+  };
+
   // Валидация формы
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
@@ -219,9 +255,13 @@ export const AuthForm: React.FC = () => {
                 }`}
                 placeholder="Телефон: например +79181234567"
                 value={formData.phone}
-                onChange={e =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
+                onChange={handlePhoneChange}
+                onFocus={(e) => {
+                  // Если поле пустое, автоматически добавляем +7
+                  if (!e.target.value) {
+                    setFormData({ ...formData, phone: '+7' });
+                  }
+                }}
               />
               {formErrors.phone && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>

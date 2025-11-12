@@ -40,4 +40,12 @@ export const categoriesApi = {
     }>(`/categories/${id}`, categoryData);
     return response;
   },
+
+  // Удалить категорию (админ)
+  deleteCategory: async (id: string): Promise<{ message: string }> => {
+    const response = await httpClient.delete<{ message: string }>(
+      `/categories/${id}`
+    );
+    return response;
+  },
 };

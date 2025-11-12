@@ -8,7 +8,7 @@ import {
     deleteItem,
     uploadItemImage
 } from '../controllers/itemController.js';
-import { authenticateToken, requireAdmin } from '../controllers/auth.js';
+import { authenticateToken, requireAdminOrCanteenManager } from '../controllers/auth.js';
 import { singleImageUpload } from '../middleware/upload.js';
 
 const router = express.Router();
@@ -18,10 +18,10 @@ router.get('/', getItems);
 router.get('/:id', getItemById);
 router.get('/category/:category_slug', getItemsByCategory);
 
-// Админ роуты
-router.post('/', authenticateToken, requireAdmin, createItem);
-router.put('/:id', authenticateToken, requireAdmin, updateItem);
-router.delete('/:id', authenticateToken, requireAdmin, deleteItem);
-router.post('/:id/image', authenticateToken, requireAdmin, singleImageUpload('image'), uploadItemImage);
+// Админ и canteenManager роуты
+router.post('/', authenticateToken, requireAdminOrCanteenManager, createItem);
+router.put('/:id', authenticateToken, requireAdminOrCanteenManager, updateItem);
+router.delete('/:id', authenticateToken, requireAdminOrCanteenManager, deleteItem);
+router.post('/:id/image', authenticateToken, requireAdminOrCanteenManager, singleImageUpload('image'), uploadItemImage);
 
 export { router };

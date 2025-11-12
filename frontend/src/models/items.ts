@@ -108,3 +108,22 @@ sample({
   clock: deleteItem,
   target: deleteItemFx,
 });
+
+// Автоматическая перезагрузка после создания/обновления/удаления
+sample({
+  clock: createItemFx.done,
+  fn: () => ({}),
+  target: loadItems,
+});
+
+sample({
+  clock: updateItemFx.done,
+  fn: () => ({}),
+  target: loadItems,
+});
+
+sample({
+  clock: deleteItemFx.done,
+  fn: () => ({}),
+  target: loadItems,
+});

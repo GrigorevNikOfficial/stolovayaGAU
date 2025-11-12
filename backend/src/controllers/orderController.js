@@ -9,11 +9,26 @@ const normalizeId = value => {
   return value;
 };
 
+// Нормализация старых статусов к новым
+const normalizeStatus = (status) => {
+  const statusMap = {
+    'pending': 'created',
+    'confirmed': 'created',
+    'ready': 'ready_for_pickup',
+    'delivering': 'in_transit',
+    'delivered': 'completed',
+  };
+  return statusMap[status] || status;
+};
+
 const mapOrderToResponse = order => {
   const plain =
     typeof order.toObject === 'function'
       ? order.toObject({ getters: true })
       : order;
+
+  // Нормализуем статус
+  const normalizedStatus = normalizeStatus(plain.status);
 
   return {
     _id: normalizeId(plain._id),
@@ -30,10 +45,10 @@ const mapOrderToResponse = order => {
       price: item.price_at_time,
     })),
     total_amount: plain.total_amount,
-    status: plain.status,
+    status: normalizedStatus,
     status_history: (plain.status_history || []).map(entry => ({
       _id: normalizeId(entry._id),
-      status: entry.status,
+      status: normalizeStatus(entry.status),
       notes: entry.notes,
       changed_at: entry.changed_at,
     })),
@@ -120,36 +135,13 @@ export const createOrder = async (req, res) => {
       },
       items: orderItems,
       total_amount: totalAmount,
-      status: 'pending',
+      status: 'created',
       delivery_method: delivery_method,
       table_number: delivery_method === 'dine_in' ? table_number : null,
       delivery_address: delivery_method === 'delivery' ? delivery_address : null
     });
 
     await order.save();
-
-    // Автоматически подтверждаем заказ через 5 секунд
-    setTimeout(async () => {
-      try {
-        const updatedOrder = await Order.findByIdAndUpdate(
-            order._id,
-            {
-              status: 'confirmed',
-              $push: {
-                status_history: {
-                  status: 'confirmed',
-                  notes: 'Заказ автоматически подтвержден',
-                  changed_at: new Date()
-                }
-              }
-            },
-            { new: true }
-        );
-        console.log(`Order ${orderNumber} auto-confirmed`);
-      } catch (err) {
-        console.error('Error auto-confirming order:', err);
-      }
-    }, 5000);
 
     res.status(201).json({
       message: 'Заказ успешно создан',
@@ -169,12 +161,29 @@ export const getMyOrders = async (req, res) => {
     const userRole = req.user.role;
 
     let filter = {};
-    if (userRole !== 'admin') {
+    // admin, storeManager и canteenManager видят все заказы
+    if (userRole !== 'admin' && userRole !== 'storeManager' && userRole !== 'canteenManager' && userRole !== 'cateenManager') {
       filter.user_id = userId;
+    }
+
+    // storeManager видит ТОЛЬКО заказы начиная с этапа 4 (in_transit) и далее
+    // Буфет должен видеть только: in_transit, ready_for_pickup, completed (и старые: delivering, delivered)
+    // НЕ видит: created, cooking, waiting_delivery, pending, confirmed
+    if (userRole === 'storeManager') {
+      filter.status = { $in: ['in_transit', 'ready_for_pickup', 'completed', 'delivering', 'delivered'] };
+    }
+
+    // canteenManager видит заказы с момента создания до момента отправки включительно (created, cooking, waiting_delivery, in_transit)
+    // На этапе 5 (ready_for_pickup) столовая перестаёт видеть
+    // НЕ видит: ready_for_pickup, completed, delivered
+    if (userRole === 'canteenManager' || userRole === 'cateenManager') {
+      filter.status = { $in: ['created', 'cooking', 'waiting_delivery', 'in_transit', 'pending', 'confirmed', 'delivering'] };
     }
 
   const orders = await Order.find(filter)
     .sort({ created_at: -1 });
+
+  console.log(`getMyOrders: найдено ${orders.length} заказов для роли ${userRole}, фильтр:`, JSON.stringify(filter));
 
   res.json({ orders: orders.map(mapOrderToResponse) });
 
@@ -191,8 +200,9 @@ export const getOrderHistory = async (req, res) => {
     const userRole = req.user.role;
 
     // Проверяем доступ к заказу
+    // admin и storeManager могут видеть все заказы
     let filter = { _id: id };
-    if (userRole !== 'admin') {
+    if (userRole !== 'admin' && userRole !== 'storeManager') {
       filter.user_id = userId;
     }
 
@@ -215,8 +225,9 @@ export const getOrderById = async (req, res) => {
     const userId = req.user._id;
     const userRole = req.user.role;
 
+    // admin и storeManager могут видеть все заказы
     let filter = { _id: id };
-    if (userRole !== 'admin') {
+    if (userRole !== 'admin' && userRole !== 'storeManager') {
       filter.user_id = userId;
     }
 
@@ -240,21 +251,15 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-export const updateOrderStatus = async (req, res) => {
+export const updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const updateData = req.body;
     const userRole = req.user.role;
 
-    // Только админы могут менять статусы
-    if (userRole !== 'admin') {
-      return res.status(403).json({ error: 'Недостаточно прав для изменения статуса заказа' });
-    }
-
-    const validStatuses = ['pending', 'confirmed', 'cooking', 'ready', 'delivering', 'delivered', 'completed', 'cancelled'];
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Неверный статус заказа' });
+    // Только admin и storeManager могут редактировать заказы
+    if (userRole !== 'admin' && userRole !== 'storeManager') {
+      return res.status(403).json({ error: 'Недостаточно прав для редактирования заказа' });
     }
 
     const order = await Order.findById(id);
@@ -262,14 +267,152 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: 'Заказ не найден' });
     }
 
+    // Обновляем поля заказа
+    if (updateData.status !== undefined) {
+      const validStatuses = ['created', 'cooking', 'waiting_delivery', 'in_transit', 'ready_for_pickup', 'completed', 'cancelled'];
+      if (!validStatuses.includes(updateData.status)) {
+        return res.status(400).json({ error: 'Неверный статус заказа' });
+      }
+
+      // Для storeManager можно только переходить к ready_for_pickup или completed
+      if (userRole === 'storeManager') {
+        if (!['ready_for_pickup', 'completed'].includes(updateData.status)) {
+          return res.status(403).json({ error: 'Можно изменить только на "Готов к получению" или "Завершён"' });
+        }
+        if (updateData.status === 'ready_for_pickup' && order.status !== 'in_transit') {
+          return res.status(400).json({ error: 'Можно установить "Готов к получению" только для заказов в статусе "В пути"' });
+        }
+        if (updateData.status === 'completed' && order.status !== 'ready_for_pickup') {
+          return res.status(400).json({ error: 'Можно завершить только заказы в статусе "Готов к получению"' });
+        }
+      }
+
+      const statusNotes = {
+        created: 'Заказ создан',
+        cooking: 'Столовая приняла заказ и приступила к нему',
+        waiting_delivery: 'Столовая приготовила и ждёт доставщика',
+        in_transit: 'Передан в доставку',
+        ready_for_pickup: 'Готов к получению в буфете',
+        completed: 'Пользователь забрал заказ',
+        cancelled: 'Заказ отменен'
+      };
+
+      order.status = updateData.status;
+      order.status_history.push({
+        status: updateData.status,
+        notes: statusNotes[updateData.status] || `Статус изменен на ${updateData.status}`,
+        changed_at: new Date()
+      });
+    }
+
+    if (updateData.delivery_method !== undefined) {
+      order.delivery_method = updateData.delivery_method;
+    }
+
+    if (updateData.table_number !== undefined) {
+      order.table_number = updateData.table_number;
+    }
+
+    if (updateData.delivery_address !== undefined) {
+      order.delivery_address = updateData.delivery_address;
+    }
+
+    await order.save();
+
+    res.json({
+      message: 'Заказ успешно обновлен',
+      order: mapOrderToResponse(order)
+    });
+
+  } catch (error) {
+    console.error('Update order error:', error);
+    res.status(500).json({ error: 'Ошибка при обновлении заказа' });
+  }
+};
+
+export const updateOrderStatus = async (req, res) => {
+  try {
+    // Проверяем, что пользователь аутентифицирован
+    if (!req.user) {
+      console.log('updateOrderStatus: пользователь не аутентифицирован');
+      return res.status(401).json({ error: 'Требуется аутентификация' });
+    }
+
+    const { id } = req.params;
+    const { status } = req.body;
+    const userRole = req.user.role;
+
+    console.log(`updateOrderStatus: запрос от пользователя с ролью "${userRole}", userId: ${req.user._id}, orderId: ${id}, newStatus: ${status}`);
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ error: 'Заказ не найден' });
+    }
+
+    // Определяем доступные статусы в зависимости от роли
+    let allowedStatuses = [];
+    let canChangeStatus = false;
+
+    if (userRole === 'admin') {
+      // Админ может менять на любой статус, включая отмену
+      allowedStatuses = ['created', 'cooking', 'waiting_delivery', 'in_transit', 'ready_for_pickup', 'completed', 'cancelled'];
+      canChangeStatus = true;
+    } else if (userRole === 'user') {
+      // Обычный пользователь может только отменить заказ в статусе created
+      allowedStatuses = ['cancelled'];
+      canChangeStatus = order.status === 'created';
+    } else if (userRole === 'canteenManager' || userRole === 'cateenManager') {
+      // Администратор столовой может менять статусы от cooking до in_transit (2-4)
+      // Может переходить: created -> cooking -> waiting_delivery -> in_transit
+      allowedStatuses = ['cooking', 'waiting_delivery', 'in_transit'];
+      canChangeStatus = order.status === 'created' || 
+                        order.status === 'cooking' || 
+                        order.status === 'waiting_delivery' || 
+                        order.status === 'in_transit';
+    } else if (userRole === 'storeManager') {
+      // Администратор буфета может менять статусы ready_for_pickup и completed (5-6)
+      allowedStatuses = ['ready_for_pickup', 'completed'];
+      canChangeStatus = order.status === 'in_transit' || order.status === 'ready_for_pickup';
+    }
+
+    if (!canChangeStatus) {
+      return res.status(403).json({ error: 'Недостаточно прав для изменения статуса заказа' });
+    }
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ 
+        error: `Неверный статус заказа. Доступные статусы: ${allowedStatuses.join(', ')}` 
+      });
+    }
+
+    // Проверка последовательности статусов только для canteenManager
+    if (userRole === 'canteenManager' || userRole === 'cateenManager') {
+      const statusOrder = {
+        'created': 1,
+        'cooking': 2,
+        'waiting_delivery': 3,
+        'in_transit': 4,
+        'ready_for_pickup': 5,
+        'completed': 6,
+        'cancelled': 0
+      };
+
+      const currentStatusOrder = statusOrder[order.status] || 0;
+      const newStatusOrder = statusOrder[status] || 0;
+
+      // Для canteenManager можно только переходить вперед по порядку (2->3->4)
+      if (newStatusOrder <= currentStatusOrder) {
+        return res.status(400).json({ error: 'Можно переходить только к следующему статусу' });
+      }
+    }
+
     const statusNotes = {
-      pending: 'Заказ создан',
-      confirmed: 'Заказ подтвержден',
-      cooking: 'Заказ передан на кухню',
-      ready: 'Заказ готов',
-      delivering: 'Заказ передан курьеру',
-      delivered: 'Заказ доставлен',
-      completed: 'Заказ завершен',
+      created: 'Заказ создан',
+      cooking: 'Столовая приняла заказ и приступила к нему',
+      waiting_delivery: 'Столовая приготовила и ждёт доставщика',
+      in_transit: 'Передан в доставку',
+      ready_for_pickup: 'Готов к получению в буфете',
+      completed: 'Пользователь забрал заказ',
       cancelled: 'Заказ отменен'
     };
 
@@ -283,7 +426,7 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
-  res.json(mapOrderToResponse(order));
+    res.json(mapOrderToResponse(order));
 
   } catch (error) {
     console.error('Update order status error:', error);
@@ -292,12 +435,27 @@ export const updateOrderStatus = async (req, res) => {
 };
 
 export const getAllOrders = async (req, res) => {
+  console.log('=== getAllOrders ВЫЗВАН ===');
+  console.log('req.method:', req.method);
+  console.log('req.path:', req.path);
+  console.log('req.user:', req.user ? { _id: req.user._id, role: req.user.role } : 'null');
+  
   try {
-    const { status, delivery_method, page = 1, limit = 20 } = req.query;
+    // Проверяем, что пользователь аутентифицирован
+    if (!req.user) {
+      console.log('getAllOrders: пользователь не аутентифицирован');
+      return res.status(401).json({ error: 'Требуется аутентификация' });
+    }
+
+    const { status, delivery_method, page = 1, limit = 100 } = req.query;
     const userRole = req.user.role;
 
-    // Только админы могут видеть все заказы
-    if (userRole !== 'admin') {
+    console.log(`getAllOrders: запрос от пользователя с ролью "${userRole}", userId: ${req.user._id}`);
+    console.log(`getAllOrders: проверка роли - admin: ${userRole === 'admin'}, storeManager: ${userRole === 'storeManager'}, canteenManager: ${userRole === 'canteenManager'}, cateenManager: ${userRole === 'cateenManager'}`);
+
+    // admin, storeManager и canteenManager могут видеть заказы
+    if (userRole !== 'admin' && userRole !== 'storeManager' && userRole !== 'canteenManager' && userRole !== 'cateenManager') {
+      console.log(`getAllOrders: доступ запрещен для роли "${userRole}"`);
       return res.status(403).json({ error: 'Недостаточно прав' });
     }
 
@@ -305,12 +463,28 @@ export const getAllOrders = async (req, res) => {
     if (status) filter.status = status;
     if (delivery_method) filter.delivery_method = delivery_method;
 
+    // storeManager видит ТОЛЬКО заказы начиная с этапа 4 (in_transit) и далее
+    // Буфет должен видеть только: in_transit, ready_for_pickup, completed (и старые: delivering, delivered)
+    // НЕ видит: created, cooking, waiting_delivery, pending, confirmed
+    if (userRole === 'storeManager') {
+      filter.status = { $in: ['in_transit', 'ready_for_pickup', 'completed', 'delivering', 'delivered'] };
+    }
+
+    // canteenManager видит заказы с момента создания до момента отправки включительно (created, cooking, waiting_delivery, in_transit)
+    // На этапе 5 (ready_for_pickup) столовая перестаёт видеть
+    // НЕ видит: ready_for_pickup, completed, delivered
+    if (userRole === 'canteenManager' || userRole === 'cateenManager') {
+      filter.status = { $in: ['created', 'cooking', 'waiting_delivery', 'in_transit', 'pending', 'confirmed', 'delivering'] };
+    }
+
   const orders = await Order.find(filter)
     .sort({ created_at: -1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
 
     const total = await Order.countDocuments(filter);
+
+    console.log(`getAllOrders: найдено ${orders.length} заказов для роли ${userRole}, всего в БД: ${total}`);
 
     res.json({
       orders: orders.map(mapOrderToResponse),

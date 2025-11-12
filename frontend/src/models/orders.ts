@@ -15,13 +15,14 @@ import type { User } from '../types/user';
 import { $currentUser } from './users';
 
 type LoadOrdersParams = {
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'storeManager' | 'canteenManager' | 'cateenManager';
 };
 
 // Events (остаются те же)
 export const loadOrders = createEvent();
 export const createOrder = createEvent<CreateOrderRequest>();
 export const updateOrderStatus = createEvent<UpdateOrderRequest>();
+export const updateOrder = createEvent<UpdateOrderRequest>();
 export const cancelOrder = createEvent<string>(); // Из number в string
 export const clearOrders = createEvent();
 export const refreshOrders = createEvent();
@@ -29,7 +30,8 @@ export const refreshOrders = createEvent();
 // Effects с обновленными типами
 export const loadOrdersFx = createEffect(
   async ({ role }: LoadOrdersParams): Promise<Order[]> => {
-    if (role === 'admin') {
+    // admin, storeManager и canteenManager видят все заказы (через getAllOrders)
+    if (role === 'admin' || role === 'storeManager' || role === 'canteenManager' || role === 'cateenManager') {
       const response = await ordersApi.getOrders();
       return response.orders;
     }
@@ -50,7 +52,19 @@ export const createOrderFx = createEffect(async (order: CreateOrderRequest) => {
 export const updateOrderStatusFx = createEffect(
   async (order: UpdateOrderRequest): Promise<Order> => {
     console.log('Updating order status:', order);
-    return await ordersApi.updateOrder(order);
+    if (order.status !== undefined) {
+      return await ordersApi.updateOrderStatus(order);
+    }
+    const response = await ordersApi.updateOrder(order);
+    return response.order;
+  }
+);
+
+export const updateOrderFx = createEffect(
+  async (order: UpdateOrderRequest): Promise<Order> => {
+    console.log('Updating order:', order);
+    const response = await ordersApi.updateOrder(order);
+    return response.order;
   }
 );
 
@@ -76,6 +90,11 @@ export const $orders = createStore<Order[]>([])
         order._id === updatedOrder._id ? updatedOrder : order
       ) // _id вместо id
   )
+  .on(updateOrderFx.doneData, (state, updatedOrder) =>
+    state.map(order =>
+      order._id === updatedOrder._id ? updatedOrder : order
+    )
+  )
   .on(cancelOrderFx.doneData, (state, cancelledOrder) =>
     state.map(
       order => (order._id === cancelledOrder._id ? cancelledOrder : order) // _id вместо id
@@ -90,7 +109,11 @@ export const $displayedOrders = combine(
   (orders, currentUser) => {
     if (!currentUser) return [];
 
-    if (currentUser.role === 'admin') {
+    // admin, storeManager и canteenManager видят все заказы (фильтрация по статусу уже на бэкенде)
+    if (currentUser.role === 'admin' || 
+        currentUser.role === 'storeManager' || 
+        currentUser.role === 'canteenManager' || 
+        currentUser.role === 'cateenManager') {
       return orders;
     } else {
       return orders.filter(order => order.user_id === currentUser._id); // _id вместо id
@@ -111,17 +134,20 @@ export const $isCreating = createStore(false).on(
 
 export const $isUpdating = createStore(false)
   .on(updateOrderStatusFx.pending, (_, pending) => pending)
+  .on(updateOrderFx.pending, (_, pending) => pending)
   .on(cancelOrderFx.pending, (_, pending) => pending);
 
 export const $orderError = createStore<string | null>(null)
   .on(loadOrdersFx.fail, (_, { error }) => error.message)
   .on(createOrderFx.fail, (_, { error }) => error.message)
   .on(updateOrderStatusFx.fail, (_, { error }) => error.message)
+  .on(updateOrderFx.fail, (_, { error }) => error.message)
   .on(cancelOrderFx.fail, (_, { error }) => error.message)
   .reset([
     loadOrders,
     createOrder,
     updateOrderStatus,
+    updateOrder,
     cancelOrder,
     refreshOrders,
   ]);
@@ -154,6 +180,11 @@ sample({
 });
 
 sample({
+  clock: updateOrder,
+  target: updateOrderFx,
+});
+
+sample({
   clock: cancelOrder,
   target: cancelOrderFx,
 });
@@ -172,6 +203,11 @@ sample({
 
 sample({
   clock: updateOrderStatusFx.done,
+  target: refreshOrders,
+});
+
+sample({
+  clock: updateOrderFx.done,
   target: refreshOrders,
 });
 

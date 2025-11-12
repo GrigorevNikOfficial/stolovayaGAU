@@ -69,3 +69,27 @@ export const requireAdmin = (req, res, next) => {
 
   next();
 };
+
+export const requireAdminOrCanteenManager = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Требуется аутентификация' });
+  }
+
+  if (req.user.role !== 'admin' && req.user.role !== 'canteenManager' && req.user.role !== 'cateenManager') {
+    return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора или администратора столовой' });
+  }
+
+  next();
+};
+
+export const requireAdminOrStoreManager = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Требуется аутентификация' });
+  }
+
+  if (req.user.role !== 'admin' && req.user.role !== 'storeManager') {
+    return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора или администратора буфета' });
+  }
+
+  next();
+};

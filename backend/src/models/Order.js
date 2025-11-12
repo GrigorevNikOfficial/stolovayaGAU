@@ -66,8 +66,8 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'cooking', 'ready', 'delivering', 'delivered', 'completed', 'cancelled'],
-        default: 'pending'
+        enum: ['created', 'cooking', 'waiting_delivery', 'in_transit', 'ready_for_pickup', 'completed', 'cancelled'],
+        default: 'created'
     },
     status_history: [statusHistorySchema],
     delivery_method: {
@@ -97,7 +97,7 @@ orderSchema.statics.generateOrderNumber = async function() {
 orderSchema.pre('save', function(next) {
     if (this.isNew) {
         this.status_history.push({
-            status: 'pending',
+            status: 'created',
             notes: 'Заказ создан',
             changed_at: new Date()
         });

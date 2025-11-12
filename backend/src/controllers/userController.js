@@ -1,13 +1,34 @@
-import { User } from '../models/User.js';
-import { generateToken } from './auth.js';
 import { S3_FOLDERS } from '../config/storage.js';
+import { User } from '../models/User.js';
 import {
-  buildPublicUrl,
-  DEFAULT_PROFILE_PICTURE_KEY,
-  deleteObject,
-  StorageServiceError,
-  uploadImage,
+    buildPublicUrl,
+    DEFAULT_PROFILE_PICTURE_KEY,
+    deleteObject,
+    StorageServiceError,
+    uploadImage,
 } from '../services/storageService.js';
+import { generateToken } from './auth.js';
+
+// Функция для форматирования телефона с +7
+const formatPhone = (phone) => {
+    if (!phone) return phone;
+    
+    // Убираем все нецифровые символы
+    let cleaned = phone.replace(/\D/g, '');
+    
+    // Если номер начинается с 8, заменяем на 7
+    if (cleaned.startsWith('8')) {
+        cleaned = '7' + cleaned.substring(1);
+    }
+    
+    // Если номер не начинается с 7, добавляем 7
+    if (!cleaned.startsWith('7')) {
+        cleaned = '7' + cleaned;
+    }
+    
+    // Форматируем в формат +7XXXXXXXXXX
+    return '+' + cleaned;
+};
 
 const mapUserToResponse = (user) => {
   const avatarKey = user?.avatar?.key || DEFAULT_PROFILE_PICTURE_KEY;
@@ -35,8 +56,11 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
     }
 
+    // Форматируем телефон с +7
+    const formattedPhone = formatPhone(phone);
+
     const existingUser = await User.findOne({
-      $or: [{ phone }, { email: mail }]
+      $or: [{ phone: formattedPhone }, { email: mail }]
     });
 
     if (existingUser) {
@@ -46,7 +70,7 @@ export const register = async (req, res) => {
     const user = new User({
       first_name,
       last_name,
-      phone,
+      phone: formattedPhone,
       email: mail,
       password,
       role: 'user'
@@ -81,7 +105,10 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: 'Телефон и пароль обязательны' });
     }
 
-    const user = await User.findOne({ phone });
+    // Форматируем телефон с +7
+    const formattedPhone = formatPhone(phone);
+
+    const user = await User.findOne({ phone: formattedPhone });
     if (!user) {
       return res.status(401).json({ error: 'Неверный телефон или пароль' });
     }
@@ -120,10 +147,13 @@ export const updateProfile = async (req, res) => {
     const userId = req.user._id;
 
     if (phone || mail) {
+      // Форматируем телефон с +7 если он передан
+      const formattedPhone = phone ? formatPhone(phone) : null;
+      
       const existingUser = await User.findOne({
         $and: [
           { _id: { $ne: userId } },
-          { $or: [{ phone }, { email: mail }] }
+          { $or: [{ phone: formattedPhone }, { email: mail }] }
         ]
       });
 
@@ -135,7 +165,7 @@ export const updateProfile = async (req, res) => {
     const updateData = {};
     if (first_name) updateData.first_name = first_name;
     if (last_name) updateData.last_name = last_name;
-    if (phone) updateData.phone = phone;
+    if (phone) updateData.phone = formatPhone(phone);
     if (mail) updateData.email = mail;
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -171,8 +201,9 @@ export const updateUserRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!role || !['user', 'admin'].includes(role)) {
-      return res.status(400).json({ error: 'Неверная роль' });
+    const validRoles = ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'];
+    if (!role || !validRoles.includes(role)) {
+      return res.status(400).json({ error: 'Неверная роль. Допустимые роли: user, admin, canteenManager, cateenManager, storeManager' });
     }
 
     const user = await User.findByIdAndUpdate(

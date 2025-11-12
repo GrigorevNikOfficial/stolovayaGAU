@@ -122,15 +122,19 @@ export const ProfilePage: React.FC = () => {
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     currentUser.role === 'admin'
                       ? 'bg-purple-100 text-purple-800'
-                      : 'bg-green-100 text-green-800'
+                      : currentUser.role === 'canteenManager' || currentUser.role === 'cateenManager'
+                        ? 'bg-blue-100 text-blue-800'
+                        : currentUser.role === 'storeManager'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-green-100 text-green-800'
                   }`}
                 >
                   {currentUser.role === 'admin'
                     ? 'Администратор системы'
-                    : currentUser.role === 'canteenManager'
-                      ? 'администратор столовой'
+                    : currentUser.role === 'canteenManager' || currentUser.role === 'cateenManager'
+                      ? 'Администратор столовой'
                       : currentUser.role === 'storeManager'
-                        ? 'администратор буфета'
+                        ? 'Администратор буфета'
                         : 'Пользователь'}
                 </span>
               </p>

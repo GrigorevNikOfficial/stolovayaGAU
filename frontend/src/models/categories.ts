@@ -13,6 +13,7 @@ export const updateCategory = createEvent<{
   id: string;
   data: UpdateCategoryRequest;
 }>();
+export const deleteCategory = createEvent<string>();
 export const setActiveCategory = createEvent<string | null>(); // Для фильтрации
 export const refreshCategories = createEvent();
 
@@ -35,12 +36,20 @@ export const updateCategoryFx = createEffect(
   }
 );
 
+export const deleteCategoryFx = createEffect(async (id: string) => {
+  const response = await categoriesApi.deleteCategory(id);
+  return { id, response };
+});
+
 // Stores
 export const $categories = createStore<Category[]>([])
   .on(loadCategoriesFx.doneData, (_, categories) => categories)
   .on(createCategoryFx.doneData, (state, { category }) => [...state, category])
   .on(updateCategoryFx.doneData, (state, { category }) =>
     state.map(cat => (cat._id === category._id ? category : cat))
+  )
+  .on(deleteCategoryFx.doneData, (state, { id }) =>
+    state.filter(cat => cat._id !== id)
   );
 
 // Активная категория для фильтрации
@@ -82,7 +91,8 @@ export const $categoriesError = createStore<string | null>(null)
   .on(loadCategoriesFx.fail, (_, { error }) => error.message)
   .on(createCategoryFx.fail, (_, { error }) => error.message)
   .on(updateCategoryFx.fail, (_, { error }) => error.message)
-  .reset([loadCategories, createCategory, updateCategory, refreshCategories]);
+  .on(deleteCategoryFx.fail, (_, { error }) => error.message)
+  .reset([loadCategories, createCategory, updateCategory, deleteCategory, refreshCategories]);
 
 // Samples
 sample({
@@ -105,7 +115,12 @@ sample({
   target: updateCategoryFx,
 });
 
-// Автоматическое обновление списка после создания/обновления
+sample({
+  clock: deleteCategory,
+  target: deleteCategoryFx,
+});
+
+// Автоматическое обновление списка после создания/обновления/удаления
 sample({
   clock: createCategoryFx.done,
   target: refreshCategories,
@@ -113,5 +128,10 @@ sample({
 
 sample({
   clock: updateCategoryFx.done,
+  target: refreshCategories,
+});
+
+sample({
+  clock: deleteCategoryFx.done,
   target: refreshCategories,
 });

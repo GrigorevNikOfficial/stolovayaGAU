@@ -4,14 +4,13 @@ export interface Order {
   order_number: string;
   total_amount: number;
   status:
-    | 'pending'
-    | 'confirmed'
+    | 'created'
     | 'cooking'
-    | 'ready'
-    | 'delivering'
-    | 'delivered'
-    | 'cancelled'
-    | 'completed';
+    | 'waiting_delivery'
+    | 'in_transit'
+    | 'ready_for_pickup'
+    | 'completed'
+    | 'cancelled';
   delivery_method: 'dine_in' | 'pickup' | 'delivery'; // Добавили dine_in
   table_number?: number; // Новое поле для dine_in
   delivery_address?: string;
@@ -63,5 +62,8 @@ export interface CreateOrderRequest {
 
 export interface UpdateOrderRequest {
   id: string; // Из number в string
-  status: Order['status'];
+  status?: Order['status'];
+  delivery_method?: 'dine_in' | 'pickup' | 'delivery';
+  table_number?: number;
+  delivery_address?: string;
 }
