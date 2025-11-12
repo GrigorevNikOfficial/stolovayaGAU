@@ -1,7 +1,6 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
 import { $currentUser, logout } from '../models/users';
-import { OrdersList } from '../components/OrdersList';
 import { loadOrders } from '../models/orders';
 
 export const ProfilePage: React.FC = () => {
@@ -127,8 +126,12 @@ export const ProfilePage: React.FC = () => {
                   }`}
                 >
                   {currentUser.role === 'admin'
-                    ? 'Администратор'
-                    : 'Пользователь'}
+                    ? 'Администратор системы'
+                    : currentUser.role === 'canteenManager'
+                      ? 'администратор столовой'
+                      : currentUser.role === 'storeManager'
+                        ? 'администратор буфета'
+                        : 'Пользователь'}
                 </span>
               </p>
             </div>
@@ -145,12 +148,6 @@ export const ProfilePage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Блок заказов */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Мои заказы</h2>
-          <OrdersList />
         </div>
       </div>
     </div>
