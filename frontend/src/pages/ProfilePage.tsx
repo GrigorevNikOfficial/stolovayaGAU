@@ -126,8 +126,12 @@ export const ProfilePage: React.FC = () => {
                   }`}
                 >
                   {currentUser.role === 'admin'
-                    ? 'Администратор'
-                    : 'Пользователь'}
+                    ? 'Администратор системы'
+                    : currentUser.role === 'canteenManager'
+                      ? 'администратор столовой'
+                      : currentUser.role === 'storeManager'
+                        ? 'администратор буфета'
+                        : 'Пользователь'}
                 </span>
               </p>
             </div>

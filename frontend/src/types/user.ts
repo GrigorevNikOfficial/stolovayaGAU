@@ -20,7 +20,7 @@ export interface User {
   last_name: string;
   phone: string;
   mail: string; // Используем mail как в бэкенде
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'canteenManager' | 'storeManager';
   created_at: string;
   updated_at?: string;
 }
