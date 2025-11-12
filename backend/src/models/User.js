@@ -34,6 +34,13 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
+    },
+    avatar: {
+        key: {
+            type: String,
+            required: true,
+            default: 'pfps/pfp_placeholder.webp'
+        }
     }
 }, {
     timestamps: true

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 
 export const authenticateToken = async (req, res, next) => {
@@ -11,8 +12,17 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const rawUserId = decoded?.userId;
+    const normalizedUserId =
+      typeof rawUserId === 'string'
+        ? rawUserId
+        : rawUserId?.toString?.();
 
-    const user = await User.findById(decoded.userId).select('-password');
+    if (!normalizedUserId || !mongoose.Types.ObjectId.isValid(normalizedUserId)) {
+      return res.status(401).json({ error: 'Неверный токен' });
+    }
+
+    const user = await User.findById(normalizedUserId).select('-password');
 
     if (!user) {
       return res.status(401).json({ error: 'Пользователь не найден' });
@@ -36,8 +46,13 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 export const generateToken = (userId) => {
+  const normalizedUserId =
+    typeof userId === 'string'
+      ? userId
+      : userId?.toString?.();
+
   return jwt.sign(
-      { userId: userId }, // Явно указываем поле userId
+      { userId: normalizedUserId }, // Явно указываем поле userId
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );

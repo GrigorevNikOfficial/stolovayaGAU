@@ -1,6 +1,7 @@
 import type {
   CreateOrderRequest,
   Order,
+  OrderHistory,
   OrderWithDetails,
   UpdateOrderRequest,
 } from '../types/order';
@@ -8,8 +9,26 @@ import { httpClient } from './http-client.ts';
 
 export const ordersApi = {
   // Получить все заказы
-  getOrders: async (): Promise<{ orders: Order[] }> => {
-    const response = await httpClient.get<{ orders: Order[] }>('/orders');
+    getOrders: async (): Promise<{
+    orders: Order[];
+    totalPages?: number;
+    currentPage?: number;
+    total?: number;
+  }> => {
+    const response = await httpClient.get<{
+      orders: Order[];
+      totalPages?: number;
+      currentPage?: number;
+      total?: number;
+    }>('/orders');
+    return response;
+  },
+
+  // Получить заказы текущего пользователя
+  getMyOrders: async (): Promise<{ orders: Order[] }> => {
+    const response = await httpClient.get<{ orders: Order[] }>(
+      '/orders/my-orders'
+    );
     return response;
   },
 

@@ -1,6 +1,50 @@
 import { Order } from '../models/Order.js';
 import { Item } from '../models/Item.js';
 
+const normalizeId = value => {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value;
+  if (value instanceof Date) return value;
+  if (value.toString) return value.toString();
+  return value;
+};
+
+const mapOrderToResponse = order => {
+  const plain =
+    typeof order.toObject === 'function'
+      ? order.toObject({ getters: true })
+      : order;
+
+  return {
+    _id: normalizeId(plain._id),
+    order_number: plain.order_number,
+    user_id: normalizeId(plain.user_id?._id ?? plain.user_id),
+    user_info: plain.user_info || null,
+    items: (plain.items || []).map(item => ({
+      _id: normalizeId(item._id),
+      item_id: normalizeId(item.item_id),
+      uniq_nom: item.uniq_nom,
+      name: item.name,
+      quantity: item.quantity,
+      price_at_time: item.price_at_time,
+      price: item.price_at_time,
+    })),
+    total_amount: plain.total_amount,
+    status: plain.status,
+    status_history: (plain.status_history || []).map(entry => ({
+      _id: normalizeId(entry._id),
+      status: entry.status,
+      notes: entry.notes,
+      changed_at: entry.changed_at,
+    })),
+    delivery_method: plain.delivery_method,
+    table_number: plain.table_number,
+    delivery_address: plain.delivery_address,
+    created_at: plain.created_at,
+    updated_at: plain.updated_at,
+  };
+};
+
 export const createOrder = async (req, res) => {
   try {
     const { items, delivery_method = 'pickup', table_number, delivery_address } = req.body;
@@ -109,7 +153,7 @@ export const createOrder = async (req, res) => {
 
     res.status(201).json({
       message: 'Заказ успешно создан',
-      order: order,
+      order: mapOrderToResponse(order),
       order_number: orderNumber
     });
 
@@ -129,11 +173,10 @@ export const getMyOrders = async (req, res) => {
       filter.user_id = userId;
     }
 
-    const orders = await Order.find(filter)
-        .populate('user_id', 'first_name last_name phone email')
-        .sort({ created_at: -1 });
+  const orders = await Order.find(filter)
+    .sort({ created_at: -1 });
 
-    res.json({ orders });
+  res.json({ orders: orders.map(mapOrderToResponse) });
 
   } catch (error) {
     console.error('Get orders error:', error);
@@ -177,17 +220,18 @@ export const getOrderById = async (req, res) => {
       filter.user_id = userId;
     }
 
-    const order = await Order.findOne(filter)
-        .populate('user_id', 'first_name last_name phone email');
+  const order = await Order.findOne(filter);
 
     if (!order) {
       return res.status(404).json({ error: 'Заказ не найден' });
     }
 
+    const mappedOrder = mapOrderToResponse(order);
+
     res.json({
-      order: order,
-      items: order.items,
-      history: order.status_history
+      order: mappedOrder,
+      items: mappedOrder.items,
+      history: mappedOrder.status_history
     });
 
   } catch (error) {
@@ -239,7 +283,7 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
-    res.json(order);
+  res.json(mapOrderToResponse(order));
 
   } catch (error) {
     console.error('Update order status error:', error);
@@ -261,16 +305,15 @@ export const getAllOrders = async (req, res) => {
     if (status) filter.status = status;
     if (delivery_method) filter.delivery_method = delivery_method;
 
-    const orders = await Order.find(filter)
-        .populate('user_id', 'first_name last_name phone email')
-        .sort({ created_at: -1 })
+  const orders = await Order.find(filter)
+    .sort({ created_at: -1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
 
     const total = await Order.countDocuments(filter);
 
     res.json({
-      orders,
+      orders: orders.map(mapOrderToResponse),
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       total
