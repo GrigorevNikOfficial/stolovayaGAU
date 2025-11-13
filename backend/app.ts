@@ -14,6 +14,7 @@ import { router as userRoutes } from './src/routes/users.js';
 import { router as itemRoutes } from './src/routes/items.js';
 import { router as orderRoutes } from './src/routes/orders.js';
 import { router as categoryRoutes } from './src/routes/categories.js';
+import { router as settingsRoutes } from './src/routes/settings.js';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
