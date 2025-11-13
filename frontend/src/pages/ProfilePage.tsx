@@ -66,7 +66,7 @@ export const ProfilePage: React.FC = () => {
                 onClick={() => handleNavigation('/')}
                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
               >
-                В меню
+                На главную
               </button>
               <button
                 onClick={handleLogoutClick}
@@ -122,7 +122,8 @@ export const ProfilePage: React.FC = () => {
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     currentUser.role === 'admin'
                       ? 'bg-purple-100 text-purple-800'
-                      : currentUser.role === 'canteenManager' || currentUser.role === 'cateenManager'
+                      : currentUser.role === 'canteenManager' ||
+                          currentUser.role === 'cateenManager'
                         ? 'bg-blue-100 text-blue-800'
                         : currentUser.role === 'storeManager'
                           ? 'bg-orange-100 text-orange-800'
@@ -131,7 +132,8 @@ export const ProfilePage: React.FC = () => {
                 >
                   {currentUser.role === 'admin'
                     ? 'Администратор системы'
-                    : currentUser.role === 'canteenManager' || currentUser.role === 'cateenManager'
+                    : currentUser.role === 'canteenManager' ||
+                        currentUser.role === 'cateenManager'
                       ? 'Администратор столовой'
                       : currentUser.role === 'storeManager'
                         ? 'Администратор буфета'

@@ -6,7 +6,20 @@ import { ItemsList } from '../components/ItemsList';
 import { CartBlock } from '../components/CardBlock.tsx';
 import { $currentUser } from '../models/users';
 import { OrdersList } from '../components/OrdersList.tsx';
-import { DeliverySettings } from '../components/DeliverySettings';
+import { DeliverySettings } from '../components/DeliverySettings.tsx';
+import { CategoriesList } from '../components/CategoriesList.tsx';
+
+// Функция для проверки ролей
+const hasRole = (user: any, roles: string | string[]): boolean => {
+  if (!user) {
+    // Для неавторизованного пользователя
+    const rolesArray = Array.isArray(roles) ? roles : [roles];
+    return rolesArray.includes('guest');
+  }
+
+  const rolesArray = Array.isArray(roles) ? roles : [roles];
+  return rolesArray.includes(user.role);
+};
 
 export const HomePage: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
@@ -16,6 +29,35 @@ export const HomePage: React.FC = () => {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
+
+  // Определяем видимые табы для текущего пользователя
+  const getVisibleTabs = () => {
+    const allTabs = [
+      {
+        id: 'menu',
+        label: 'Меню',
+        icon: '🛍️',
+        roles: ['admin', 'canteenManager', 'user', 'guest'],
+      },
+      {
+        id: 'categories',
+        label: 'Категории',
+        icon: '📂',
+        roles: ['admin', 'canteenManager'],
+      },
+      {
+        id: 'orders',
+        label: 'Заказы',
+        icon: '📦',
+        roles: ['admin', 'canteenManager', 'storeManager', 'user'],
+      },
+      { id: 'settings', label: 'Настройки', icon: '⚙️', roles: ['admin'] },
+    ];
+
+    return allTabs.filter(tab => hasRole(currentUser, tab.roles));
+  };
+
+  const visibleTabs = getVisibleTabs();
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden">
@@ -64,78 +106,30 @@ export const HomePage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full">
               <Tabs selectedIndex={activeTab} onSelect={setActiveTab}>
                 <TabList className="flex flex-col">
-                  <Tab className="py-4 px-6 cursor-pointer transition-colors border-b border-gray-200 ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <span className="text-lg mr-3">🛍️</span>
-                      <span className="font-medium">Товары</span>
-                    </div>
-                  </Tab>
-                  <Tab className="py-4 px-6 cursor-pointer transition-colors ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50">
-                    <div className="flex items-center">
-                      <span className="text-lg mr-3">📂</span>
-                      <span className="font-medium">Заказы</span>
-                    </div>
-                  </Tab>
-                  {/* Таб для админа */}
-                  {currentUser?.role === 'admin' && (
-                    <Tab className="py-4 px-6 cursor-pointer transition-colors ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50">
+                  {visibleTabs.map((tab, index) => (
+                    <Tab
+                      key={tab.id}
+                      className="py-4 px-6 cursor-pointer transition-colors border-b border-gray-200 ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50"
+                    >
                       <div className="flex items-center">
-                        <span className="text-lg mr-3">⚙️</span>
-                        <span className="font-medium">Настройки</span>
+                        <span className="text-lg mr-3">{tab.icon}</span>
+                        <span className="font-medium">{tab.label}</span>
                       </div>
                     </Tab>
-                  )}
+                  ))}
                 </TabList>
 
                 {/* Контент левого блока */}
                 <div className="p-4">
-                  <TabPanel>
-                    <div className="space-y-3">
-                      <p className="text-sm text-gray-600">
-                        Все доступные товары в нашем меню
-                      </p>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-xs text-blue-700">
-                          Добавляйте товары в корзину
-                        </p>
-                      </div>
-                    </div>
-                  </TabPanel>
-
-                  {(currentUser?.role === 'admin' || currentUser?.role === 'canteenManager' || currentUser?.role === 'cateenManager') && (
-                    <TabPanel>
+                  {visibleTabs.map((tab, index) => (
+                    <TabPanel key={tab.id}>
                       <div className="text-center py-4">
                         <p className="text-gray-500 text-sm">
-                          Управление категориями товаров
+                          {getTabDescription(tab.id, currentUser)}
                         </p>
                       </div>
                     </TabPanel>
-                  )}
-
-                  <TabPanel>
-                    <div className="text-center py-4">
-                      {currentUser && (currentUser.role == 'admin' || currentUser.role == 'storeManager') ? (
-                        <p className="text-gray-500 text-sm">Все заказы</p>
-                      ) : currentUser && currentUser.role == 'user' ? (
-                        <p className="text-gray-500 text-sm">Мои заказы</p>
-                      ) : (
-                        <p className="text-gray-500 text-sm">
-                          Авторизуйтесь чтобы отображались ваши заказы
-                        </p>
-                      )}
-                    </div>
-                  </TabPanel>
-
-                  {/* Контент для таба настроек (только для админа) */}
-                  {currentUser?.role === 'admin' && (
-                    <TabPanel>
-                      <div className="text-center py-4">
-                        <p className="text-gray-500 text-sm">
-                          Управление настройками доставки
-                        </p>
-                      </div>
-                    </TabPanel>
-                  )}
+                  ))}
                 </div>
               </Tabs>
             </div>
@@ -143,41 +137,87 @@ export const HomePage: React.FC = () => {
 
           {/* Правый блок - ОСНОВНОЙ КОНТЕНТ */}
           <div className="flex-1 h-full">
-            {activeTab === 0 ? (
-              /* Вкладка ТОВАРЫ - показываем список товаров и корзину */
-              <div className="flex gap-8 h-full">
-                {/* Список товаров - с прокруткой */}
-                <div className="flex-1 h-full">
-                  <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">
-                      Все товары
-                    </h2>
-                    <div className="flex-1 overflow-y-auto">
-                      {/* ItemsList теперь будет прокручиваться внутри этого контейнера */}
-                      <ItemsList />
+            {activeTab < visibleTabs.length && (
+              <>
+                {visibleTabs[activeTab].id === 'menu' && (
+                  <div className="flex gap-8 h-full">
+                    <div className="flex-1 h-full">
+                      <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
+                        <h2 className="text-xl font-bold text-gray-900 mb-6">
+                          Меню
+                        </h2>
+                        <div className="flex-1 overflow-y-auto">
+                          <ItemsList />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-80 h-full">
+                      <CartBlock />
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Корзина - только для вкладки "Товары" */}
-                <div className="w-80 h-full">
-                  <div className="h-full">
-                    <CartBlock />
+                {visibleTabs[activeTab].id === 'categories' && (
+                  <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
+                    <h2 className="text-xl font-bold text-gray-900 mb-6">
+                      Управление категориями
+                    </h2>
+                    <div className="flex-1 overflow-y-auto">
+                      <CategoriesList />
+                    </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-              /* Вкладка КАТЕГОРИИ - показываем только управление категориями */
-              <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto">
-                  {/* ItemsList теперь будет прокручиваться внутри этого контейнера */}
-                  <OrdersList />
-                </div>
-              </div>
+                )}
+
+                {visibleTabs[activeTab].id === 'orders' && (
+                  <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
+                    <h2 className="text-xl font-bold text-gray-900 mb-6">
+                      {getOrdersTitle(currentUser)}
+                    </h2>
+                    <div className="flex-1 overflow-y-auto">
+                      <OrdersList />
+                    </div>
+                  </div>
+                )}
+
+                {visibleTabs[activeTab].id === 'settings' && (
+                  <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
+                    <div className="flex-1 overflow-y-auto">
+                      <DeliverySettings />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
       </div>
     </div>
   );
+};
+
+// Вспомогательная функция для описаний табов
+const getTabDescription = (tabId: string, user: any) => {
+  switch (tabId) {
+    case 'menu':
+      return 'Все доступные товары в нашем меню';
+    case 'categories':
+      return 'Управление категориями товаров';
+    case 'orders':
+      if (!user) return 'Авторизуйтесь чтобы отображались ваши заказы';
+      if (hasRole(user, ['admin', 'canteenManager', 'storeManager']))
+        return 'Все заказы системы';
+      return 'Мои заказы';
+    case 'settings':
+      return 'Управление настройками доставки';
+    default:
+      return '';
+  }
+};
+
+// Функция для заголовка заказов
+const getOrdersTitle = (user: any) => {
+  if (!user) return 'Заказы';
+  if (hasRole(user, ['admin', 'canteenManager', 'storeManager']))
+    return 'Все заказы';
+  return 'Мои заказы';
 };

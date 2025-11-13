@@ -70,19 +70,6 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ error: 'Корзина пуста' });
     }
 
-    // Временно отключаем доставку
-    if (delivery_method === 'delivery') {
-      return res.status(400).json({
-        error: 'Доставка временно недоступна. Пожалуйста, выберите самовывоз или поесть на месте.'
-      });
-    }
-
-    // Валидация для dine_in
-    if (delivery_method === 'dine_in' && !table_number) {
-      return res.status(400).json({
-        error: 'Для заказа на месте необходимо указать номер стола'
-      });
-    }
 
     let totalAmount = 0;
     const orderItems = [];
