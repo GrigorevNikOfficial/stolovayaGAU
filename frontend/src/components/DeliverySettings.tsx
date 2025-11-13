@@ -23,19 +23,21 @@ export const DeliverySettings: React.FC = () => {
     deliveryTimeStart: '',
     deliveryTimeEnd: '',
   });
+  const [activeTab, setActiveTab] = useState(0);
 
   // Загружаем настройки из БД при монтировании
   useEffect(() => {
     handleFetchSettings();
   }, [handleFetchSettings]);
 
-  // Когда настройки загрузились из БД - заполняем поля
+  // Когда настройки загрузились из БД - заполняем поля и устанавливаем активный таб
   useEffect(() => {
     if (settings.deliveryTimeStart && settings.deliveryTimeEnd) {
       setTimeSettings({
         deliveryTimeStart: settings.deliveryTimeStart,
         deliveryTimeEnd: settings.deliveryTimeEnd,
       });
+      setActiveTab(settings.deliveryEnabled ? 0 : 1);
     }
   }, [settings]);
 
@@ -44,6 +46,7 @@ export const DeliverySettings: React.FC = () => {
     setIsLoading(true);
     try {
       await handleUpdateSettings({ deliveryEnabled });
+      setActiveTab(deliveryEnabled ? 0 : 1);
     } catch (error: any) {
       alert('Ошибка: ' + error.message);
     } finally {
@@ -62,6 +65,12 @@ export const DeliverySettings: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Обработчик изменения таба
+  const handleTabChange = (index: number) => {
+    const deliveryEnabled = index === 0;
+    toggleDelivery(deliveryEnabled);
   };
 
   if (currentUser?.role !== 'admin') {
@@ -85,18 +94,12 @@ export const DeliverySettings: React.FC = () => {
         </h1>
 
         {/* Табы для статуса доставки */}
-        <Tabs selectedIndex={settings.deliveryEnabled ? 0 : 1}>
+        <Tabs selectedIndex={activeTab} onSelect={handleTabChange}>
           <TabList className="flex bg-gray-100 rounded-lg p-1 mb-6">
-            <Tab
-              onClick={() => toggleDelivery(true)}
-              className="flex-1 py-2 px-3 text-center cursor-pointer rounded-md ui-selected:bg-white ui-selected:text-green-600 ui-selected:font-medium ui-selected:shadow-sm ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900"
-            >
+            <Tab className="flex-1 py-2 px-3 text-center cursor-pointer rounded-md ui-selected:bg-white ui-selected:text-green-600 ui-selected:font-medium ui-selected:shadow-sm ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900">
               ✅ Включена
             </Tab>
-            <Tab
-              onClick={() => toggleDelivery(false)}
-              className="flex-1 py-2 px-3 text-center cursor-pointer rounded-md ui-selected:bg-white ui-selected:text-red-600 ui-selected:font-medium ui-selected:shadow-sm ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900"
-            >
+            <Tab className="flex-1 py-2 px-3 text-center cursor-pointer rounded-md ui-selected:bg-white ui-selected:text-red-600 ui-selected:font-medium ui-selected:shadow-sm ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900">
               ❌ Выключена
             </Tab>
           </TabList>
@@ -104,11 +107,17 @@ export const DeliverySettings: React.FC = () => {
           <TabPanel>
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 font-medium">Доставка активна</p>
+              <p className="text-green-700 text-sm mt-1">
+                Пользователи могут выбирать доставку
+              </p>
             </div>
           </TabPanel>
           <TabPanel>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 font-medium">Доставка отключена</p>
+              <p className="text-red-700 text-sm mt-1">
+                Пользователи не смогут выбирать доставку
+              </p>
             </div>
           </TabPanel>
         </Tabs>
@@ -128,7 +137,7 @@ export const DeliverySettings: React.FC = () => {
                   deliveryTimeStart: e.target.value,
                 }))
               }
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -145,14 +154,14 @@ export const DeliverySettings: React.FC = () => {
                   deliveryTimeEnd: e.target.value,
                 }))
               }
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <button
             onClick={saveTimeSettings}
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {isLoading ? 'Сохранение...' : 'Сохранить время'}
           </button>
@@ -167,9 +176,11 @@ export const DeliverySettings: React.FC = () => {
 
         {/* Текущие данные из БД */}
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm font-medium text-gray-700">Данные из БД:</p>
+          <p className="text-sm font-medium text-gray-700 mb-2">
+            Данные из БД:
+          </p>
           <p className="text-sm text-gray-600">
-            Статус: {settings.deliveryEnabled ? 'Включена' : 'Выключена'}
+            Статус: {settings.deliveryEnabled ? '✅ Включена' : '❌ Выключена'}
           </p>
           <p className="text-sm text-gray-600">
             Время: {settings.deliveryTimeStart} - {settings.deliveryTimeEnd}

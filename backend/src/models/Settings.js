@@ -1,5 +1,5 @@
-// models/Settings.js
-const mongoose = require('mongoose');
+// src/models/Settings.js
+import mongoose from 'mongoose';
 
 const settingsSchema = new mongoose.Schema({
     name: {
@@ -14,18 +14,15 @@ const settingsSchema = new mongoose.Schema({
     },
     deliveryTimeStart: {
         type: String,
-        default: "09:00"
+        default: "08:00"
     },
     deliveryTimeEnd: {
         type: String,
-        default: "22:00"
-    },
-    updatedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        default: "10:00"
     }
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model('Settings', settingsSchema);
+// Используем именованный экспорт
+export const Settings = mongoose.model('Settings', settingsSchema);
