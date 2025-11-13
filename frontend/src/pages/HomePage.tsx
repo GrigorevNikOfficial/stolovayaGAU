@@ -6,6 +6,7 @@ import { ItemsList } from '../components/ItemsList';
 import { CartBlock } from '../components/CardBlock.tsx';
 import { $currentUser } from '../models/users';
 import { OrdersList } from '../components/OrdersList.tsx';
+import { DeliverySettings } from '../components/DeliverySettings';
 
 export const HomePage: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
@@ -69,12 +70,21 @@ export const HomePage: React.FC = () => {
                       <span className="font-medium">Товары</span>
                     </div>
                   </Tab>
-                  <Tab className="py-4 px-6 cursor-pointer transition-colors ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50">
+                  <Tab className="py-4 px-6 cursor-pointer transition-colors border-b border-gray-200 ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50">
                     <div className="flex items-center">
                       <span className="text-lg mr-3">📂</span>
                       <span className="font-medium">Заказы</span>
                     </div>
                   </Tab>
+                  {/* Таб для админа */}
+                  {currentUser?.role === 'admin' && (
+                    <Tab className="py-4 px-6 cursor-pointer transition-colors ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50">
+                      <div className="flex items-center">
+                        <span className="text-lg mr-3">⚙️</span>
+                        <span className="font-medium">Настройки</span>
+                      </div>
+                    </Tab>
+                  )}
                 </TabList>
 
                 {/* Контент левого блока */}
@@ -105,6 +115,17 @@ export const HomePage: React.FC = () => {
                       )}
                     </div>
                   </TabPanel>
+
+                  {/* Контент для таба настроек (только для админа) */}
+                  {currentUser?.role === 'admin' && (
+                    <TabPanel>
+                      <div className="text-center py-4">
+                        <p className="text-gray-500 text-sm">
+                          Управление настройками доставки
+                        </p>
+                      </div>
+                    </TabPanel>
+                  )}
                 </div>
               </Tabs>
             </div>
@@ -122,7 +143,6 @@ export const HomePage: React.FC = () => {
                       Все товары
                     </h2>
                     <div className="flex-1 overflow-y-auto">
-                      {/* ItemsList теперь будет прокручиваться внутри этого контейнера */}
                       <ItemsList />
                     </div>
                   </div>
@@ -135,12 +155,18 @@ export const HomePage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ) : (
-              /* Вкладка КАТЕГОРИИ - показываем только управление категориями */
+            ) : activeTab === 1 ? (
+              /* Вкладка ЗАКАЗЫ - показываем список заказов */
               <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
                 <div className="flex-1 overflow-y-auto">
-                  {/* ItemsList теперь будет прокручиваться внутри этого контейнера */}
                   <OrdersList />
+                </div>
+              </div>
+            ) : (
+              /* Вкладка НАСТРОЙКИ - показываем настройки доставки (только для админа) */
+              <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
+                <div className="flex-1 overflow-y-auto">
+                  <DeliverySettings />
                 </div>
               </div>
             )}
