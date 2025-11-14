@@ -1,5 +1,3 @@
-import type { Category } from './category'; // Импортируем из отдельного файла
-
 export interface Item {
   _id: string;
   uniq_nom: string;
@@ -22,6 +20,10 @@ export interface Item {
   sort_order: number;
   created_at: string;
   updated_at?: string;
+  image?: {
+    key: string;
+    url: string;
+  };
 }
 
 // Остальные интерфейсы остаются без Category
@@ -55,4 +57,15 @@ export interface UpdateItemRequest {
   preparation_time?: number;
   nutrition?: object;
   sort_order?: number;
+}
+
+export interface CreateItemPayload {
+  data: CreateItemRequest;
+  imageFile?: File | null;
+}
+
+export interface UpdateItemPayload {
+  id: string;
+  data: UpdateItemRequest;
+  imageFile?: File | null;
 }

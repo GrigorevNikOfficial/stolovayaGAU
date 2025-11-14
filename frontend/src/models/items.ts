@@ -1,6 +1,10 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { itemsApi } from '../api/items';
-import type { Item, CreateItemRequest, UpdateItemRequest } from '../types/item';
+import type {
+  Item,
+  CreateItemPayload,
+  UpdateItemPayload,
+} from '../types/item';
 // Убираем импорт categoriesApi и Category
 
 // Events (оставляем только для товаров)
@@ -10,11 +14,8 @@ export const loadItems = createEvent<{
 }>();
 export const loadItem = createEvent<string>();
 export const loadItemsByCategory = createEvent<string>();
-export const createItem = createEvent<CreateItemRequest>();
-export const updateItem = createEvent<{
-  id: string;
-  data: UpdateItemRequest;
-}>();
+export const createItem = createEvent<CreateItemPayload>();
+export const updateItem = createEvent<UpdateItemPayload>();
 export const deleteItem = createEvent<string>();
 
 // Effects (только для товаров)
@@ -37,16 +38,39 @@ export const loadItemsByCategoryFx = createEffect(
 );
 
 export const createItemFx = createEffect(
-  async (itemData: CreateItemRequest) => {
-    const response = await itemsApi.createItem(itemData);
-    return response;
+  async ({ data, imageFile }: CreateItemPayload) => {
+    const response = await itemsApi.createItem(data);
+    let createdItem = response.item;
+
+    if (imageFile) {
+      const uploadResponse = await itemsApi.uploadItemImage(
+        createdItem._id,
+        imageFile
+      );
+      createdItem = uploadResponse.item;
+    }
+
+    return {
+      ...response,
+      item: createdItem,
+    };
   }
 );
 
 export const updateItemFx = createEffect(
-  async ({ id, data }: { id: string; data: UpdateItemRequest }) => {
+  async ({ id, data, imageFile }: UpdateItemPayload) => {
     const response = await itemsApi.updateItem(id, data);
-    return response;
+    let updatedItem = response.item;
+
+    if (imageFile) {
+      const uploadResponse = await itemsApi.uploadItemImage(id, imageFile);
+      updatedItem = uploadResponse.item;
+    }
+
+    return {
+      ...response,
+      item: updatedItem,
+    };
   }
 );
 

@@ -1,14 +1,40 @@
 import React from 'react';
 import { useUnit } from 'effector-react';
-import { $currentUser, logout } from '../models/users';
+import {
+  $currentUser,
+  logout,
+  uploadAvatar,
+  uploadAvatarFx,
+} from '../models/users';
 import { loadOrders } from '../models/orders';
 
 export const ProfilePage: React.FC = () => {
-  const [currentUser, handleLogout, handleLoadOrders] = useUnit([
-    $currentUser,
-    logout,
-    loadOrders,
-  ]);
+  const {
+    currentUser,
+    handleLogout,
+    handleLoadOrders,
+    handleUploadAvatar,
+    isAvatarUploading,
+  } = useUnit({
+    currentUser: $currentUser,
+    handleLogout: logout,
+    handleLoadOrders: loadOrders,
+    handleUploadAvatar: uploadAvatar,
+    isAvatarUploading: uploadAvatarFx.pending,
+  });
+
+  const avatarUrl = currentUser?.avatar?.url;
+  const userInitials = currentUser
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+    : '';
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && currentUser) {
+      handleUploadAvatar({ id: currentUser._id, file });
+    }
+    e.target.value = '';
+  };
 
   const handleNavigation = (path: string) => {
     window.history.pushState({}, '', path);
@@ -56,10 +82,42 @@ export const ProfilePage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="bg-white shadow rounded-lg p-6 mb-6">
           <div className="flex justify-between items-start mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Профиль пользователя
-              </h1>
+            <div className="flex items-center gap-4">
+              <label
+                htmlFor="avatar-input"
+                className="group cursor-pointer"
+              >
+                <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden border border-gray-300 flex items-center justify-center text-xl font-semibold text-gray-600 group-hover:ring-2 group-hover:ring-indigo-500 group-hover:border-indigo-500 transition">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={`${currentUser.first_name} ${currentUser.last_name}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{userInitials}</span>
+                )}
+                </div>
+                <p className="text-xs text-center text-gray-500 mt-2 group-hover:text-indigo-600">
+                  {isAvatarUploading ? 'Загрузка...' : 'Изменить аватар'}
+                </p>
+              </label>
+              <input
+                id="avatar-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+                disabled={isAvatarUploading}
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Профиль пользователя
+                </h1>
+                <p className="text-gray-500 text-sm">
+                  Управляйте личными данными и настройками аккаунта
+                </p>
+              </div>
             </div>
             <div className="flex gap-2">
               <button

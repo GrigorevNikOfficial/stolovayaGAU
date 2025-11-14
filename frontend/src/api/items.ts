@@ -1,6 +1,6 @@
 import type {
   Item,
-  Category,
+  /* Category, */
   CreateItemRequest,
   UpdateItemRequest,
 } from '../types/item';
@@ -75,6 +75,24 @@ export const itemsApi = {
     const response = await httpClient.delete<{ message: string }>(
       `/items/${id}`
     );
+    return response;
+  },
+
+  // Загрузить изображение для товара
+  uploadItemImage: async (
+    id: string,
+    file: File
+  ): Promise<{
+    message: string;
+    item: Item;
+  }> => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await httpClient.post<{
+      message: string;
+      item: Item;
+    }>(`/items/${id}/image`, formData);
     return response;
   },
 };

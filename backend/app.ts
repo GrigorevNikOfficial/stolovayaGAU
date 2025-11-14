@@ -21,7 +21,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: '*', // Разрешить все домены (для тестирования)
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());

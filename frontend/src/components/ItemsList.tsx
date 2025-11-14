@@ -10,22 +10,16 @@ import {
 } from '../models/items';
 import { addToCart } from '../models/cart';
 import { $currentUser } from '../models/users';
-import {
-  $categories,
-  loadCategories,
-  $categoriesForSelect,
-} from '../models/categories';
+import { loadCategories, $categoriesForSelect } from '../models/categories';
 import type { CreateItemRequest, UpdateItemRequest } from '../types/item';
 
 export const ItemsList: React.FC = () => {
-  const [items, itemsError, currentUser, categories, categoriesForSelect] =
-    useUnit([
-      $items,
-      $itemsError,
-      $currentUser,
-      $categories,
-      $categoriesForSelect,
-    ]);
+  const [items, itemsError, currentUser, categoriesForSelect] = useUnit([
+    $items,
+    $itemsError,
+    $currentUser,
+    $categoriesForSelect,
+  ]);
 
   const handleLoadItems = useUnit(loadItems);
   const handleAddToCart = useUnit(addToCart);
@@ -81,13 +75,20 @@ export const ItemsList: React.FC = () => {
       })
     : [];
 
-  const onCreateItem = (itemData: CreateItemRequest) => {
-    handleCreateItem(itemData);
+  const onCreateItem = (
+    itemData: CreateItemRequest,
+    imageFile?: File | null
+  ) => {
+    handleCreateItem({ data: itemData, imageFile: imageFile ?? undefined });
     setShowCreateModal(false);
   };
 
-  const onUpdateItem = (id: string, itemData: UpdateItemRequest) => {
-    handleUpdateItem({ id, data: itemData });
+  const onUpdateItem = (
+    id: string,
+    itemData: UpdateItemRequest,
+    imageFile?: File | null
+  ) => {
+    handleUpdateItem({ id, data: itemData, imageFile: imageFile ?? undefined });
     setShowEditModal(false);
     setSelectedItem(null);
   };
@@ -307,7 +308,9 @@ export const ItemsList: React.FC = () => {
       {showCreateModal && (
         <ItemModal
           onClose={() => setShowCreateModal(false)}
-          onSave={onCreateItem}
+          onSave={(data, imageFile) =>
+            onCreateItem(data as CreateItemRequest, imageFile)
+          }
           categories={categoriesForSelect}
         />
       )}
@@ -320,7 +323,13 @@ export const ItemsList: React.FC = () => {
             setShowEditModal(false);
             setSelectedItem(null);
           }}
-          onSave={data => onUpdateItem(selectedItem._id, data)}
+          onSave={(data, imageFile) =>
+            onUpdateItem(
+              selectedItem._id,
+              data as UpdateItemRequest,
+              imageFile
+            )
+          }
           categories={categoriesForSelect}
         />
       )}
@@ -344,7 +353,10 @@ export const ItemsList: React.FC = () => {
 const ItemModal: React.FC<{
   item?: any;
   onClose: () => void;
-  onSave: (data: CreateItemRequest | UpdateItemRequest) => void;
+  onSave: (
+    data: CreateItemRequest | UpdateItemRequest,
+    imageFile?: File | null
+  ) => void;
   categories: Array<{ value: string; label: string }>;
 }> = ({ item, onClose, onSave, categories }) => {
   const [formData, setFormData] = useState({
@@ -358,6 +370,8 @@ const ItemModal: React.FC<{
     preparation_time: item?.preparation_time || 5,
     is_available: item?.is_available !== undefined ? item.is_available : true,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [selectedImageName, setSelectedImageName] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -376,7 +390,13 @@ const ItemModal: React.FC<{
     if (formData.preparation_time)
       submitData.preparation_time = Number(formData.preparation_time);
 
-    onSave(submitData);
+    onSave(submitData, imageFile);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    setSelectedImageName(file ? file.name : '');
   };
 
   return (
@@ -533,6 +553,24 @@ const ItemModal: React.FC<{
                 Доступен для заказа
               </span>
             </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Изображение блюда
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              {selectedImageName
+                ? `Выбран файл: ${selectedImageName}`
+                : item?.image?.url || item?.image_url
+                ? 'Текущее изображение сохранится, если не выбрать новый файл.'
+                : 'Выберите файл PNG, JPG или WEBP для отображения блюда.'}
+            </p>
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button
