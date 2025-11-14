@@ -59,6 +59,11 @@ export const HomePage: React.FC = () => {
 
   const visibleTabs = getVisibleTabs();
 
+  // Определяем, нужно ли показывать корзину
+  const showCart =
+    currentUser &&
+    (currentUser.role === 'admin' || currentUser.role === 'user');
+
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden">
       {/* Шапка */}
@@ -140,9 +145,12 @@ export const HomePage: React.FC = () => {
             {activeTab < visibleTabs.length && (
               <>
                 {visibleTabs[activeTab].id === 'menu' && (
-                  <div className="flex gap-8 h-full">
-                    <div className="flex-1 h-full">
-                      <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
+                  <div
+                    className={`flex gap-8 h-full ${showCart ? '' : 'w-full'}`}
+                  >
+                    {/* Список товаров - растягивается на всю ширину если корзина скрыта */}
+                    <div className={`${showCart ? 'flex-1' : 'w-full'} h-full`}>
+                      <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col w-full">
                         <h2 className="text-xl font-bold text-gray-900 mb-6">
                           Меню
                         </h2>
@@ -151,9 +159,13 @@ export const HomePage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="w-80 h-full">
-                      <CartBlock />
-                    </div>
+
+                    {/* Корзина - показывается только для определенных ролей */}
+                    {showCart && (
+                      <div className="w-80 h-full">
+                        <CartBlock />
+                      </div>
+                    )}
                   </div>
                 )}
 

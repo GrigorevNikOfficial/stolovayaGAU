@@ -18,13 +18,14 @@ import {
 import type { CreateItemRequest, UpdateItemRequest } from '../types/item';
 
 export const ItemsList: React.FC = () => {
-  const [items, itemsError, currentUser, categories, categoriesForSelect] = useUnit([
-    $items,
-    $itemsError,
-    $currentUser,
-    $categories,
-    $categoriesForSelect,
-  ]);
+  const [items, itemsError, currentUser, categories, categoriesForSelect] =
+    useUnit([
+      $items,
+      $itemsError,
+      $currentUser,
+      $categories,
+      $categoriesForSelect,
+    ]);
 
   const handleLoadItems = useUnit(loadItems);
   const handleAddToCart = useUnit(addToCart);
@@ -42,7 +43,9 @@ export const ItemsList: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   const isAdminOrCanteenManager =
-    currentUser?.role === 'admin' || currentUser?.role === 'canteenManager' || currentUser?.role === 'cateenManager';
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'canteenManager' ||
+    currentUser?.role === 'cateenManager';
 
   useEffect(() => {
     console.log('ItemsList: начата загрузка товаров');
@@ -66,12 +69,17 @@ export const ItemsList: React.FC = () => {
   }, [menuOpen]);
 
   // Фильтрация товаров
-  const filteredItems = Array.isArray(items) ? items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = !selectedCategory || item.category_slug === selectedCategory;
-    return matchesSearch && matchesCategory;
-  }) : [];
+  const filteredItems = Array.isArray(items)
+    ? items.filter(item => {
+        const matchesSearch =
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.description &&
+            item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesCategory =
+          !selectedCategory || item.category_slug === selectedCategory;
+        return matchesSearch && matchesCategory;
+      })
+    : [];
 
   const onCreateItem = (itemData: CreateItemRequest) => {
     handleCreateItem(itemData);
@@ -129,18 +137,18 @@ export const ItemsList: React.FC = () => {
               type="text"
               placeholder="Поиск товаров..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div className="w-64">
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={e => setSelectedCategory(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Все категории</option>
-              {categoriesForSelect.map((cat) => (
+              {categoriesForSelect.map(cat => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
                 </option>
@@ -176,7 +184,7 @@ export const ItemsList: React.FC = () => {
             {isAdminOrCanteenManager && (
               <div className="absolute top-2 right-2 z-10">
                 <button
-                  onClick={(e) => handleMenuClick(e, item._id)}
+                  onClick={e => handleMenuClick(e, item._id)}
                   className="p-2 rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-900"
                 >
                   <svg
@@ -246,25 +254,29 @@ export const ItemsList: React.FC = () => {
                 )}
               </div>
 
-              <button
-                onClick={() =>
-                  handleAddToCart({
-                    _id: item._id,
-                    uniq_nom: item.uniq_nom || item._id,
-                    name: item.name,
-                    price: item.price,
-                    description: item.description,
-                    category_slug: item.category_slug,
-                    calories: item.calories,
-                    number_pribors: item.number_pribors,
-                    image_url: item.image_url,
-                    preparation_time: item.preparation_time,
-                  })
-                }
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
-              >
-                Добавить в корзину
-              </button>
+              {currentUser &&
+                (currentUser.role === 'admin' ||
+                  currentUser.role === 'user') && (
+                  <button
+                    onClick={() =>
+                      handleAddToCart({
+                        _id: item._id,
+                        uniq_nom: item.uniq_nom || item._id,
+                        name: item.name,
+                        price: item.price,
+                        description: item.description,
+                        category_slug: item.category_slug,
+                        calories: item.calories,
+                        number_pribors: item.number_pribors,
+                        image_url: item.image_url,
+                        preparation_time: item.preparation_time,
+                      })
+                    }
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
+                  >
+                    Добавить в заказ
+                  </button>
+                )}
             </div>
           </div>
         ))}
@@ -308,7 +320,7 @@ export const ItemsList: React.FC = () => {
             setShowEditModal(false);
             setSelectedItem(null);
           }}
-          onSave={(data) => onUpdateItem(selectedItem._id, data)}
+          onSave={data => onUpdateItem(selectedItem._id, data)}
           categories={categoriesForSelect}
         />
       )}
@@ -382,7 +394,7 @@ const ItemModal: React.FC<{
               type="text"
               required
               value={formData.uniq_nom}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, uniq_nom: e.target.value })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -396,9 +408,7 @@ const ItemModal: React.FC<{
               type="text"
               required
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -409,7 +419,7 @@ const ItemModal: React.FC<{
             <textarea
               required
               value={formData.description}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, description: e.target.value })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -427,7 +437,7 @@ const ItemModal: React.FC<{
                 min="0"
                 step="0.01"
                 value={formData.price}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, price: Number(e.target.value) })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -440,13 +450,13 @@ const ItemModal: React.FC<{
               <select
                 required
                 value={formData.category_slug}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, category_slug: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="">Выберите категорию</option>
-                {categories.map((cat) => (
+                {categories.map(cat => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
                   </option>
@@ -463,7 +473,7 @@ const ItemModal: React.FC<{
                 type="number"
                 min="0"
                 value={formData.calories}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({
                     ...formData,
                     calories: e.target.value ? Number(e.target.value) : '',
@@ -480,7 +490,7 @@ const ItemModal: React.FC<{
                 type="number"
                 min="0"
                 value={formData.number_pribors}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({
                     ...formData,
                     number_pribors: e.target.value
@@ -499,7 +509,7 @@ const ItemModal: React.FC<{
                 type="number"
                 min="0"
                 value={formData.preparation_time}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({
                     ...formData,
                     preparation_time: Number(e.target.value),
@@ -514,7 +524,7 @@ const ItemModal: React.FC<{
               <input
                 type="checkbox"
                 checked={formData.is_available}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, is_available: e.target.checked })
                 }
                 className="mr-2"
@@ -556,8 +566,8 @@ const DeleteConfirmModal: React.FC<{
       <div className="bg-white rounded-lg p-6 max-w-md w-full">
         <h2 className="text-xl font-bold mb-4">Подтверждение удаления</h2>
         <p className="mb-6">
-          Вы уверены, что хотите удалить товар <strong>{itemName}</strong>?
-          Это действие нельзя отменить.
+          Вы уверены, что хотите удалить товар <strong>{itemName}</strong>? Это
+          действие нельзя отменить.
         </p>
         <div className="flex justify-end gap-3">
           <button

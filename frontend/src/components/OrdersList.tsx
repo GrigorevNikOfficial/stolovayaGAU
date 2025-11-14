@@ -48,7 +48,10 @@ export const OrdersList: React.FC = () => {
   // Загружаем заказы при монтировании компонента
   useEffect(() => {
     if (currentUser) {
-      console.log('OrdersList: загружаем заказы для пользователя', currentUser.role);
+      console.log(
+        'OrdersList: загружаем заказы для пользователя',
+        currentUser.role
+      );
       handleLoadOrders();
     }
   }, [currentUser, handleLoadOrders]);
@@ -106,16 +109,17 @@ export const OrdersList: React.FC = () => {
   // Получить следующий доступный статус для canteenManager
   const getNextStatusForCanteenManager = (currentStatus: string) => {
     // Нормализуем старые статусы
-    const normalizedStatus = currentStatus === 'pending' || currentStatus === 'confirmed' 
-      ? 'created' 
-      : currentStatus === 'delivering' 
-        ? 'in_transit' 
-        : currentStatus;
-    
+    const normalizedStatus =
+      currentStatus === 'pending' || currentStatus === 'confirmed'
+        ? 'created'
+        : currentStatus === 'delivering'
+          ? 'in_transit'
+          : currentStatus;
+
     const statusFlow = {
-      'created': 'cooking',
-      'cooking': 'waiting_delivery',
-      'waiting_delivery': 'in_transit',
+      created: 'cooking',
+      cooking: 'waiting_delivery',
+      waiting_delivery: 'in_transit',
     };
     return statusFlow[normalizedStatus as keyof typeof statusFlow] || null;
   };
@@ -128,32 +132,53 @@ export const OrdersList: React.FC = () => {
     if (role === 'admin') {
       // Админ может менять на любой статус, но показываем только следующие доступные статусы
       if (order.status === 'created') {
-        actions.push({ label: 'Готовится', status: 'cooking', color: 'bg-orange-600' });
+        actions.push({
+          label: 'Готовится',
+          status: 'cooking',
+          color: 'bg-orange-600',
+        });
       } else if (order.status === 'cooking') {
-        actions.push({ label: 'Ждёт отправления', status: 'waiting_delivery', color: 'bg-blue-600' });
+        actions.push({
+          label: 'Ждёт отправления',
+          status: 'waiting_delivery',
+          color: 'bg-blue-600',
+        });
       } else if (order.status === 'waiting_delivery') {
-        actions.push({ label: 'В пути', status: 'in_transit', color: 'bg-purple-600' });
+        actions.push({
+          label: 'В пути',
+          status: 'in_transit',
+          color: 'bg-purple-600',
+        });
       } else if (order.status === 'in_transit') {
-        actions.push({ label: 'Готов к получению', status: 'ready_for_pickup', color: 'bg-green-600' });
+        actions.push({
+          label: 'Готов к получению',
+          status: 'ready_for_pickup',
+          color: 'bg-green-600',
+        });
       } else if (order.status === 'ready_for_pickup') {
-        actions.push({ label: 'Завершён', status: 'completed', color: 'bg-gray-600' });
+        actions.push({
+          label: 'Завершён',
+          status: 'completed',
+          color: 'bg-gray-600',
+        });
       }
       // Для админа также доступны все статусы через модальное окно редактирования
     } else if (role === 'canteenManager' || role === 'cateenManager') {
       // Администратор столовой может переходить: created -> cooking -> waiting_delivery -> in_transit
       // Нормализуем статус для обработки старых статусов
-      const normalizedStatus = order.status === 'pending' || order.status === 'confirmed' 
-        ? 'created' 
-        : order.status === 'delivering' 
-          ? 'in_transit' 
-          : order.status;
-      
+      const normalizedStatus =
+        order.status === 'pending' || order.status === 'confirmed'
+          ? 'created'
+          : order.status === 'delivering'
+            ? 'in_transit'
+            : order.status;
+
       const nextStatus = getNextStatusForCanteenManager(normalizedStatus);
       if (nextStatus) {
         const labels: { [key: string]: string } = {
-          'cooking': 'Приступить к приготовлению',
-          'waiting_delivery': 'Готов, ждёт доставщика',
-          'in_transit': 'Передать в доставку',
+          cooking: 'Приступить к приготовлению',
+          waiting_delivery: 'Готов, ждёт доставщика',
+          in_transit: 'Передать в доставку',
         };
         actions.push({
           label: labels[nextStatus] || nextStatus,
@@ -164,15 +189,19 @@ export const OrdersList: React.FC = () => {
     } else if (role === 'storeManager') {
       // Администратор буфета может: in_transit -> ready_for_pickup -> completed
       // Нормализуем статус для обработки старых статусов
-      const normalizedStatus = order.status === 'delivering' ? 'in_transit' : order.status;
-      
+      const normalizedStatus =
+        order.status === 'delivering' ? 'in_transit' : order.status;
+
       if (normalizedStatus === 'in_transit') {
         actions.push({
           label: 'Готов к получению',
           status: 'ready_for_pickup',
           color: 'bg-green-600',
         });
-      } else if (normalizedStatus === 'ready_for_pickup' || order.status === 'ready') {
+      } else if (
+        normalizedStatus === 'ready_for_pickup' ||
+        order.status === 'ready'
+      ) {
         actions.push({
           label: 'Выдать заказ',
           status: 'completed',
@@ -218,11 +247,11 @@ export const OrdersList: React.FC = () => {
       {/* Кнопка ручного обновления */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">
-          {currentUser?.role === 'admin' || 
-           currentUser?.role === 'storeManager' || 
-           currentUser?.role === 'canteenManager' || 
-           currentUser?.role === 'cateenManager'
-            ? 'Все заказы' 
+          {currentUser?.role === 'admin' ||
+          currentUser?.role === 'storeManager' ||
+          currentUser?.role === 'canteenManager' ||
+          currentUser?.role === 'cateenManager'
+            ? 'Все заказы'
             : 'Мои заказы'}
         </h3>
         <button
@@ -238,7 +267,9 @@ export const OrdersList: React.FC = () => {
           statusLabels[order.status as keyof typeof statusLabels] ||
           order.status;
         const availableActions = getAvailableActions(order);
-        const isCanteenManager = currentUser?.role === 'canteenManager' || currentUser?.role === 'cateenManager';
+        const isCanteenManager =
+          currentUser?.role === 'canteenManager' ||
+          currentUser?.role === 'cateenManager';
 
         return (
           <div
@@ -253,7 +284,8 @@ export const OrdersList: React.FC = () => {
                 <p className="text-sm text-gray-500">
                   {new Date(order.created_at).toLocaleString('ru-RU')}
                 </p>
-                {(currentUser?.role === 'admin' || currentUser?.role === 'storeManager') && (
+                {(currentUser?.role === 'admin' ||
+                  currentUser?.role === 'storeManager') && (
                   <p className="text-sm text-gray-500">
                     Пользователь ID: {order.user_id}
                   </p>
@@ -284,15 +316,14 @@ export const OrdersList: React.FC = () => {
                   {currentStatusLabel}
                 </span>
                 {/* Пользователь может отменить только заказы в статусе "Создан" */}
-                {order.status === 'created' &&
-                  currentUser?.role === 'user' && (
-                    <button
-                      onClick={() => handleCancel(order._id)}
-                      className="text-red-600 hover:text-red-500 text-sm font-medium"
-                    >
-                      Отменить
-                    </button>
-                  )}
+                {order.status === 'created' && currentUser?.role === 'user' && (
+                  <button
+                    onClick={() => handleCancel(order._id)}
+                    className="text-red-600 hover:text-red-500 text-sm font-medium"
+                  >
+                    Отменить
+                  </button>
+                )}
               </div>
             </div>
 
@@ -328,7 +359,9 @@ export const OrdersList: React.FC = () => {
                       {availableActions.map((action, index) => (
                         <button
                           key={index}
-                          onClick={() => handleStatusChange(order._id, action.status)}
+                          onClick={() =>
+                            handleStatusChange(order._id, action.status)
+                          }
                           disabled={isUpdating}
                           className={`${action.color} hover:opacity-90 disabled:opacity-50 text-white px-4 py-2 rounded text-sm transition-colors font-medium`}
                         >
@@ -342,18 +375,19 @@ export const OrdersList: React.FC = () => {
                   )}
 
                   {/* Кнопка редактирования только для admin (для редактирования других полей) */}
-                  {currentUser?.role === 'admin' && order.status !== 'completed' && (
-                    <button
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setShowEditModal(true);
-                      }}
-                      disabled={isUpdating}
-                      className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-4 py-2 rounded text-sm transition-colors"
-                    >
-                      Редактировать
-                    </button>
-                  )}
+                  {currentUser?.role === 'admin' &&
+                    order.status !== 'completed' && (
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setShowEditModal(true);
+                        }}
+                        disabled={isUpdating}
+                        className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-4 py-2 rounded text-sm transition-colors"
+                      >
+                        Редактировать
+                      </button>
+                    )}
 
                   {/* Кнопка отмены для admin */}
                   {currentUser?.role === 'admin' &&
@@ -394,7 +428,7 @@ export const OrdersList: React.FC = () => {
             setShowEditModal(false);
             setSelectedOrder(null);
           }}
-          onSave={(data) => {
+          onSave={data => {
             handleUpdateOrder({ id: selectedOrder._id, ...data });
             setShowEditModal(false);
             setSelectedOrder(null);
@@ -447,7 +481,7 @@ const OrderEditModal: React.FC<{
             </label>
             <select
               value={formData.status}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, status: e.target.value })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -467,8 +501,11 @@ const OrderEditModal: React.FC<{
             </label>
             <select
               value={formData.delivery_method}
-              onChange={(e) =>
-                setFormData({ ...formData, delivery_method: e.target.value as any })
+              onChange={e =>
+                setFormData({
+                  ...formData,
+                  delivery_method: e.target.value as any,
+                })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
@@ -486,7 +523,7 @@ const OrderEditModal: React.FC<{
                 type="number"
                 min="1"
                 value={formData.table_number}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, table_number: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -501,7 +538,7 @@ const OrderEditModal: React.FC<{
               <input
                 type="text"
                 value={formData.delivery_address}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, delivery_address: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
