@@ -11,6 +11,11 @@ export const Header: React.FC<HeaderProps> = ({ onCartClick }) => {
   const [currentUser, handleLogout, cartItemsCount, handleSetCartOpen] =
     useUnit([$currentUser, logout, $cartItemsCount, setCartOpen]);
 
+  const avatarUrl = currentUser?.avatar?.url;
+  const userInitials = currentUser
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+    : '';
+
   const handleCartClick = () => {
     handleSetCartOpen(true);
   };
@@ -61,6 +66,17 @@ export const Header: React.FC<HeaderProps> = ({ onCartClick }) => {
             {/* Профиль пользователя */}
             {currentUser ? (
               <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-300 flex items-center justify-center text-sm font-semibold text-gray-600">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={`${currentUser.first_name} ${currentUser.last_name}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{userInitials}</span>
+                  )}
+                </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">
                     {currentUser.first_name} {currentUser.last_name}

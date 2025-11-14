@@ -25,6 +25,11 @@ export const HomePage: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
   const [activeTab, setActiveTab] = useState(0);
 
+  const avatarUrl = currentUser?.avatar?.url;
+  const userInitials = currentUser
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+    : '';
+
   const handleNavigation = (path: string) => {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -71,12 +76,25 @@ export const HomePage: React.FC = () => {
 
             <div className="flex items-center space-x-4">
               {currentUser ? (
-                <button
-                  onClick={() => handleNavigation('/profile')}
-                  className="text-gray-700 hover:text-gray-900 font-medium"
-                >
-                  Профиль
-                </button>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-300 flex items-center justify-center text-sm font-semibold text-gray-600">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={`${currentUser.first_name} ${currentUser.last_name}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{userInitials}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleNavigation('/profile')}
+                    className="text-gray-700 hover:text-gray-900 font-medium"
+                  >
+                    Профиль
+                  </button>
+                </div>
               ) : (
                 <>
                   <button
@@ -106,7 +124,7 @@ export const HomePage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full">
               <Tabs selectedIndex={activeTab} onSelect={setActiveTab}>
                 <TabList className="flex flex-col">
-                  {visibleTabs.map((tab, index) => (
+                  {visibleTabs.map(tab => (
                     <Tab
                       key={tab.id}
                       className="py-4 px-6 cursor-pointer transition-colors border-b border-gray-200 ui-selected:bg-indigo-50 ui-selected:font-medium ui-selected:text-indigo-700 ui-not-selected:text-gray-600 ui-not-selected:hover:text-gray-900 ui-not-selected:hover:bg-gray-50"
@@ -121,7 +139,7 @@ export const HomePage: React.FC = () => {
 
                 {/* Контент левого блока */}
                 <div className="p-4">
-                  {visibleTabs.map((tab, index) => (
+                  {visibleTabs.map(tab => (
                     <TabPanel key={tab.id}>
                       <div className="text-center py-4">
                         <p className="text-gray-500 text-sm">

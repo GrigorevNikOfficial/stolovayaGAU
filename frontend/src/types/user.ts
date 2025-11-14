@@ -28,4 +28,8 @@ export interface User {
   role: 'user' | 'admin' | 'canteenManager' | 'cateenManager' | 'storeManager';
   created_at: string;
   updated_at?: string;
+  avatar?: {
+    key: string;
+    url: string;
+  };
 }

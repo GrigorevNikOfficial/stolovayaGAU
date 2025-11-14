@@ -17,6 +17,7 @@ export const updateUserRole = createEvent<{
   id: string;
   role: 'user' | 'admin';
 }>(); // Админ
+export const uploadAvatar = createEvent<{ id: string; file: File }>();
 
 // Effects
 export const loginFx = createEffect(async (credentials: LoginRequest) => {
@@ -53,12 +54,20 @@ export const updateUserRoleFx = createEffect(
   }
 );
 
+export const uploadAvatarFx = createEffect(
+  async ({ id, file }: { id: string; file: File }) => {
+    const response = await usersApi.uploadAvatar(id, file);
+    return response.user;
+  }
+);
+
 // Stores
 export const $currentUser = createStore<User | null>(null)
   .on(loginFx.doneData, (_, { user }) => user)
   .on(registerFx.doneData, (_, { user }) => user)
   .on(getMeFx.doneData, (_, user) => user)
   .on(updateProfileFx.doneData, (_, user) => user)
+  .on(uploadAvatarFx.doneData, (_, user) => user)
   .reset(logout);
 
 export const $users = createStore<User[]>([]) // Админ
@@ -101,4 +110,9 @@ sample({
 sample({
   clock: updateUserRole,
   target: updateUserRoleFx,
+});
+
+sample({
+  clock: uploadAvatar,
+  target: uploadAvatarFx,
 });

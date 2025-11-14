@@ -78,4 +78,22 @@ export const usersApi = {
     }>(`/users/${id}/role`, { role });
     return response;
   },
+
+  // Обновить аватар пользователя
+  uploadAvatar: async (
+    id: string,
+    file: File
+  ): Promise<{
+    message: string;
+    user: User;
+  }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await httpClient.patch<{
+      message: string;
+      user: User;
+    }>(`/users/${id}/avatar`, formData);
+    return response;
+  },
 };
