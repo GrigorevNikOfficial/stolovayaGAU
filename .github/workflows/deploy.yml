@@ -63,7 +63,7 @@ jobs:
     env:
       VPS_PORT: ${{ secrets.VPS_PORT != '' && secrets.VPS_PORT || '22' }}
       DEPLOY_PATH: ${{ secrets.VPS_APP_PATH }}
-      GHCR_USER: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
+      GHCR_USER: ${{ github.repository_owner }}
       STACK_VERSION: ${{ github.sha }}
     steps:
       - name: Deploy on VPS via SSH
