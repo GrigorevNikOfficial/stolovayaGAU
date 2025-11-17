@@ -1,7 +1,8 @@
-export { itemsApi } from './items/items';
-export { ordersApi } from './orders/orders';
-export { httpClient } from './http-client';
-export { API_CONFIG } from './config';
 export type * from '../types/item';
-export { settings } from './settings';
 export type * from '../types/order';
+export { API_CONFIG } from './config';
+export { httpClient } from './http-client';
+export { itemsApi } from './items';
+export { ordersApi } from './orders';
+export { settings } from './settings';
+

@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
 import { useUnit } from 'effector-react';
+import React, { useEffect, useState } from 'react';
 import {
-  $displayedOrders,
-  $isLoading,
-  $isUpdating,
-  updateOrderStatus,
-  updateOrder,
-  cancelOrder,
-  refreshOrders,
-  loadOrders,
+    $displayedOrders,
+    $isUpdating,
+    $ordersIsLoading,
+    cancelOrder,
+    loadOrders,
+    refreshOrders,
+    updateOrder,
+    updateOrderStatus,
 } from '../models/orders';
 import { $currentUser } from '../models/users';
 import type { UpdateOrderRequest } from '../types/order';
@@ -25,7 +25,7 @@ export const OrdersList: React.FC = () => {
     handleRefreshOrders,
   ] = useUnit([
     $displayedOrders,
-    $isLoading,
+    $ordersIsLoading,
     $isUpdating,
     $currentUser,
     updateOrderStatus,
@@ -34,14 +34,11 @@ export const OrdersList: React.FC = () => {
     refreshOrders,
   ]);
 
-  const [selectedStatuses, setSelectedStatuses] = useState<{
+  const [_selectedStatuses, setSelectedStatuses] = useState<{
     [key: string]: string;
   }>({});
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-
-  const isAdminOrStoreManager =
-    currentUser?.role === 'admin' || currentUser?.role === 'storeManager';
 
   const handleLoadOrders = useUnit(loadOrders);
 
@@ -59,7 +56,7 @@ export const OrdersList: React.FC = () => {
   // Инициализируем selectedStatuses текущими статусами заказов
   useEffect(() => {
     const initialStatuses: { [key: string]: string } = {};
-    orders.forEach(order => {
+    orders.forEach((order: any) => {
       initialStatuses[order._id] = order.status;
     });
     setSelectedStatuses(initialStatuses);
@@ -262,14 +259,11 @@ export const OrdersList: React.FC = () => {
         </button>
       </div>
 
-      {orders.map(order => {
+      {orders.map((order: any) => {
         const currentStatusLabel =
           statusLabels[order.status as keyof typeof statusLabels] ||
           order.status;
         const availableActions = getAvailableActions(order);
-        const isCanteenManager =
-          currentUser?.role === 'canteenManager' ||
-          currentUser?.role === 'cateenManager';
 
         return (
           <div
@@ -328,13 +322,13 @@ export const OrdersList: React.FC = () => {
             </div>
 
             {/* Список товаров в заказе */}
-            {order.items && order.items.length > 0 && (
+            {(order as any).items && (order as any).items.length > 0 && (
               <div className="border-t pt-4 mb-4">
                 <h4 className="text-sm font-medium text-gray-900 mb-2">
                   Состав заказа:
                 </h4>
                 <ul className="space-y-1">
-                  {order.items.map((orderItem: any, index: number) => (
+                  {(order as any).items.map((orderItem: any, index: number) => (
                     <li key={index} className="flex justify-between text-sm">
                       <span>{orderItem.name || `Товар ${index + 1}`}</span>
                       <span>
@@ -429,7 +423,7 @@ export const OrdersList: React.FC = () => {
             setSelectedOrder(null);
           }}
           onSave={data => {
-            handleUpdateOrder({ id: selectedOrder._id, ...data });
+            handleUpdateOrder({ ...data, id: selectedOrder._id });
             setShowEditModal(false);
             setSelectedOrder(null);
           }}
@@ -455,6 +449,7 @@ const OrderEditModal: React.FC<{
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const submitData: UpdateOrderRequest = {
+      id: order._id,
       status: formData.status,
       delivery_method: formData.delivery_method,
     };

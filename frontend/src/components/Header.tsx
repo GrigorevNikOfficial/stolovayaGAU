@@ -1,13 +1,13 @@
-import React from 'react';
 import { useUnit } from 'effector-react';
-import { $currentUser, logout } from '../models/users';
+import React from 'react';
 import { $cartItemsCount, setCartOpen } from '../models/cart';
+import { $currentUser, logout } from '../models/users';
 
 interface HeaderProps {
   onCartClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onCartClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onCartClick: _onCartClick }) => {
   const [currentUser, handleLogout, cartItemsCount, handleSetCartOpen] =
     useUnit([$currentUser, logout, $cartItemsCount, setCartOpen]);
 

@@ -4,7 +4,9 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-		"dev": "nodemon --watch src --watch app.ts --exec node --loader ts-node/esm app.ts"
+    "dev": "nodemon --watch src --watch app.ts --exec node --loader ts-node/esm app.ts",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/app.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.927.0",

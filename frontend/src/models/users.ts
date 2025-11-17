@@ -1,10 +1,10 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { usersApi } from '../api/users';
 import type {
-  User,
-  LoginRequest,
-  RegisterRequest,
-  UpdateProfileRequest,
+    LoginRequest,
+    RegisterRequest,
+    UpdateProfileRequest,
+    User,
 } from '../types/user';
 
 // Events
@@ -84,7 +84,8 @@ export const $authError = createStore<string | null>(null)
 
 export const $isLoading = createStore(false)
   .on(loginFx.pending, (_, pending) => pending)
-  .on(registerFx.pending, (_, pending) => pending);
+  .on(registerFx.pending, (_, pending) => pending)
+  .on(getMeFx.pending, (_, pending) => pending);
 
 // Samples
 sample({
