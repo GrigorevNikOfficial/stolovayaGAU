@@ -8,8 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/stolovaya-backend
-  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/stolovaya-frontend
 
 jobs:
   build-and-push:
@@ -19,6 +17,8 @@ jobs:
       packages: write
     env:
       FRONTEND_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL != '' && secrets.FRONTEND_API_BASE_URL || 'http://localhost:5000/api' }}
+      BACKEND_IMAGE_LOWER: ${{ format('ghcr.io/{0}/stolovaya-backend', github.repository_owner) }}
+      FRONTEND_IMAGE_LOWER: ${{ format('ghcr.io/{0}/stolovaya-frontend', github.repository_owner) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,8 +40,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE_LOWER }}:latest
+            ${{ env.BACKEND_IMAGE_LOWER }}:${{ github.sha }}
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v6
@@ -52,8 +52,8 @@ jobs:
           build-args: |
             VITE_API_BASE_URL=${{ env.FRONTEND_API_BASE_URL }}
           tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE_LOWER }}:latest
+            ${{ env.FRONTEND_IMAGE_LOWER }}:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
