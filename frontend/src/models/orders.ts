@@ -1,15 +1,15 @@
 import {
-  createEffect,
-  createEvent,
-  createStore,
-  sample,
-  combine,
+    combine,
+    createEffect,
+    createEvent,
+    createStore,
+    sample,
 } from 'effector';
 import { ordersApi } from '../api/orders';
 import type {
-  CreateOrderRequest,
-  Order,
-  UpdateOrderRequest,
+    CreateOrderRequest,
+    Order,
+    UpdateOrderRequest,
 } from '../types/order';
 import type { User } from '../types/user';
 import { $currentUser } from './users';
@@ -72,10 +72,11 @@ export const cancelOrderFx = createEffect(
   async (orderId: string): Promise<Order> => {
     // Из number в string
     console.log('Cancelling order:', orderId);
-    return await ordersApi.updateOrder({
+    const response = await ordersApi.updateOrder({
       id: orderId,
       status: 'cancelled',
     });
+    return response.order;
   }
 );
 
@@ -122,7 +123,7 @@ export const $displayedOrders = combine(
 );
 
 // Остальные stores и samples остаются без изменений
-export const $isLoading = createStore(false).on(
+export const $ordersIsLoading = createStore(false).on(
   loadOrdersFx.pending,
   (_, pending) => pending
 );

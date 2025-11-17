@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+
+  backend:
+    image: ghcr.io/YOUR_GITHUB_USERNAME/stolovaya-backend:${STACK_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    env_file:
+      - .env
+    environment:
+      PORT: ${BACKEND_PORT:-5000}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+
+  frontend:
+    image: ghcr.io/YOUR_GITHUB_USERNAME/stolovaya-frontend:${STACK_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-4173}:80"
+
+volumes:
+  mongo-data:

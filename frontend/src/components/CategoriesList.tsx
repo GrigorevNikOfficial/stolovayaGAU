@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
 import { useUnit } from 'effector-react';
+import React, { useEffect, useState } from 'react';
 import {
-  $categories,
-  $categoriesLoading,
-  $categoriesError,
-  loadCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory,
+    $categories,
+    $categoriesError,
+    $categoriesLoading,
+    createCategory,
+    deleteCategory,
+    loadCategories,
+    updateCategory,
 } from '../models/categories';
 import { $currentUser } from '../models/users';
 import type {
-  CreateCategoryRequest,
-  UpdateCategoryRequest,
+    CreateCategoryRequest,
+    UpdateCategoryRequest,
 } from '../types/category';
 
 export const CategoriesList: React.FC = () => {
@@ -197,7 +197,7 @@ export const CategoriesList: React.FC = () => {
       {showCreateModal && (
         <CategoryModal
           onClose={() => setShowCreateModal(false)}
-          onSave={onCreateCategory}
+          onSave={(data) => onCreateCategory(data as CreateCategoryRequest)}
         />
       )}
 

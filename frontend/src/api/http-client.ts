@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:5000/api';
+import { API_CONFIG } from './config';
+
+const API_BASE = API_CONFIG.BASE_URL;
 
 const isFormDataBody = (data: unknown): data is FormData =>
   typeof FormData !== 'undefined' && data instanceof FormData;

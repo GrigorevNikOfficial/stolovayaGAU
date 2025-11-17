@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
 import { useUnit } from 'effector-react';
+import React, { useState } from 'react';
 import {
-  $isLoading,
-  $authError,
-  login,
-  register,
-  $currentUser,
+    $authError,
+    $currentUser,
+    $isLoading,
+    login,
+    register,
 } from '../models/users';
 
 export const AuthForm: React.FC = () => {
@@ -19,7 +19,7 @@ export const AuthForm: React.FC = () => {
     confirmPassword: '',
   });
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [showSuccess] = useState(false);
 
   const [isLoading, authError, currentUser, handleLogin, handleRegister] =
     useUnit([$isLoading, $authError, $currentUser, login, register]);
@@ -118,7 +118,6 @@ export const AuthForm: React.FC = () => {
         phone: formData.phone,
         mail: formData.email, // Ключевое изменение: mail вместо email
         password: formData.password,
-        role: 'user',
       });
     }
   };
