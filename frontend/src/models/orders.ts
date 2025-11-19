@@ -1,18 +1,19 @@
 import {
-    combine,
-    createEffect,
-    createEvent,
-    createStore,
-    sample,
+  combine,
+  createEffect,
+  createEvent,
+  createStore,
+  sample,
 } from 'effector';
 import { ordersApi } from '../api/orders';
 import type {
-    CreateOrderRequest,
-    Order,
-    UpdateOrderRequest,
+  CreateOrderRequest,
+  Order,
+  UpdateOrderRequest,
 } from '../types/order';
 import type { User } from '../types/user';
 import { $currentUser } from './users';
+import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 
 type LoadOrdersParams = {
   role: 'admin' | 'user' | 'storeManager' | 'canteenManager' | 'cateenManager';
@@ -31,7 +32,12 @@ export const refreshOrders = createEvent();
 export const loadOrdersFx = createEffect(
   async ({ role }: LoadOrdersParams): Promise<Order[]> => {
     // admin, storeManager и canteenManager видят все заказы (через getAllOrders)
-    if (role === 'admin' || role === 'storeManager' || role === 'canteenManager' || role === 'cateenManager') {
+    if (
+      role === 'admin' ||
+      role === 'storeManager' ||
+      role === 'canteenManager' ||
+      role === 'cateenManager'
+    ) {
       const response = await ordersApi.getOrders();
       return response.orders;
     }
@@ -92,9 +98,7 @@ export const $orders = createStore<Order[]>([])
       ) // _id вместо id
   )
   .on(updateOrderFx.doneData, (state, updatedOrder) =>
-    state.map(order =>
-      order._id === updatedOrder._id ? updatedOrder : order
-    )
+    state.map(order => (order._id === updatedOrder._id ? updatedOrder : order))
   )
   .on(cancelOrderFx.doneData, (state, cancelledOrder) =>
     state.map(
@@ -111,10 +115,12 @@ export const $displayedOrders = combine(
     if (!currentUser) return [];
 
     // admin, storeManager и canteenManager видят все заказы (фильтрация по статусу уже на бэкенде)
-    if (currentUser.role === 'admin' || 
-        currentUser.role === 'storeManager' || 
-        currentUser.role === 'canteenManager' || 
-        currentUser.role === 'cateenManager') {
+    if (
+      currentUser.role === 'admin' ||
+      currentUser.role === 'storeManager' ||
+      currentUser.role === 'canteenManager' ||
+      currentUser.role === 'cateenManager'
+    ) {
       return orders;
     } else {
       return orders.filter(order => order.user_id === currentUser._id); // _id вместо id
@@ -199,7 +205,14 @@ sample({
 
 sample({
   clock: createOrderFx.done,
-  target: refreshOrders,
+  fn: () => ({ message: 'Успешно!', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: createOrderFx.fail,
+  fn: () => ({ message: 'Ошибка!', type: 'error' as const }),
+  target: showToast,
 });
 
 sample({

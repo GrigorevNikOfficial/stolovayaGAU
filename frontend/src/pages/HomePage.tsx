@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUnit } from 'effector-react';
-import { ItemsList } from '../components/ItemsList';
-import { CartBlock } from '../components/CardBlock.tsx';
+import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
+import { ItemsList } from '../components/Items/ItemsList.tsx';
 import { $currentUser } from '../models/users';
-import { OrdersList } from '../components/OrdersList.tsx';
-import { DeliverySettings } from '../components/DeliverySettings.tsx';
-import { CategoriesList } from '../components/CategoriesList.tsx';
+import { OrdersList } from '../components/Orders/OrdersList.tsx';
+import { Settings } from '../components/Settings/Settings.tsx';
+import { CategoriesList } from '../components/Categories/CategoriesList.tsx';
 import Button from '../components/layout/Button/Button.tsx';
-import Tabs from '../components/layout/Tabs/Tabs.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
+import CartModal from '../components/Modal/CardModal.tsx';
+import { $cart } from '../models/cart';
+import LogoSAU from '../images/LogoSAU.svg';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -23,9 +25,10 @@ const hasRole = (user: any, roles: string | string[]): boolean => {
 
 export const HomePage: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
+  const [cart] = useUnit([$cart]);
   const [activeTab, setActiveTab] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
@@ -76,29 +79,39 @@ export const HomePage: React.FC = () => {
     currentUser &&
     (currentUser.role === 'admin' || currentUser.role === 'user');
 
+  // Закрываем мобильное меню при смене таба
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [activeTab]);
+
   return (
-    <div className="min-h-screen bg-gray-50 overflow-hidden">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Шапка */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="px-3 sm:px-4 lg:px-6">
           {/* Вся навигация в одной строке */}
           <div className="flex items-center justify-between py-3 sm:py-4 gap-4">
-            {/* Левая часть: лого и табы */}
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap shrink-0">
-                СтоловаяГАУ
+            {/* Левая часть: логотип и название */}
+            <div className="flex items-center gap-3 shrink-0 mr-12">
+              <img
+                src={LogoSAU}
+                alt="Логотип столовой ГАУ"
+                className="w-8 h-8 sm:w-10 sm:h-10"
+              />
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                Столовая ГАУ
               </h1>
+            </div>
 
-              {/* Табы - скрываем на мобильных */}
-              <div className="hidden lg:block flex-1 min-w-0">
-                <Tabs
-                  tabs={visibleTabs}
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  orientation="horizontal"
-                  className="flex-1"
-                />
-              </div>
+            {/* Центральная часть: табы */}
+            <div className="hidden lg:block flex-1 min-w-0">
+              <Tabs
+                tabs={visibleTabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                orientation="horizontal"
+                className="flex-1"
+              />
             </div>
 
             {/* Правая часть: кнопки пользователя */}
@@ -122,172 +135,165 @@ export const HomePage: React.FC = () => {
               )}
             </div>
           </div>
-          {/* УБИРАЕМ мобильные табы из header - они теперь только внизу */}
         </div>
       </header>
 
       {/* Основной контент */}
-      {/* Основной контент */}
-      {/* Основной контент */}
-      <div className="px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 h-[calc(100vh-64px-64px)] sm:h-[calc(100vh-80px-64px)] lg:h-[calc(100vh-80px)]">
+      <div className="flex-1 px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         <div className="h-full">
-          {/* Правый блок - ОСНОВНОЙ КОНТЕНТ */}
-          <div className="h-full min-h-0">
-            {activeTab < visibleTabs.length && (
-              <>
-                {visibleTabs[activeTab].id === 'menu' && (
-                  <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 h-full">
-                    {/* Список товаров */}
-                    <div className="w-full h-full min-h-0">
-                      <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 lg:p-6 h-full flex flex-col">
-                        <div className="flex items-center justify-between mb-4 sm:mb-6">
-                          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                            Меню
-                          </h2>
-                        </div>
-                        <div className="flex-1 overflow-y-auto">
-                          <ItemsList />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Корзина для десктопа */}
-                    {showCart && (
-                      <div className="hidden lg:block lg:w-80 h-full">
-                        <CartBlock />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {visibleTabs[activeTab].id === 'categories' && (
-                  <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 lg:p-6 h-full flex flex-col">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                        Управление категориями
-                      </h2>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <CategoriesList />
-                    </div>
-                  </div>
-                )}
-
-                {visibleTabs[activeTab].id === 'orders' && (
-                  <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 lg:p-6 h-full flex flex-col">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                        {getOrdersTitle(currentUser)}
-                      </h2>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <OrdersList />
-                    </div>
-                  </div>
-                )}
-
-                {visibleTabs[activeTab].id === 'settings' && (
-                  <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 lg:p-6 h-full flex flex-col">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                        Настройки доставки
-                      </h2>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <DeliverySettings />
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+          {/* Мобильное меню */}
+          <div
+            className={`lg:hidden mb-6 transition-all duration-300 ${isMobileMenuOpen ? 'block' : 'hidden'}`}
+          >
+            <div className="bg-white rounded-2xl shadow-lg p-4">
+              <Tabs
+                tabs={visibleTabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                orientation="vertical"
+                className="w-full"
+              />
+            </div>
           </div>
+
+          {/* Контент активного таба */}
+          {activeTab < visibleTabs.length && (
+            <>
+              {visibleTabs[activeTab].id === 'menu' && (
+                <div className="h-full">
+                  <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                    <div className="flex items-center justify-between mb-4 sm:mb-6">
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                        Меню
+                      </h2>
+                      {/* Индикатор активного таба для мобильных */}
+                      <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        <span>{visibleTabs[activeTab].icon}</span>
+                        <span>{visibleTabs[activeTab].label}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      <ItemsList />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {visibleTabs[activeTab].id === 'categories' && (
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                  <div className="flex items-center justify-between ">
+                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      <span>{visibleTabs[activeTab].icon}</span>
+                      <span>{visibleTabs[activeTab].label}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    <CategoriesList />
+                  </div>
+                </div>
+              )}
+
+              {visibleTabs[activeTab].id === 'orders' && (
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                  <div className="flex items-center justify-between ">
+                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      <span>{visibleTabs[activeTab].icon}</span>
+                      <span>{visibleTabs[activeTab].label}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    <OrdersList />
+                  </div>
+                </div>
+              )}
+
+              {visibleTabs[activeTab].id === 'settings' && (
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                  <div className="flex items-center justify-between ">
+                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      <span>{visibleTabs[activeTab].icon}</span>
+                      <span>{visibleTabs[activeTab].label}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    <Settings />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Мобильная корзина - выезжающая панель */}
-      {showCart && isCartOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-black bg-opacity-50"
-            onClick={() => setIsCartOpen(false)}
-          />
-          <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-xl">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Корзина</h3>
-                <Button
-                  onClick={() => setIsCartOpen(false)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <CartBlock />
-              </div>
-            </div>
-          </div>
+      {/* Футер */}
+      <Footer />
+
+      {/* Кнопка открытия корзины (плавающая) - ТОЛЬКО ДЛЯ ДЕСКТОПА */}
+      {showCart && cart.length > 0 && (
+        <div className="hidden lg:block fixed bottom-6 right-6 z-30">
+          <Button
+            onClick={() => setIsCartModalOpen(true)}
+            variant="primary"
+            size="lg"
+            className="shadow-2xl shadow-green-dark/30 hover:shadow-3xl hover:shadow-green-dark/40 transition-all duration-400 ease-out hover:scale-105"
+          >
+            <span className="flex items-center gap-2">
+              🛒 Корзина
+              <span className="bg-white text-green-dark text-xs font-bold px-2 py-1 rounded-full min-w-6">
+                {cart.reduce((total, item) => total + item.quantity, 0)}
+              </span>
+            </span>
+          </Button>
         </div>
       )}
 
-      {/* Мобильная навигация - индикатор активного таба + корзина */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 z-40 shadow-lg">
+      {/* Модальное окно корзины */}
+      <CartModal
+        isOpen={isCartModalOpen}
+        onClose={() => setIsCartModalOpen(false)}
+      />
+
+      {/* Мобильная навигация */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-30 shadow-lg">
         <div className="flex justify-around items-center">
           {visibleTabs.map((tab, index) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(index)}
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[60px] ${
+              className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] ${
                 activeTab === index
                   ? 'text-green-dark bg-green-light'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <span className="text-lg mb-1">{tab.icon}</span>
-              <span className="text-xs font-medium truncate max-w-[50px]">
+              <span className="text-xs font-medium truncate max-w-[60px]">
                 {tab.label}
               </span>
             </button>
           ))}
 
-          {/* Кнопка корзины */}
+          {/* Кнопка корзины для мобильных */}
           {showCart && (
             <button
-              onClick={() => setIsCartOpen(true)}
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-[60px] ${
-                isCartOpen
+              onClick={() => setIsCartModalOpen(true)}
+              className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] relative ${
+                isCartModalOpen
                   ? 'text-green-dark bg-green-light'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
+              {cart.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {cart.reduce((total, item) => total + item.quantity, 0)}
+                </span>
+              )}
               <span className="text-lg mb-1">🛒</span>
               <span className="text-xs font-medium">Корзина</span>
             </button>
           )}
         </div>
       </div>
-      <Footer />
     </div>
   );
-};
-
-// Функция для заголовка заказов
-const getOrdersTitle = (user: any) => {
-  if (!user) return 'Заказы';
-  if (hasRole(user, ['admin', 'canteenManager', 'storeManager']))
-    return 'Все заказы';
-  return 'Мои заказы';
 };

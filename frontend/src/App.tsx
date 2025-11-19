@@ -2,8 +2,9 @@ import React from 'react';
 import { useUnit } from 'effector-react';
 import { $currentUser, getMeFx } from './models/users';
 import { HomePage } from './pages/HomePage';
-import { AuthForm } from './components/AuthForm';
+import { AuthForm } from './components/Auth/AuthForm.tsx';
 import { ProfilePage } from './pages/ProfilePage';
+import { Toast } from './components/layout/Toast/Toast'; // Добавь этот импорт
 
 function App() {
   const [currentUser, handleGetMe] = useUnit([$currentUser, getMeFx]);
@@ -73,7 +74,13 @@ function App() {
     }
   };
 
-  return <div className="min-h-screen bg-gray-100">{getCurrentPage()}</div>;
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {getCurrentPage()}
+      {/* Добавь Toast здесь */}
+      <Toast />
+    </div>
+  );
 }
 
 export default App;
