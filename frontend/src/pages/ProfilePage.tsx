@@ -7,6 +7,8 @@ import {
   uploadAvatarFx,
 } from '../models/users';
 import { loadOrders } from '../models/orders';
+import Button from '../components/layout/Button/Button.tsx';
+import Footer from '../components/layout/Footer/Footer.tsx';
 
 export const ProfilePage: React.FC = () => {
   const {
@@ -19,6 +21,7 @@ export const ProfilePage: React.FC = () => {
     currentUser: $currentUser,
     handleLogout: logout,
     handleLoadOrders: loadOrders,
+    handleUploadOrders: loadOrders,
     handleUploadAvatar: uploadAvatar,
     isAvatarUploading: uploadAvatarFx.pending,
   });
@@ -42,7 +45,7 @@ export const ProfilePage: React.FC = () => {
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
-  // Загружаем заказы ТОЛЬКО при загрузке страницы профиля
+  // Загружаем заказы при загрузке страницы профиля
   React.useEffect(() => {
     if (currentUser) {
       console.log(
@@ -67,159 +70,175 @@ export const ProfilePage: React.FC = () => {
           <h2 className="text-xl sm:text-2xl font-bold mb-4">
             Пользователь не авторизован
           </h2>
-          <button
+          <Button
             onClick={() => handleNavigation('/')}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm sm:text-base"
+            variant="primary"
+            size="md"
           >
             На главную
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4">
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-          {/* Заголовок и кнопки */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4 sm:mb-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <label htmlFor="avatar-input" className="group cursor-pointer">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-200 overflow-hidden border border-gray-300 flex items-center justify-center text-lg sm:text-xl font-semibold text-gray-600 group-hover:ring-2 group-hover:ring-indigo-500 group-hover:border-indigo-500 transition">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={`${currentUser.first_name} ${currentUser.last_name}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span>{userInitials}</span>
-                  )}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Основной контент */}
+      <div className="flex-1 py-4 sm:py-8">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4">
+          <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+            {/* Заголовок и кнопки */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 sm:mb-8">
+              <div className="flex items-center gap-4 sm:gap-6">
+                {/* Аватар с возможностью загрузки */}
+                <label htmlFor="avatar-input" className="cursor-pointer group">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-green-light to-green-medium overflow-hidden border-2 border-white shadow-lg flex items-center justify-center text-xl sm:text-2xl font-bold text-green-darker group-hover:shadow-xl group-hover:scale-105 transition-all duration-200">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={`${currentUser.first_name} ${currentUser.last_name}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{userInitials}</span>
+                    )}
+                  </div>
+                  <input
+                    id="avatar-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                    disabled={isAvatarUploading}
+                  />
+                </label>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                    {currentUser.first_name} {currentUser.last_name}
+                  </h1>
+                  <p className="text-gray-500 text-sm sm:text-base mt-1">
+                    Личный кабинет
+                  </p>
                 </div>
-                <p className="text-xs text-center text-gray-500 mt-1 sm:mt-2 group-hover:text-indigo-600">
-                  {isAvatarUploading ? 'Загрузка...' : 'Изменить'}
-                </p>
-              </label>
-              <input
-                id="avatar-input"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarChange}
-                disabled={isAvatarUploading}
-              />
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  Профиль пользователя
-                </h1>
-                <p className="text-gray-500 text-xs sm:text-sm">
-                  Управляйте личными данными
-                </p>
+              </div>
+
+              {/* Кнопки навигации */}
+              <div className="flex flex-col xs:flex-row gap-3 w-full sm:w-auto">
+                <Button
+                  onClick={() => handleNavigation('/')}
+                  variant="outline"
+                  size="lg"
+                  className="flex-1 xs:flex-none"
+                >
+                  На главную
+                </Button>
+                <Button
+                  onClick={handleLogoutClick}
+                  variant="secondary"
+                  size="xl"
+                  className="flex-1 xs:flex-none bg-red-500 hover:bg-red-600 border-red-500"
+                >
+                  Выйти
+                </Button>
               </div>
             </div>
 
-            {/* Кнопки навигации */}
-            <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => handleNavigation('/')}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base flex-1 xs:flex-none text-center"
-              >
-                На главную
-              </button>
-              <button
-                onClick={handleLogoutClick}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base flex-1 xs:flex-none text-center"
-              >
-                Выйти
-              </button>
-            </div>
-          </div>
+            {/* Информация о пользователе */}
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
+                    Имя
+                  </label>
+                  <p className="text-base sm:text-lg text-gray-900 font-semibold">
+                    {currentUser.first_name}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
+                    Фамилия
+                  </label>
+                  <p className="text-base sm:text-lg text-gray-900 font-semibold">
+                    {currentUser.last_name}
+                  </p>
+                </div>
+              </div>
 
-          {/* Информация о пользователе */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                  Имя
+              <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
+                  Телефон
                 </label>
-                <p className="text-sm sm:text-base text-gray-900 font-medium">
-                  {currentUser.first_name}
+                <p className="text-base sm:text-lg text-gray-900 font-semibold">
+                  {currentUser.phone}
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                  Фамилия
+
+              {currentUser.mail && (
+                <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
+                    Email
+                  </label>
+                  <p className="text-base sm:text-lg text-gray-900 font-semibold break-all">
+                    {currentUser.mail}
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
+                  Роль
                 </label>
-                <p className="text-sm sm:text-base text-gray-900 font-medium">
-                  {currentUser.last_name}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Телефон
-              </label>
-              <p className="text-sm sm:text-base text-gray-900 font-medium">
-                {currentUser.phone}
-              </p>
-            </div>
-
-            {currentUser.mail && (
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                  Email
-                </label>
-                <p className="text-sm sm:text-base text-gray-900 font-medium break-all">
-                  {currentUser.mail}
-                </p>
-              </div>
-            )}
-
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Роль
-              </label>
-              <p className="text-sm sm:text-base text-gray-900">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    currentUser.role === 'admin'
-                      ? 'bg-purple-100 text-purple-800'
+                <p className="text-base sm:text-lg">
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      currentUser.role === 'admin'
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                        : currentUser.role === 'canteenManager' ||
+                            currentUser.role === 'cateenManager'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                          : currentUser.role === 'storeManager'
+                            ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                            : 'bg-green-100 text-green-800 border border-green-200'
+                    }`}
+                  >
+                    {currentUser.role === 'admin'
+                      ? 'Администратор системы'
                       : currentUser.role === 'canteenManager' ||
                           currentUser.role === 'cateenManager'
-                        ? 'bg-blue-100 text-blue-800'
+                        ? 'Администратор столовой'
                         : currentUser.role === 'storeManager'
-                          ? 'bg-orange-100 text-orange-800'
-                          : 'bg-green-100 text-green-800'
-                  }`}
-                >
-                  {currentUser.role === 'admin'
-                    ? 'Администратор системы'
-                    : currentUser.role === 'canteenManager' ||
-                        currentUser.role === 'cateenManager'
-                      ? 'Администратор столовой'
-                      : currentUser.role === 'storeManager'
-                        ? 'Администратор буфета'
-                        : 'Пользователь'}
-                </span>
-              </p>
-            </div>
-
-            {/* Дополнительная информация */}
-            {currentUser.created_at && (
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                  Дата регистрации
-                </label>
-                <p className="text-sm sm:text-base text-gray-900">
-                  {new Date(currentUser.created_at).toLocaleDateString('ru-RU')}
+                          ? 'Администратор буфета'
+                          : 'Пользователь'}
+                  </span>
                 </p>
               </div>
-            )}
+
+              {/* Дополнительная информация */}
+              {currentUser.created_at && (
+                <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
+                    Дата регистрации
+                  </label>
+                  <p className="text-base sm:text-lg text-gray-900">
+                    {new Date(currentUser.created_at).toLocaleDateString(
+                      'ru-RU',
+                      {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Футер */}
+      <Footer />
     </div>
   );
 };
