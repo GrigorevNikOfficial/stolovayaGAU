@@ -187,6 +187,18 @@ export const ProfilePage: React.FC = () => {
 
               <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
                 <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
+                  Баланс
+                </label>
+                <p className="text-2xl sm:text-3xl font-bold text-green-dark">
+                  {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Пополнить баланс может администратор системы
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200">
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
                   Роль
                 </label>
                 <p className="text-base sm:text-lg">

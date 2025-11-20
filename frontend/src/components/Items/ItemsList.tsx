@@ -146,6 +146,9 @@ export const ItemsList: React.FC = () => {
 
   const handleAddToCartClick = (e: React.MouseEvent, item: any) => {
     e.stopPropagation();
+    if (item.is_available === false) {
+      return;
+    }
     handleAddToCart({
       _id: item._id,
       uniq_nom: item.uniq_nom || item._id,
@@ -160,11 +163,17 @@ export const ItemsList: React.FC = () => {
     });
   };
 
-  const handleIncreaseQuantity = (e: React.MouseEvent, itemId: string) => {
+  const handleIncreaseQuantity = (
+    e: React.MouseEvent,
+    item: { _id: string; is_available?: boolean }
+  ) => {
     e.stopPropagation();
-    const currentQuantity = getItemQuantity(itemId);
+    if (item.is_available === false) {
+      return;
+    }
+    const currentQuantity = getItemQuantity(item._id);
     handleUpdateQuantity({
-      id: itemId,
+      id: item._id,
       quantity: currentQuantity + 1,
     });
   };
@@ -181,8 +190,6 @@ export const ItemsList: React.FC = () => {
       });
     }
   };
-
-  const itemsArray = Array.isArray(items) ? items : [];
 
   return (
     <div className="fade-in">
@@ -276,9 +283,13 @@ export const ItemsList: React.FC = () => {
             </div>
           )}
 
-          {filteredItems.map((item, index) => {
+          {filteredItems.map(item => {
             const quantity = getItemQuantity(item._id);
             const isInCart = quantity > 0;
+            const isAvailable = item.is_available !== false;
+            const availabilityBadgeClasses = isAvailable
+              ? 'bg-green-light text-green-darker border-green-lighter'
+              : 'bg-gray-100 text-gray-500 border-gray-200';
 
             return (
               <div
@@ -345,6 +356,11 @@ export const ItemsList: React.FC = () => {
                     <span className="text-base font-bold text-green-dark">
                       {item.price} ₽
                     </span>
+                    <span
+                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${availabilityBadgeClasses}`}
+                    >
+                      {isAvailable ? 'Доступно' : 'Недоступно'}
+                    </span>
                   </div>
 
                   {/* Кнопка добавления в корзину */}
@@ -354,12 +370,17 @@ export const ItemsList: React.FC = () => {
                       <div className="mt-2">
                         {!isInCart ? (
                           <Button
-                            onClick={e => handleAddToCartClick(e, item)}
+                            onClick={
+                              isAvailable
+                                ? e => handleAddToCartClick(e, item)
+                                : undefined
+                            }
+                            disabled={!isAvailable}
                             variant="outline"
                             size="sm"
                             className="w-full text-xs py-1.5 px-2 truncate"
                           >
-                            🛒 В корзину
+                            {isAvailable ? '🛒 В корзину' : 'Недоступно'}
                           </Button>
                         ) : (
                           <div className="flex items-center justify-between bg-green-light rounded-lg p-1">
@@ -373,12 +394,18 @@ export const ItemsList: React.FC = () => {
                               {quantity}
                             </span>
                             <button
-                              onClick={e => handleIncreaseQuantity(e, item._id)}
+                              onClick={e => handleIncreaseQuantity(e, item)}
+                              disabled={!isAvailable}
                               className="w-6 h-6 rounded-full bg-white text-green-dark flex items-center justify-center text-sm font-bold hover:bg-green-medium hover:text-white transition-all duration-200"
                             >
                               +
                             </button>
                           </div>
+                        )}
+                        {!isAvailable && isInCart && (
+                          <p className="text-[11px] text-red-500 mt-1 text-center">
+                            Товар недоступен, удалите его из корзины
+                          </p>
                         )}
                       </div>
                     )}
@@ -420,11 +447,6 @@ export const ItemsList: React.FC = () => {
         item={selectedItemForModal}
         isOpen={itemModalOpen}
         onClose={() => setItemModalOpen(false)}
-        isInCart={
-          selectedItemForModal
-            ? getItemQuantity(selectedItemForModal._id) > 0
-            : false
-        }
       />
 
       {showCreateModal && (

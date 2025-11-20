@@ -12,11 +12,16 @@ import type {
   UpdateOrderRequest,
 } from '../types/order';
 import type { User } from '../types/user';
-import { $currentUser } from './users';
+import { $currentUser, updateCurrentUserBalance } from './users';
 import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 
 type LoadOrdersParams = {
   role: 'admin' | 'user' | 'storeManager' | 'canteenManager' | 'cateenManager';
+};
+
+type OrderWithBalance = {
+  order: Order;
+  balance?: number | null;
 };
 
 // Events (остаются те же)
@@ -52,37 +57,36 @@ export const createOrderFx = createEffect(async (order: CreateOrderRequest) => {
   return {
     order: response.order,
     order_number: response.order_number,
+    balance: response.balance,
   };
 });
 
 export const updateOrderStatusFx = createEffect(
-  async (order: UpdateOrderRequest): Promise<Order> => {
+  async (order: UpdateOrderRequest): Promise<OrderWithBalance> => {
     console.log('Updating order status:', order);
     if (order.status !== undefined) {
       return await ordersApi.updateOrderStatus(order);
     }
     const response = await ordersApi.updateOrder(order);
-    return response.order;
+    return { order: response.order, balance: response.balance ?? null };
   }
 );
 
 export const updateOrderFx = createEffect(
-  async (order: UpdateOrderRequest): Promise<Order> => {
+  async (order: UpdateOrderRequest): Promise<OrderWithBalance> => {
     console.log('Updating order:', order);
     const response = await ordersApi.updateOrder(order);
-    return response.order;
+    return { order: response.order, balance: response.balance ?? null };
   }
 );
 
 export const cancelOrderFx = createEffect(
-  async (orderId: string): Promise<Order> => {
-    // Из number в string
+  async (orderId: string): Promise<OrderWithBalance> => {
     console.log('Cancelling order:', orderId);
-    const response = await ordersApi.updateOrder({
+    return await ordersApi.updateOrderStatus({
       id: orderId,
       status: 'cancelled',
     });
-    return response.order;
   }
 );
 
@@ -90,19 +94,15 @@ export const cancelOrderFx = createEffect(
 export const $orders = createStore<Order[]>([])
   .on(loadOrdersFx.doneData, (_, orders) => orders)
   .on(createOrderFx.doneData, (state, { order }) => [order, ...state])
-  .on(
-    updateOrderStatusFx.doneData,
-    (state, updatedOrder) =>
-      state.map(order =>
-        order._id === updatedOrder._id ? updatedOrder : order
-      ) // _id вместо id
-  )
-  .on(updateOrderFx.doneData, (state, updatedOrder) =>
+  .on(updateOrderStatusFx.doneData, (state, { order: updatedOrder }) =>
     state.map(order => (order._id === updatedOrder._id ? updatedOrder : order))
   )
-  .on(cancelOrderFx.doneData, (state, cancelledOrder) =>
-    state.map(
-      order => (order._id === cancelledOrder._id ? cancelledOrder : order) // _id вместо id
+  .on(updateOrderFx.doneData, (state, { order: updatedOrder }) =>
+    state.map(order => (order._id === updatedOrder._id ? updatedOrder : order))
+  )
+  .on(cancelOrderFx.doneData, (state, { order: cancelledOrder }) =>
+    state.map(order =>
+      order._id === cancelledOrder._id ? cancelledOrder : order
     )
   )
   .reset(clearOrders);
@@ -181,6 +181,13 @@ sample({
 });
 
 sample({
+  clock: createOrderFx.doneData,
+  filter: ({ balance }) => typeof balance === 'number',
+  fn: ({ balance }) => balance,
+  target: updateCurrentUserBalance,
+});
+
+sample({
   clock: updateOrderStatus,
   target: updateOrderStatusFx,
 });
@@ -193,6 +200,45 @@ sample({
 sample({
   clock: cancelOrder,
   target: cancelOrderFx,
+});
+
+sample({
+  source: $currentUser,
+  clock: updateOrderStatusFx.doneData,
+  filter: (currentUser, { balance, order }) =>
+    Boolean(
+      currentUser &&
+        typeof balance === 'number' &&
+        order.user_id === currentUser._id
+    ),
+  fn: (_, { balance }) => balance as number,
+  target: updateCurrentUserBalance,
+});
+
+sample({
+  source: $currentUser,
+  clock: updateOrderFx.doneData,
+  filter: (currentUser, { balance, order }) =>
+    Boolean(
+      currentUser &&
+        typeof balance === 'number' &&
+        order.user_id === currentUser._id
+    ),
+  fn: (_, { balance }) => balance as number,
+  target: updateCurrentUserBalance,
+});
+
+sample({
+  source: $currentUser,
+  clock: cancelOrderFx.doneData,
+  filter: (currentUser, { balance, order }) =>
+    Boolean(
+      currentUser &&
+        typeof balance === 'number' &&
+        order.user_id === currentUser._id
+    ),
+  fn: (_, { balance }) => balance as number,
+  target: updateCurrentUserBalance,
 });
 
 sample({
@@ -223,7 +269,7 @@ sample({
 sample({
   clock: updateOrderStatusFx.fail,
   fn: () => ({
-    message: 'Ошика при удалении статуса заказа',
+    message: 'Ошибка при обновлении статуса заказа',
     type: 'error' as const,
   }),
   target: showToast,
@@ -259,8 +305,8 @@ sample({
 sample({
   clock: cancelOrderFx.fail,
   fn: () => ({
-    message: 'Заказ успешно удален',
-    type: 'success' as const,
+    message: 'Не удалось отменить заказ',
+    type: 'error' as const,
   }),
   target: showToast,
 });

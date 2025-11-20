@@ -46,6 +46,9 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   ]);
 
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const currentBalance = currentUser?.balance ?? 0;
+  const hasEnoughBalance = currentUser ? currentBalance >= cartTotal : true;
+  const remainingBalance = currentBalance - cartTotal;
 
   const deliveryAddressOptions = [
     { value: 'эк', label: 'Экономический корпус' },
@@ -71,6 +74,11 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     // Валидация для доставки
     if (deliveryMethod === 'delivery' && !deliveryAddress) {
       alert('Пожалуйста, выберите адрес доставки');
+      return;
+    }
+
+    if (currentUser && currentBalance < cartTotal) {
+      alert('Недостаточно средств на балансе. Обратитесь к администратору.');
       return;
     }
 
@@ -162,6 +170,29 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
       {/* Список товаров */}
       <div className="flex-1 overflow-y-auto p-6">
+        {currentUser && (
+          <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+            <div className="flex items-center justify-between text-sm font-semibold text-gray-700">
+              <span>Баланс</span>
+              <span className="text-lg text-green-dark">
+                {currentBalance} ₽
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+              <span>После заказа</span>
+              <span
+                className={
+                  remainingBalance >= 0
+                    ? 'text-green-darker font-semibold'
+                    : 'text-red-500 font-semibold'
+                }
+              >
+                {remainingBalance >= 0 ? remainingBalance : 0} ₽
+              </span>
+            </div>
+          </div>
+        )}
+
         {cart.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-300 text-6xl mb-4">🛒</div>
@@ -243,13 +274,21 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
             </span>
           </div>
 
+          {!hasEnoughBalance && currentUser && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+              Недостаточно средств на балансе. Попросите администратора
+              пополнить баланс.
+            </div>
+          )}
+
           <div className="space-y-3">
             <Button
               onClick={handleSubmitOrder}
               disabled={
                 isCreating ||
                 (deliveryMethod === 'delivery' && !settings.deliveryEnabled) ||
-                (deliveryMethod === 'delivery' && !deliveryAddress)
+                (deliveryMethod === 'delivery' && !deliveryAddress) ||
+                !hasEnoughBalance
               }
               variant="primary"
               size="lg"

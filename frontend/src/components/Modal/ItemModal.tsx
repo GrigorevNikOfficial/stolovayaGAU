@@ -14,14 +14,12 @@ interface ItemModalProps {
   item: any;
   isOpen: boolean;
   onClose: () => void;
-  isInCart?: boolean;
 }
 
 export const ItemModal: React.FC<ItemModalProps> = ({
   item,
   isOpen,
   onClose,
-  isInCart = false,
 }) => {
   const [
     currentUser,
@@ -46,8 +44,12 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   };
 
   const quantity = getItemQuantity();
+  const isAvailable = item.is_available !== false;
 
   const handleAddToCartClick = () => {
+    if (!isAvailable) {
+      return;
+    }
     handleAddToCart({
       _id: item._id,
       uniq_nom: item.uniq_nom || item._id,
@@ -63,6 +65,9 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   };
 
   const handleIncreaseQuantity = () => {
+    if (!isAvailable) {
+      return;
+    }
     handleUpdateQuantity({
       id: item._id,
       quantity: quantity + 1,
@@ -146,15 +151,22 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
               {/* Детали */}
               <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-3xl font-bold text-green-dark">
                     {item.price} ₽
                   </span>
-                  {item.category_slug && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-light text-green-darker border border-green-lighter">
-                      {item.category_slug}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-semibold px-3 py-1 rounded-full border ${isAvailable ? 'bg-green-light text-green-darker border-green-lighter' : 'bg-gray-100 text-gray-500 border-gray-200'}`}
+                    >
+                      {isAvailable ? 'Доступно' : 'Недоступно'}
                     </span>
-                  )}
+                    {item.category_slug && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-light text-green-darker border border-green-lighter">
+                        {item.category_slug}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Характеристики */}
@@ -189,8 +201,9 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                       variant="primary"
                       size="lg"
                       className="flex-1"
+                      disabled={!isAvailable}
                     >
-                      🛒 Добавить в корзину
+                      {isAvailable ? '🛒 Добавить в корзину' : 'Недоступно'}
                     </Button>
                   ) : (
                     <>
@@ -210,12 +223,18 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                         variant="outline"
                         size="lg"
                         className="w-12 h-12 !p-0"
+                        disabled={!isAvailable}
                       >
                         +
                       </Button>
                     </>
                   )}
                 </div>
+              )}
+              {!isAvailable && (
+                <p className="text-sm text-red-500 text-center mt-4">
+                  Товар временно недоступен для заказа
+                </p>
               )}
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useUnit } from 'effector-react';
 import { $currentUser } from '../../models/users';
 import Tabs from '../layout/Tabs/Tabs.tsx';
 import { DeliverySettings } from './DeliverySettings.tsx';
+import { UserBalances } from './UserBalances.tsx';
 
 export const Settings: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
@@ -15,6 +16,12 @@ export const Settings: React.FC = () => {
       id: 'delivery',
       label: 'Доставка',
       icon: '🚚',
+      roles: ['admin'],
+    },
+    {
+      id: 'balances',
+      label: 'Баланс пользователей',
+      icon: '💰',
       roles: ['admin'],
     },
     {
@@ -75,6 +82,8 @@ export const Settings: React.FC = () => {
       {activeTab < visibleTabs.length && (
         <div className="bg-white rounded-2xl shadow-lg p-6">
           {visibleTabs[activeTab].id === 'delivery' && <DeliverySettings />}
+
+          {visibleTabs[activeTab].id === 'balances' && <UserBalances />}
 
           {visibleTabs[activeTab].id === 'notifications' && (
             <div className="text-center py-12">

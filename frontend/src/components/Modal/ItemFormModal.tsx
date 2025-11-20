@@ -66,7 +66,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
     }
   }, [item, isOpen]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -305,15 +305,12 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                     type="checkbox"
                     checked={formData.is_active}
                     onChange={e =>
-                      handleInputChange(
-                        'is_active',
-                        e.target.checked.toString()
-                      )
+                      handleInputChange('is_active', e.target.checked)
                     }
                     className="mr-3 w-5 h-5 text-green-dark rounded focus:ring-green-medium"
                   />
                   <span className="text-sm font-medium text-gray-700">
-                    Товар активен
+                    Товар доступен
                   </span>
                 </label>
               </div>

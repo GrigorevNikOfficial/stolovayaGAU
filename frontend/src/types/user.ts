@@ -26,6 +26,7 @@ export interface User {
   phone: string;
   mail: string; // Используем mail как в бэкенде
   role: 'user' | 'admin' | 'canteenManager' | 'cateenManager' | 'storeManager';
+  balance: number;
   created_at: string;
   updated_at?: string;
   avatar?: {

@@ -1,11 +1,12 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { usersApi } from '../api/users';
 import type {
-    LoginRequest,
-    RegisterRequest,
-    UpdateProfileRequest,
-    User,
+  LoginRequest,
+  RegisterRequest,
+  UpdateProfileRequest,
+  User,
 } from '../types/user';
+import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 
 // Events
 export const login = createEvent<LoginRequest>();
@@ -18,6 +19,8 @@ export const updateUserRole = createEvent<{
   role: 'user' | 'admin';
 }>(); // Админ
 export const uploadAvatar = createEvent<{ id: string; file: File }>();
+export const topUpUserBalance = createEvent<{ id: string; amount: number }>();
+export const updateCurrentUserBalance = createEvent<number>();
 
 // Effects
 export const loginFx = createEffect(async (credentials: LoginRequest) => {
@@ -61,6 +64,13 @@ export const uploadAvatarFx = createEffect(
   }
 );
 
+export const topUpUserBalanceFx = createEffect(
+  async ({ id, amount }: { id: string; amount: number }) => {
+    const response = await usersApi.topUpBalance(id, amount);
+    return response.user;
+  }
+);
+
 // Stores
 export const $currentUser = createStore<User | null>(null)
   .on(loginFx.doneData, (_, { user }) => user)
@@ -68,11 +78,20 @@ export const $currentUser = createStore<User | null>(null)
   .on(getMeFx.doneData, (_, user) => user)
   .on(updateProfileFx.doneData, (_, user) => user)
   .on(uploadAvatarFx.doneData, (_, user) => user)
+  .on(topUpUserBalanceFx.doneData, (state, user) =>
+    state && state._id === user._id ? user : state
+  )
+  .on(updateCurrentUserBalance, (state, balance) =>
+    state ? { ...state, balance } : state
+  )
   .reset(logout);
 
 export const $users = createStore<User[]>([]) // Админ
   .on(loadUsersFx.doneData, (_, users) => users)
   .on(updateUserRoleFx.doneData, (state, updatedUser) =>
+    state.map(user => (user._id === updatedUser._id ? updatedUser : user))
+  )
+  .on(topUpUserBalanceFx.doneData, (state, updatedUser) =>
     state.map(user => (user._id === updatedUser._id ? updatedUser : user))
   );
 
@@ -116,4 +135,24 @@ sample({
 sample({
   clock: uploadAvatar,
   target: uploadAvatarFx,
+});
+
+sample({
+  clock: topUpUserBalance,
+  target: topUpUserBalanceFx,
+});
+
+sample({
+  clock: topUpUserBalanceFx.done,
+  fn: () => ({ message: 'Баланс пополнен', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: topUpUserBalanceFx.fail,
+  fn: () => ({
+    message: 'Не удалось пополнить баланс',
+    type: 'error' as const,
+  }),
+  target: showToast,
 });

@@ -9,7 +9,7 @@ import { httpClient } from './http-client.ts';
 
 export const ordersApi = {
   // Получить все заказы
-    getOrders: async (): Promise<{
+  getOrders: async (): Promise<{
     orders: Order[];
     totalPages?: number;
     currentPage?: number;
@@ -46,38 +46,51 @@ export const ordersApi = {
     message: string;
     order: Order;
     order_number: string;
+    balance: number;
   }> => {
     const response = await httpClient.post<{
       message: string;
       order: Order;
       order_number: string;
+      balance: number;
     }>('/orders', order);
     return response;
   },
 
   // Обновить статус заказа
-  updateOrderStatus: async (order: UpdateOrderRequest): Promise<Order> => {
-    const response = await httpClient.put<Order>(
-      `/orders/${order.id}/status`,
-      { status: order.status }
-    );
+  updateOrderStatus: async (
+    order: UpdateOrderRequest
+  ): Promise<{ order: Order; balance?: number | null }> => {
+    const response = await httpClient.put<{
+      order: Order;
+      balance?: number | null;
+    }>(`/orders/${order.id}/status`, {
+      status: order.status,
+    });
     return response;
   },
 
   // Обновить заказ (для admin и storeManager)
-  updateOrder: async (order: UpdateOrderRequest): Promise<{
+  updateOrder: async (
+    order: UpdateOrderRequest
+  ): Promise<{
     message: string;
     order: Order;
+    balance?: number | null;
   }> => {
     const updateData: any = {};
     if (order.status !== undefined) updateData.status = order.status;
-    if (order.delivery_method !== undefined) updateData.delivery_method = order.delivery_method;
-    if (order.table_number !== undefined) updateData.table_number = order.table_number;
-    if (order.delivery_address !== undefined) updateData.delivery_address = order.delivery_address;
+    if (order.delivery_method !== undefined)
+      updateData.delivery_method = order.delivery_method;
+    if (order.table_number !== undefined)
+      updateData.table_number = order.table_number;
+    if (order.delivery_address !== undefined)
+      updateData.delivery_address = order.delivery_address;
 
     const response = await httpClient.put<{
       message: string;
       order: Order;
+      balance?: number | null;
     }>(`/orders/${order.id}`, updateData);
     return response;
   },

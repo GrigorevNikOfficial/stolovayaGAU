@@ -96,4 +96,19 @@ export const usersApi = {
     }>(`/users/${id}/avatar`, formData);
     return response;
   },
+
+  // Пополнить баланс пользователя (админ)
+  topUpBalance: async (
+    id: string,
+    amount: number
+  ): Promise<{
+    message: string;
+    user: User;
+  }> => {
+    const response = await httpClient.post<{
+      message: string;
+      user: User;
+    }>(`/users/${id}/balance/top-up`, { amount });
+    return response;
+  },
 };

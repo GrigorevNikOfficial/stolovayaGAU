@@ -116,6 +116,21 @@ export const HomePage: React.FC = () => {
 
             {/* Правая часть: кнопки пользователя */}
             <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 shrink-0">
+              {currentUser && (
+                <>
+                  <div className="sm:hidden mr-1 text-xs font-semibold text-green-dark bg-green-light/60 px-2 py-1 rounded-full">
+                    {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
+                  </div>
+                  <div className="hidden sm:flex flex-col items-end text-right mr-1">
+                    <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                      Баланс
+                    </span>
+                    <span className="text-base font-bold text-green-dark">
+                      {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
+                    </span>
+                  </div>
+                </>
+              )}
               {currentUser ? (
                 <Button
                   onClick={handleProfileClick}
