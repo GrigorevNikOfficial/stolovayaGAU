@@ -159,7 +159,6 @@ export const $orderError = createStore<string | null>(null)
     refreshOrders,
   ]);
 
-// Samples (остаются те же)
 sample({
   clock: loadOrders,
   source: $currentUser,
@@ -205,27 +204,63 @@ sample({
 
 sample({
   clock: createOrderFx.done,
-  fn: () => ({ message: 'Успешно!', type: 'success' as const }),
+  fn: () => ({ message: 'Заказ успешно создан', type: 'success' as const }),
   target: showToast,
 });
 
 sample({
   clock: createOrderFx.fail,
-  fn: () => ({ message: 'Ошибка!', type: 'error' as const }),
+  fn: () => ({ message: 'Ошибка при создании заказа', type: 'error' as const }),
   target: showToast,
 });
 
 sample({
   clock: updateOrderStatusFx.done,
-  target: refreshOrders,
+  fn: () => ({ message: 'Статус заказа обновлен', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: updateOrderStatusFx.fail,
+  fn: () => ({
+    message: 'Ошика при удалении статуса заказа',
+    type: 'error' as const,
+  }),
+  target: showToast,
 });
 
 sample({
   clock: updateOrderFx.done,
-  target: refreshOrders,
+  fn: () => ({
+    message: 'Заказ успешно обновлен',
+    type: 'success' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: updateOrderFx.fail,
+  fn: () => ({
+    message: 'Ошибка при обновлении заказа',
+    type: 'error' as const,
+  }),
+  target: showToast,
 });
 
 sample({
   clock: cancelOrderFx.done,
-  target: refreshOrders,
+  fn: () => ({
+    message: 'Заказ успешно удален',
+    type: 'success' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: cancelOrderFx.fail,
+  fn: () => ({
+    message: 'Заказ успешно удален',
+    type: 'success' as const,
+  }),
+  target: showToast,
 });

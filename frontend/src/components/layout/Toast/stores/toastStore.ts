@@ -1,5 +1,5 @@
 // stores/toastStore.ts
-import { createEvent, createStore, sample } from 'effector';
+import { createEvent, createStore } from 'effector';
 
 // События
 export const showToast = createEvent<{
@@ -18,12 +18,21 @@ export const $toast = createStore<{
   type: 'success',
   isVisible: false,
 })
-  .on(showToast, (_, toast) => ({ ...toast, isVisible: true }))
-  .on(hideToast, state => ({ ...state, isVisible: false }));
+  .on(showToast, (_, toast) => {
+    // Автоматически скрываем предыдущий таймер
+    const timer = setTimeout(() => {
+      hideToast();
+    }, 3000);
 
-// Автоскрытие через 3 секунды
-sample({
-  clock: showToast,
-  target: hideToast,
-  delay: 3000,
-});
+    return {
+      ...toast,
+      isVisible: true,
+      _timer: timer, // сохраняем таймер для очистки
+    };
+  })
+  .on(hideToast, state => {
+    if (state._timer) {
+      clearTimeout(state._timer);
+    }
+    return { ...state, isVisible: false };
+  });

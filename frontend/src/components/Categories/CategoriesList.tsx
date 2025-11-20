@@ -41,6 +41,20 @@ export const CategoriesList: React.FC = () => {
     currentUser?.role === 'canteenManager' ||
     currentUser?.role === 'cateenManager';
 
+  // Эффект для управления overflow body при открытии модалок
+  useEffect(() => {
+    if (showCreateModal || showEditModal || showDeleteModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showCreateModal, showEditModal, showDeleteModal]);
+
   useEffect(() => {
     handleLoadCategories();
     const timer = setTimeout(() => setIsLoadingState(false), 500);
@@ -272,7 +286,7 @@ export const CategoriesList: React.FC = () => {
   );
 };
 
-// Обновленный компонент модального окна
+// Обновленный компонент модального окна с прокруткой внутри
 const CategoryModal: React.FC<{
   category?: any;
   onClose: () => void;
@@ -300,8 +314,8 @@ const CategoryModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl my-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
             {category ? 'Редактировать категорию' : 'Создать новую категорию'}
@@ -406,8 +420,8 @@ const DeleteConfirmModal: React.FC<{
   onConfirm: () => void;
 }> = ({ categoryName, onClose, onConfirm }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl my-8">
         <div className="text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl text-red-600">⚠️</span>

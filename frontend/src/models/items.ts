@@ -1,10 +1,6 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { itemsApi } from '../api/items';
-import type {
-  Item,
-  CreateItemPayload,
-  UpdateItemPayload,
-} from '../types/item';
+import type { Item, CreateItemPayload, UpdateItemPayload } from '../types/item';
 // Убираем импорт categoriesApi и Category
 
 // Events (оставляем только для товаров)
@@ -17,6 +13,7 @@ export const loadItemsByCategory = createEvent<string>();
 export const createItem = createEvent<CreateItemPayload>();
 export const updateItem = createEvent<UpdateItemPayload>();
 export const deleteItem = createEvent<string>();
+import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 
 // Effects (только для товаров)
 export const loadItemsFx = createEffect(
@@ -136,18 +133,39 @@ sample({
 // Автоматическая перезагрузка после создания/обновления/удаления
 sample({
   clock: createItemFx.done,
-  fn: () => ({}),
-  target: loadItems,
+  fn: () => ({ message: 'Товар успешно добавлен', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: createItemFx.fail,
+  fn: () => ({ message: 'Ошибка при создании товара', type: 'error' as const }),
+  target: showToast,
 });
 
 sample({
   clock: updateItemFx.done,
-  fn: () => ({}),
-  target: loadItems,
+  fn: () => ({ message: 'Товар успешно обновлен', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: updateItemFx.fail,
+  fn: () => ({
+    message: 'Ошибка при обновлении товара',
+    type: 'error' as const,
+  }),
+  target: showToast,
 });
 
 sample({
   clock: deleteItemFx.done,
-  fn: () => ({}),
-  target: loadItems,
+  fn: () => ({ message: 'Товар успешно обновлен', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: deleteItemFx.fail,
+  fn: () => ({ message: 'Ошибка при удалении товара', type: 'error' as const }),
+  target: showToast,
 });

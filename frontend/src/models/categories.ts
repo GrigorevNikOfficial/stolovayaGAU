@@ -5,6 +5,7 @@ import type {
   CreateCategoryRequest,
   UpdateCategoryRequest,
 } from '../types/category';
+import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 
 // Events
 export const loadCategories = createEvent();
@@ -92,7 +93,13 @@ export const $categoriesError = createStore<string | null>(null)
   .on(createCategoryFx.fail, (_, { error }) => error.message)
   .on(updateCategoryFx.fail, (_, { error }) => error.message)
   .on(deleteCategoryFx.fail, (_, { error }) => error.message)
-  .reset([loadCategories, createCategory, updateCategory, deleteCategory, refreshCategories]);
+  .reset([
+    loadCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    refreshCategories,
+  ]);
 
 // Samples
 sample({
@@ -123,15 +130,54 @@ sample({
 // Автоматическое обновление списка после создания/обновления/удаления
 sample({
   clock: createCategoryFx.done,
-  target: refreshCategories,
+  fn: () => ({
+    message: 'Категория успешно создана',
+    type: 'success' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: createCategoryFx.fail,
+  fn: () => ({
+    message: 'Ошибка при создании категории',
+    type: 'error' as const,
+  }),
+  target: showToast,
 });
 
 sample({
   clock: updateCategoryFx.done,
-  target: refreshCategories,
+  fn: () => ({
+    message: 'Категория успешно обновлена',
+    type: 'success' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: updateCategoryFx.fail,
+  fn: () => ({
+    message: 'Ошибка при удалении категории',
+    type: 'error' as const,
+  }),
+  target: showToast,
 });
 
 sample({
   clock: deleteCategoryFx.done,
-  target: refreshCategories,
+  fn: () => ({
+    message: 'Категория успешно удалена',
+    type: 'success' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: deleteCategoryFx.fail,
+  fn: () => ({
+    message: `Ошибка при удалении категории`,
+    type: 'error' as const,
+  }),
+  target: showToast,
 });
