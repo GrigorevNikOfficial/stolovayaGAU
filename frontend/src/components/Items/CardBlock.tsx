@@ -15,8 +15,13 @@ import {
 import { $isCreating } from '../../models/orders.ts';
 import { $currentUser } from '../../models/users.ts';
 import Button from '../layout/Button/Button.tsx';
+import Select from '../layout/Select/Select.tsx';
 
-export const CartBlock: React.FC = () => {
+interface CartBlockProps {
+  onOrderCreated?: () => void; // Добавляем callback
+}
+
+export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const [deliveryMethod, setDeliveryMethod] = useState<
     'dine_in' | 'pickup' | 'delivery'
   >('pickup');
@@ -40,6 +45,13 @@ export const CartBlock: React.FC = () => {
     createOrderFromCart,
   ]);
 
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+
+  const deliveryAddressOptions = [
+    { value: 'эк', label: 'Экономический корпус' },
+    { value: 'гл', label: 'Главный корпус' },
+  ];
+
   const [settings, handleFetchSettings] = useUnit([
     $deliverySettings,
     fetchDeliverySettings,
@@ -49,20 +61,35 @@ export const CartBlock: React.FC = () => {
     handleFetchSettings();
   }, [handleFetchSettings]);
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
     if (!currentUser) {
       alert('Для оформления заказа необходимо войти в систему');
       window.location.href = '/login';
       return;
     }
 
-    handleCreateOrder({
-      delivery_method: deliveryMethod,
-      ...(deliveryMethod === 'dine_in' && { table_number: 1 }),
-      ...(deliveryMethod === 'delivery' && {
-        delivery_address: 'Адрес доставки',
-      }),
-    });
+    // Валидация для доставки
+    if (deliveryMethod === 'delivery' && !deliveryAddress) {
+      alert('Пожалуйста, выберите адрес доставки');
+      return;
+    }
+
+    try {
+      await handleCreateOrder({
+        delivery_method: deliveryMethod,
+        ...(deliveryMethod === 'dine_in' && { table_number: 1 }),
+        ...(deliveryMethod === 'delivery' && {
+          delivery_address: deliveryAddress,
+        }),
+      });
+
+      // После успешного создания заказа вызываем callback
+      if (onOrderCreated) {
+        onOrderCreated();
+      }
+    } catch (error) {
+      console.error('Ошибка при создании заказа:', error);
+    }
   };
 
   return (
@@ -114,6 +141,20 @@ export const CartBlock: React.FC = () => {
               <p className="text-xs text-yellow-700">
                 Доставка временно недоступна
               </p>
+            </div>
+          )}
+          {settings.deliveryEnabled && deliveryMethod === 'delivery' && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Выберите адрес доставки
+              </label>
+              <Select
+                options={deliveryAddressOptions}
+                value={deliveryAddress}
+                onChange={setDeliveryAddress}
+                placeholder="Выберите корпус"
+                required={deliveryMethod === 'delivery'}
+              />
             </div>
           )}
         </div>
@@ -207,7 +248,8 @@ export const CartBlock: React.FC = () => {
               onClick={handleSubmitOrder}
               disabled={
                 isCreating ||
-                (deliveryMethod === 'delivery' && !settings.deliveryEnabled)
+                (deliveryMethod === 'delivery' && !settings.deliveryEnabled) ||
+                (deliveryMethod === 'delivery' && !deliveryAddress)
               }
               variant="primary"
               size="lg"
@@ -217,7 +259,9 @@ export const CartBlock: React.FC = () => {
                 ? 'Оформление...'
                 : deliveryMethod === 'delivery' && !settings.deliveryEnabled
                   ? 'Доставка недоступна'
-                  : 'Оформить заказ'}
+                  : deliveryMethod === 'delivery' && !deliveryAddress
+                    ? 'Выберите адрес'
+                    : 'Оформить заказ'}
             </Button>
             <Button
               onClick={handleClearCart}

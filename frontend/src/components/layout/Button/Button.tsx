@@ -7,7 +7,7 @@ interface ButtonProps {
   disabled?: boolean;
   className?: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'icon';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   avatarUrl?: string;
   initials?: string;
 }
@@ -30,6 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
     sm: 'h-8 px-4 text-sm',
     md: 'h-11 px-6 text-sm',
     lg: 'h-14 px-8 text-base',
+    xl: 'h-18 px-10 text-xl',
   };
 
   const variantClasses = {

@@ -13,7 +13,7 @@ export interface Order {
     | 'cancelled';
   delivery_method: 'dine_in' | 'pickup' | 'delivery'; // Добавили dine_in
   table_number?: number; // Новое поле для dine_in
-  delivery_address?: string;
+  delivery_address?: 'эк' | 'гл';
   created_at: string;
   updated_at?: string;
   // Новые поля из MongoDB

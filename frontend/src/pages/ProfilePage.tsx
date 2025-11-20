@@ -128,7 +128,7 @@ export const ProfilePage: React.FC = () => {
                 <Button
                   onClick={() => handleNavigation('/')}
                   variant="outline"
-                  size="lg"
+                  size="xl"
                   className="flex-1 xs:flex-none"
                 >
                   На главную

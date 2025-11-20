@@ -7,6 +7,11 @@ interface CartModalProps {
 }
 
 export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
+  const handleOrderCreated = () => {
+    // Закрываем модальное окно после успешного создания заказа
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -45,7 +50,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
 
           {/* Контент корзины */}
           <div className="flex-1 overflow-hidden">
-            <CartBlock />
+            <CartBlock onOrderCreated={handleOrderCreated} />
           </div>
         </div>
       </div>
