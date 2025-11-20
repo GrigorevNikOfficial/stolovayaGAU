@@ -23,6 +23,7 @@ import type { CreateItemRequest, UpdateItemRequest } from '../../types/item.ts';
 import Button from '../layout/Button/Button.tsx';
 import ItemModal from '../Modal/ItemModal.tsx';
 import Input from '../layout/Input/Input.tsx';
+import ItemFormModal from '../Modal/ItemFormModal.tsx';
 
 export const ItemsList: React.FC = () => {
   const [items, itemsError, currentUser, categoriesForSelect, cart] = useUnit([
@@ -426,9 +427,9 @@ export const ItemsList: React.FC = () => {
         }
       />
 
-      {/* Остальные модальные окна (создание, редактирование, удаление) */}
       {showCreateModal && (
-        <ItemModal
+        <ItemFormModal
+          isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSave={(data, imageFile) =>
             onCreateItem(data as CreateItemRequest, imageFile)
@@ -438,8 +439,9 @@ export const ItemsList: React.FC = () => {
       )}
 
       {showEditModal && selectedItem && (
-        <ItemModal
+        <ItemFormModal
           item={selectedItem}
+          isOpen={showEditModal}
           onClose={() => {
             setShowEditModal(false);
             setSelectedItem(null);
@@ -450,7 +452,6 @@ export const ItemsList: React.FC = () => {
           categories={categoriesForSelect}
         />
       )}
-
       {showDeleteModal && selectedItem && (
         <DeleteConfirmModal
           itemName={selectedItem.name}
