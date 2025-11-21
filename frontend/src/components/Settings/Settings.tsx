@@ -1,9 +1,11 @@
 // components/Settings/Settings.tsx
-import React, { useState } from 'react';
 import { useUnit } from 'effector-react';
+import React, { useState } from 'react';
 import { $currentUser } from '../../models/users';
 import Tabs from '../layout/Tabs/Tabs.tsx';
 import { DeliverySettings } from './DeliverySettings.tsx';
+import { EmployeeManagement } from './EmployeeManagement.tsx';
+import { OrderSettings } from './OrderSettings.tsx';
 import { UserBalances } from './UserBalances.tsx';
 
 export const Settings: React.FC = () => {
@@ -14,8 +16,20 @@ export const Settings: React.FC = () => {
   const settingsTabs = [
     {
       id: 'delivery',
-      label: 'Доставка',
-      icon: '🚚',
+      label: 'Заказы',
+      icon: '📦',
+      roles: ['admin'],
+    },
+    {
+      id: 'orders',
+      label: 'Сервисный сбор',
+      icon: '💵',
+      roles: ['admin'],
+    },
+    {
+      id: 'employees',
+      label: 'Сотрудники',
+      icon: '👥',
       roles: ['admin'],
     },
     {
@@ -82,6 +96,10 @@ export const Settings: React.FC = () => {
       {activeTab < visibleTabs.length && (
         <div className="bg-white rounded-2xl shadow-lg p-6">
           {visibleTabs[activeTab].id === 'delivery' && <DeliverySettings />}
+
+          {visibleTabs[activeTab].id === 'orders' && <OrderSettings />}
+
+          {visibleTabs[activeTab].id === 'employees' && <EmployeeManagement />}
 
           {visibleTabs[activeTab].id === 'balances' && <UserBalances />}
 

@@ -1,10 +1,10 @@
 // components/DeliverySettings/DeliverySettings.tsx
-import React, { useEffect, useState } from 'react';
 import { useUnit } from 'effector-react';
+import React, { useEffect, useState } from 'react';
 import {
-  $deliverySettings,
-  fetchDeliverySettings,
-  updateDeliverySettings,
+    $deliverySettings,
+    fetchDeliverySettings,
+    updateDeliverySettings,
 } from '../../models/settings';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
@@ -20,6 +20,12 @@ export const DeliverySettings: React.FC = () => {
   const [timeSettings, setTimeSettings] = useState({
     deliveryTimeStart: '',
     deliveryTimeEnd: '',
+    pickupTimeStart: '',
+    pickupTimeEnd: '',
+    dineInTimeStart: '',
+    dineInTimeEnd: '',
+    serviceFeeType: 'percent' as 'percent' | 'fixed',
+    serviceFeeValue: 0,
   });
 
   // Загружаем настройки из БД при монтировании
@@ -29,10 +35,16 @@ export const DeliverySettings: React.FC = () => {
 
   // Когда настройки загрузились из БД - заполняем поля
   useEffect(() => {
-    if (settings.deliveryTimeStart && settings.deliveryTimeEnd) {
+    if (settings.deliveryTimeStart) {
       setTimeSettings({
-        deliveryTimeStart: settings.deliveryTimeStart,
-        deliveryTimeEnd: settings.deliveryTimeEnd,
+        deliveryTimeStart: settings.deliveryTimeStart || '',
+        deliveryTimeEnd: settings.deliveryTimeEnd || '',
+        pickupTimeStart: settings.pickupTimeStart || '08:00',
+        pickupTimeEnd: settings.pickupTimeEnd || '22:00',
+        dineInTimeStart: settings.dineInTimeStart || '08:00',
+        dineInTimeEnd: settings.dineInTimeEnd || '22:00',
+        serviceFeeType: settings.serviceFeeType || 'percent',
+        serviceFeeValue: settings.serviceFeeValue || 0,
       });
     }
   }, [settings]);
@@ -41,7 +53,10 @@ export const DeliverySettings: React.FC = () => {
   const toggleDelivery = async (deliveryEnabled: boolean) => {
     setIsLoading(true);
     try {
-      await handleUpdateSettings({ deliveryEnabled });
+      await handleUpdateSettings({ 
+        deliveryEnabled,
+        ...timeSettings
+      });
     } catch (error: any) {
       alert('Ошибка: ' + error.message);
     } finally {
@@ -51,14 +66,19 @@ export const DeliverySettings: React.FC = () => {
 
   // Сохранение времени
   const saveTimeSettings = async () => {
-    if (!timeSettings.deliveryTimeStart || !timeSettings.deliveryTimeEnd) {
-      alert('Пожалуйста, заполните время начала и окончания доставки');
+    if (!timeSettings.deliveryTimeStart || !timeSettings.deliveryTimeEnd ||
+        !timeSettings.pickupTimeStart || !timeSettings.pickupTimeEnd ||
+        !timeSettings.dineInTimeStart || !timeSettings.dineInTimeEnd) {
+      alert('Пожалуйста, заполните все поля времени');
       return;
     }
 
     setIsLoading(true);
     try {
-      await handleUpdateSettings(timeSettings);
+      await handleUpdateSettings({
+        ...timeSettings,
+        deliveryEnabled: settings.deliveryEnabled,
+      });
       alert('Настройки времени сохранены!');
     } catch (error: any) {
       alert('Ошибка: ' + error.message);
@@ -72,8 +92,11 @@ export const DeliverySettings: React.FC = () => {
       {/* Статус доставки */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Управление доставкой
+          Управление заказами
         </h2>
+        <p className="text-gray-600 mb-6">
+          Настройка времени работы для разных способов получения заказов
+        </p>
 
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -124,41 +147,117 @@ export const DeliverySettings: React.FC = () => {
       {/* Время работы доставки */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Время работы доставки
+          ⏰ Время работы
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Начало доставки
-            </label>
-            <Input
-              type="time"
-              value={timeSettings.deliveryTimeStart}
-              onChange={value =>
-                setTimeSettings(prev => ({
-                  ...prev,
-                  deliveryTimeStart: value,
-                }))
-              }
-              placeholder="09:00"
-            />
+        
+        {/* Доставка */}
+        <div className="mb-6 p-4 bg-blue-50 rounded-xl">
+          <h4 className="font-semibold text-gray-900 mb-3">🚚 Доставка</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Начало
+              </label>
+              <Input
+                type="time"
+                value={timeSettings.deliveryTimeStart}
+                onChange={value =>
+                  setTimeSettings(prev => ({
+                    ...prev,
+                    deliveryTimeStart: value,
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Конец
+              </label>
+              <Input
+                type="time"
+                value={timeSettings.deliveryTimeEnd}
+                onChange={value =>
+                  setTimeSettings(prev => ({
+                    ...prev,
+                    deliveryTimeEnd: value,
+                  }))
+                }
+              />
+            </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Конец доставки
-            </label>
-            <Input
-              type="time"
-              value={timeSettings.deliveryTimeEnd}
-              onChange={value =>
-                setTimeSettings(prev => ({
-                  ...prev,
-                  deliveryTimeEnd: value,
-                }))
-              }
-              placeholder="18:00"
-            />
+        {/* Самовывоз */}
+        <div className="mb-6 p-4 bg-green-50 rounded-xl">
+          <h4 className="font-semibold text-gray-900 mb-3">📦 Самовывоз</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Начало
+              </label>
+              <Input
+                type="time"
+                value={timeSettings.pickupTimeStart}
+                onChange={value =>
+                  setTimeSettings(prev => ({
+                    ...prev,
+                    pickupTimeStart: value,
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Конец
+              </label>
+              <Input
+                type="time"
+                value={timeSettings.pickupTimeEnd}
+                onChange={value =>
+                  setTimeSettings(prev => ({
+                    ...prev,
+                    pickupTimeEnd: value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* В зале */}
+        <div className="mb-6 p-4 bg-purple-50 rounded-xl">
+          <h4 className="font-semibold text-gray-900 mb-3">🍽️ В зале</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Начало
+              </label>
+              <Input
+                type="time"
+                value={timeSettings.dineInTimeStart}
+                onChange={value =>
+                  setTimeSettings(prev => ({
+                    ...prev,
+                    dineInTimeStart: value,
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Конец
+              </label>
+              <Input
+                type="time"
+                value={timeSettings.dineInTimeEnd}
+                onChange={value =>
+                  setTimeSettings(prev => ({
+                    ...prev,
+                    dineInTimeEnd: value,
+                  }))
+                }
+              />
+            </div>
           </div>
         </div>
 
@@ -167,9 +266,9 @@ export const DeliverySettings: React.FC = () => {
           disabled={isLoading}
           variant="primary"
           size="md"
-          className="w-full md:w-auto"
+          className="w-full"
         >
-          {isLoading ? 'Сохранение...' : '💾 Сохранить время доставки'}
+          {isLoading ? 'Сохранение...' : '💾 Сохранить все настройки времени'}
         </Button>
       </div>
 

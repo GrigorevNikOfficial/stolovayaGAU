@@ -1,14 +1,14 @@
 import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import {
-  $displayedOrders,
-  $isUpdating,
-  $ordersIsLoading,
-  cancelOrder,
-  loadOrders,
-  refreshOrders,
-  updateOrder,
-  updateOrderStatus,
+    $displayedOrders,
+    $isUpdating,
+    $ordersIsLoading,
+    cancelOrder,
+    loadOrders,
+    refreshOrders,
+    updateOrder,
+    updateOrderStatus,
 } from '../../models/orders.ts';
 import { $currentUser } from '../../models/users.ts';
 import type { UpdateOrderRequest } from '../../types/order.ts';
@@ -17,6 +17,8 @@ import Input from '../layout/Input/Input.tsx';
 import StatusBadge from '../Settings/StatusBadge.tsx';
 
 export const OrdersList: React.FC = () => {
+  console.log('OrdersList: компонент рендерится');
+
   const [
     orders,
     isLoading,
@@ -50,11 +52,19 @@ export const OrdersList: React.FC = () => {
     if (currentUser) {
       console.log(
         'OrdersList: загружаем заказы для пользователя',
-        currentUser.role
+        currentUser.role,
+        currentUser
       );
       handleLoadOrders();
     }
   }, [currentUser, handleLoadOrders]);
+
+  // Логируем состояние заказов
+  useEffect(() => {
+    console.log('OrdersList: orders =', orders);
+    console.log('OrdersList: orders.length =', orders.length);
+    console.log('OrdersList: isLoading =', isLoading);
+  }, [orders, isLoading]);
 
   // Инициализируем selectedStatuses текущими статусами заказов
   useEffect(() => {
@@ -221,6 +231,12 @@ export const OrdersList: React.FC = () => {
 
       {orders.map((order: any) => {
         const availableActions = getAvailableActions(order);
+        const serviceFeeLabel =
+          order.service_fee_type === 'percent'
+            ? ` (${order.service_fee_value ?? 0}%)`
+            : order.service_fee_type === 'fixed'
+              ? ` (${order.service_fee_value ?? order.service_fee} ₽)`
+              : '';
 
         return (
           <div
@@ -313,9 +329,21 @@ export const OrdersList: React.FC = () => {
 
             <div className="border-t border-gray-200 pt-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <p className="text-xl font-bold text-green-dark">
-                  Итого: {order.total_amount} ₽
-                </p>
+                <div className="space-y-1">
+                  {typeof order.items_total === 'number' && (
+                    <p className="text-sm text-gray-600">
+                      Сумма товаров: {order.items_total} ₽
+                    </p>
+                  )}
+                  {order.service_fee && order.service_fee > 0 && (
+                    <p className="text-sm text-gray-600">
+                      Сервисный сбор{serviceFeeLabel}: {order.service_fee} ₽
+                    </p>
+                  )}
+                  <p className="text-xl font-bold text-green-dark">
+                    Итого: {order.total_amount} ₽
+                  </p>
+                </div>
                 <div className="flex flex-wrap gap-2 items-center">
                   {availableActions.length > 0 && (
                     <div className="flex flex-wrap gap-2">

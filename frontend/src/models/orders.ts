@@ -1,19 +1,19 @@
 import {
-  combine,
-  createEffect,
-  createEvent,
-  createStore,
-  sample,
+    combine,
+    createEffect,
+    createEvent,
+    createStore,
+    sample,
 } from 'effector';
 import { ordersApi } from '../api/orders';
+import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 import type {
-  CreateOrderRequest,
-  Order,
-  UpdateOrderRequest,
+    CreateOrderRequest,
+    Order,
+    UpdateOrderRequest,
 } from '../types/order';
 import type { User } from '../types/user';
 import { $currentUser, updateCurrentUserBalance } from './users';
-import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 
 type LoadOrdersParams = {
   role: 'admin' | 'user' | 'storeManager' | 'canteenManager' | 'cateenManager';
@@ -36,6 +36,7 @@ export const refreshOrders = createEvent();
 // Effects с обновленными типами
 export const loadOrdersFx = createEffect(
   async ({ role }: LoadOrdersParams): Promise<Order[]> => {
+    console.log('loadOrdersFx: загрузка заказов для роли', role);
     // admin, storeManager и canteenManager видят все заказы (через getAllOrders)
     if (
       role === 'admin' ||
@@ -44,10 +45,12 @@ export const loadOrdersFx = createEffect(
       role === 'cateenManager'
     ) {
       const response = await ordersApi.getOrders();
+      console.log('loadOrdersFx: получено заказов:', response.orders.length, response);
       return response.orders;
     }
 
     const response = await ordersApi.getMyOrders();
+    console.log('loadOrdersFx: получено моих заказов:', response.orders.length, response);
     return response.orders;
   }
 );
@@ -112,6 +115,7 @@ export const $displayedOrders = combine(
   $orders,
   $currentUser,
   (orders, currentUser) => {
+    console.log('$displayedOrders: orders =', orders.length, 'currentUser =', currentUser?.role);
     if (!currentUser) return [];
 
     // admin, storeManager и canteenManager видят все заказы (фильтрация по статусу уже на бэкенде)
@@ -121,9 +125,12 @@ export const $displayedOrders = combine(
       currentUser.role === 'canteenManager' ||
       currentUser.role === 'cateenManager'
     ) {
+      console.log('$displayedOrders: возвращаем все заказы для', currentUser.role, ':', orders.length);
       return orders;
     } else {
-      return orders.filter(order => order.user_id === currentUser._id); // _id вместо id
+      const filtered = orders.filter(order => order.user_id === currentUser._id);
+      console.log('$displayedOrders: возвращаем отфильтрованные заказы:', filtered.length);
+      return filtered; // _id вместо id
     }
   }
 );

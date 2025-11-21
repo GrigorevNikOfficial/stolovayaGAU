@@ -1,5 +1,6 @@
-import { Order } from "../models/Order.js";
 import { Item } from "../models/Item.js";
+import { Order } from "../models/Order.js";
+import { Settings } from "../models/Settings.js";
 import { User } from "../models/User.js";
 
 const normalizeId = (value) => {
@@ -45,6 +46,10 @@ const mapOrderToResponse = (order) => {
       price_at_time: item.price_at_time,
       price: item.price_at_time,
     })),
+    items_total: plain.items_total,
+    service_fee: plain.service_fee,
+    service_fee_type: plain.service_fee_type,
+    service_fee_value: plain.service_fee_value,
     total_amount: plain.total_amount,
     status: normalizedStatus,
     status_history: (plain.status_history || []).map((entry) => ({
@@ -95,6 +100,40 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ error: "Корзина пуста" });
     }
 
+    // Получаем настройки
+    let settings = await Settings.findOne({ name: 'main' });
+    if (!settings) {
+      settings = await Settings.create({ name: 'main' });
+    }
+
+    // Текущее время
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    // Проверка времени в зависимости от способа получения
+    if (delivery_method === "delivery") {
+      if (!settings.deliveryEnabled) {
+        return res.status(400).json({ error: "Доставка временно недоступна" });
+      }
+      if (currentTime < settings.deliveryTimeStart || currentTime > settings.deliveryTimeEnd) {
+        return res.status(400).json({ 
+          error: `Доставка доступна только с ${settings.deliveryTimeStart} до ${settings.deliveryTimeEnd}` 
+        });
+      }
+    } else if (delivery_method === "pickup") {
+      if (currentTime < settings.pickupTimeStart || currentTime > settings.pickupTimeEnd) {
+        return res.status(400).json({ 
+          error: `Самовывоз доступен только с ${settings.pickupTimeStart} до ${settings.pickupTimeEnd}` 
+        });
+      }
+    } else if (delivery_method === "dine_in") {
+      if (currentTime < settings.dineInTimeStart || currentTime > settings.dineInTimeEnd) {
+        return res.status(400).json({ 
+          error: `Зал работает только с ${settings.dineInTimeStart} до ${settings.dineInTimeEnd}` 
+        });
+      }
+    }
+
     let totalAmount = 0;
     const orderItems = [];
 
@@ -131,6 +170,24 @@ export const createOrder = async (req, res) => {
       totalAmount += product.price * item.quantity;
     }
 
+    // Применяем сервисный сбор
+    let serviceFee = 0;
+    let serviceFeeType = 'none';
+    let serviceFeeValue = 0;
+    const configuredFeeValue = Number(settings.serviceFeeValue) || 0;
+    if (configuredFeeValue > 0) {
+      serviceFeeType = settings.serviceFeeType === 'fixed' ? 'fixed' : 'percent';
+      serviceFeeValue = configuredFeeValue;
+      if (serviceFeeType === 'percent') {
+        serviceFee = (totalAmount * configuredFeeValue) / 100;
+      } else {
+        serviceFee = configuredFeeValue;
+      }
+      serviceFee = Math.round(serviceFee * 100) / 100;
+    }
+
+    const finalAmount = totalAmount + serviceFee;
+
     // Генерируем номер заказа
     const orderNumber = await Order.generateOrderNumber();
 
@@ -141,8 +198,8 @@ export const createOrder = async (req, res) => {
     );
 
     const updatedUser = await User.findOneAndUpdate(
-      { _id: userId, balance: { $gte: totalAmount } },
-      { $inc: { balance: -totalAmount } },
+      { _id: userId, balance: { $gte: finalAmount } },
+      { $inc: { balance: -finalAmount } },
       { new: true }
     ).select("-password");
 
@@ -160,7 +217,11 @@ export const createOrder = async (req, res) => {
         email: updatedUser.email,
       },
       items: orderItems,
-      total_amount: totalAmount,
+      items_total: totalAmount,
+      service_fee: serviceFee,
+      service_fee_type: serviceFeeType,
+      service_fee_value: serviceFeeValue,
+      total_amount: finalAmount,
       status: "created",
       delivery_method: delivery_method,
       table_number: delivery_method === "dine_in" ? table_number : null,

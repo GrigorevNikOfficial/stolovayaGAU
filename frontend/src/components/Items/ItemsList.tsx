@@ -1,31 +1,33 @@
-import React, { useState, useEffect } from 'react';
 import { useUnit } from 'effector-react';
+import React, { useEffect, useState } from 'react';
 import {
-  $items,
-  $itemsError,
-  loadItems,
-  createItem,
-  updateItem,
-  deleteItem,
-} from '../../models/items.ts';
-import {
-  addToCart,
-  $cart,
-  updateCartItemQuantity,
-  removeFromCart,
+    $cart,
+    addToCart,
+    removeFromCart,
+    updateCartItemQuantity,
 } from '../../models/cart.ts';
-import { $currentUser } from '../../models/users.ts';
 import {
-  loadCategories,
-  $categoriesForSelect,
+    $categoriesForSelect,
+    loadCategories,
 } from '../../models/categories.ts';
+import {
+    $items,
+    $itemsError,
+    createItem,
+    deleteItem,
+    loadItems,
+    updateItem,
+} from '../../models/items.ts';
+import { $currentUser } from '../../models/users.ts';
 import type { CreateItemRequest, UpdateItemRequest } from '../../types/item.ts';
 import Button from '../layout/Button/Button.tsx';
-import ItemModal from '../Modal/ItemModal.tsx';
 import Input from '../layout/Input/Input.tsx';
 import ItemFormModal from '../Modal/ItemFormModal.tsx';
+import ItemModal from '../Modal/ItemModal.tsx';
 
 export const ItemsList: React.FC = () => {
+  console.log('ItemsList: компонент рендерится');
+
   const [items, itemsError, currentUser, categoriesForSelect, cart] = useUnit([
     $items,
     $itemsError,
@@ -61,12 +63,20 @@ export const ItemsList: React.FC = () => {
 
   useEffect(() => {
     console.log('ItemsList: начата загрузка товаров');
+    console.log('ItemsList: currentUser =', currentUser);
     setIsLoading(true);
     handleLoadItems({});
     handleLoadCategories();
     const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, [handleLoadItems, handleLoadCategories]);
+
+  // Логируем загруженные товары
+  useEffect(() => {
+    console.log('ItemsList: items =', items);
+    console.log('ItemsList: items.length =', items?.length);
+    console.log('ItemsList: itemsError =', itemsError);
+  }, [items, itemsError]);
 
   // Закрытие меню при клике вне его
   useEffect(() => {
@@ -83,14 +93,16 @@ export const ItemsList: React.FC = () => {
   const filteredItems = Array.isArray(items)
     ? items.filter(item => {
         const matchesSearch =
-          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (item.description &&
-            item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+            item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesCategory =
           !selectedCategory || item.category_slug === selectedCategory;
         return matchesSearch && matchesCategory;
       })
     : [];
+
+  console.log('ItemsList: filteredItems.length =', filteredItems.length);
 
   // Получение количества товара в корзине
   const getItemQuantity = (itemId: string) => {

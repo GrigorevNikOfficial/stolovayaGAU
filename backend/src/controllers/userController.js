@@ -1,11 +1,11 @@
 import { S3_FOLDERS } from "../config/storage.js";
 import { User } from "../models/User.js";
 import {
-  buildPublicUrl,
-  DEFAULT_PROFILE_PICTURE_KEY,
-  deleteObject,
-  StorageServiceError,
-  uploadImage,
+    buildPublicUrl,
+    DEFAULT_PROFILE_PICTURE_KEY,
+    deleteObject,
+    StorageServiceError,
+    uploadImage,
 } from "../services/storageService.js";
 import { generateToken } from "./auth.js";
 
@@ -354,3 +354,89 @@ export const updateUserAvatar = async (req, res) => {
     res.status(500).json({ error: "Ошибка при обновлении аватара" });
   }
 };
+
+// Создать сотрудника (только для админа)
+export const createEmployee = async (req, res) => {
+  try {
+    const { first_name, last_name, phone, mail, password, role } = req.body;
+
+    // Проверка обязательных полей
+    if (!first_name || !last_name || !phone || !mail || !password || !role) {
+      return res
+        .status(400)
+        .json({ error: "Все поля обязательны для заполнения" });
+    }
+
+    // Проверка допустимых ролей
+    const allowedRoles = ["user", "admin", "canteenManager", "cateenManager", "storeManager"];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ error: "Недопустимая роль" });
+    }
+
+    // Форматируем телефон
+    const formattedPhone = formatPhone(phone);
+
+    // Проверка на существующего пользователя
+    const existingUser = await User.findOne({
+      $or: [{ phone: formattedPhone }, { email: mail }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: "Пользователь с таким телефоном или почтой уже существует",
+      });
+    }
+
+    // Создаем пользователя с выбранной ролью
+    const user = new User({
+      first_name,
+      last_name,
+      phone: formattedPhone,
+      email: mail,
+      password,
+      role: role,
+      balance: 0,
+    });
+
+    await user.save();
+
+    res.status(201).json({
+      message: "Сотрудник успешно создан",
+      user: mapUserToResponse(user),
+    });
+  } catch (error) {
+    console.error("Create employee error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        error: "Пользователь с такими данными уже существует",
+      });
+    }
+
+    res.status(500).json({ error: "Ошибка при создании сотрудника" });
+  }
+};
+
+// Удалить пользователя (только для админа)
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Нельзя удалить самого себя
+    if (id === req.user._id.toString()) {
+      return res.status(400).json({ error: "Нельзя удалить свой аккаунт" });
+    }
+
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({ message: "Пользователь успешно удален" });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res.status(500).json({ error: "Ошибка при удалении пользователя" });
+  }
+};
+

@@ -1,15 +1,17 @@
 import express from "express";
-import {
-  register,
-  login,
-  getMe,
-  updateProfile,
-  getAllUsers,
-  updateUserRole,
-  updateUserAvatar,
-  topUpUserBalance,
-} from "../controllers/userController.js";
 import { authenticateToken, requireAdmin } from "../controllers/auth.js";
+import {
+    createEmployee,
+    deleteUser,
+    getAllUsers,
+    getMe,
+    login,
+    register,
+    topUpUserBalance,
+    updateProfile,
+    updateUserAvatar,
+    updateUserRole,
+} from "../controllers/userController.js";
 import { singleImageUpload } from "../middleware/upload.js";
 
 const router = express.Router();
@@ -30,7 +32,9 @@ router.patch(
 
 // Админ роуты
 router.get("/", authenticateToken, requireAdmin, getAllUsers);
+router.post("/employees", authenticateToken, requireAdmin, createEmployee);
 router.put("/:id/role", authenticateToken, requireAdmin, updateUserRole);
+router.delete("/:id", authenticateToken, requireAdmin, deleteUser);
 router.post(
   "/:id/balance/top-up",
   authenticateToken,

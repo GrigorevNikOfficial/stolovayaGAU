@@ -12,7 +12,13 @@ const getDeliverySettings = async (req, res) => {
         res.json({
             deliveryEnabled: settings.deliveryEnabled,
             deliveryTimeStart: settings.deliveryTimeStart,
-            deliveryTimeEnd: settings.deliveryTimeEnd
+            deliveryTimeEnd: settings.deliveryTimeEnd,
+            pickupTimeStart: settings.pickupTimeStart,
+            pickupTimeEnd: settings.pickupTimeEnd,
+            dineInTimeStart: settings.dineInTimeStart,
+            dineInTimeEnd: settings.dineInTimeEnd,
+            serviceFeeType: settings.serviceFeeType,
+            serviceFeeValue: settings.serviceFeeValue
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -21,7 +27,17 @@ const getDeliverySettings = async (req, res) => {
 
 const updateDeliverySettings = async (req, res) => {
     try {
-        const { deliveryEnabled, deliveryTimeStart, deliveryTimeEnd } = req.body;
+        const { 
+            deliveryEnabled, 
+            deliveryTimeStart, 
+            deliveryTimeEnd, 
+            pickupTimeStart,
+            pickupTimeEnd,
+            dineInTimeStart,
+            dineInTimeEnd,
+            serviceFeeType, 
+            serviceFeeValue 
+        } = req.body;
 
         const settings = await Settings.findOneAndUpdate(
             { name: 'main' },
@@ -29,6 +45,12 @@ const updateDeliverySettings = async (req, res) => {
                 deliveryEnabled,
                 deliveryTimeStart,
                 deliveryTimeEnd,
+                pickupTimeStart,
+                pickupTimeEnd,
+                dineInTimeStart,
+                dineInTimeEnd,
+                serviceFeeType,
+                serviceFeeValue,
                 updatedBy: req.user._id
             },
             { new: true, upsert: true }
@@ -37,7 +59,13 @@ const updateDeliverySettings = async (req, res) => {
         res.json({
             deliveryEnabled: settings.deliveryEnabled,
             deliveryTimeStart: settings.deliveryTimeStart,
-            deliveryTimeEnd: settings.deliveryTimeEnd
+            deliveryTimeEnd: settings.deliveryTimeEnd,
+            pickupTimeStart: settings.pickupTimeStart,
+            pickupTimeEnd: settings.pickupTimeEnd,
+            dineInTimeStart: settings.dineInTimeStart,
+            dineInTimeEnd: settings.dineInTimeEnd,
+            serviceFeeType: settings.serviceFeeType,
+            serviceFeeValue: settings.serviceFeeValue
         });
     } catch (error) {
         res.status(400).json({ error: error.message });

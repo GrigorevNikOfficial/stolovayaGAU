@@ -1,21 +1,24 @@
+import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import {
-  $deliverySettings,
-  fetchDeliverySettings,
-} from '../../models/settings.ts';
-import { useUnit } from 'effector-react';
-import {
-  $cart,
-  $cartTotal,
-  removeFromCart,
-  updateCartItemQuantity,
-  clearCart,
-  createOrderFromCart,
+    $cart,
+    $cartTotal,
+    clearCart,
+    createOrderFromCart,
+    removeFromCart,
+    updateCartItemQuantity,
 } from '../../models/cart.ts';
 import { $isCreating } from '../../models/orders.ts';
+import {
+    $deliverySettings,
+    fetchDeliverySettings,
+} from '../../models/settings.ts';
 import { $currentUser } from '../../models/users.ts';
 import Button from '../layout/Button/Button.tsx';
 import Select from '../layout/Select/Select.tsx';
+
+const formatCurrency = (value: number) =>
+  Number.isInteger(value) ? value.toString() : value.toFixed(2);
 
 interface CartBlockProps {
   onOrderCreated?: () => void; // Добавляем callback
@@ -45,24 +48,79 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     createOrderFromCart,
   ]);
 
+  const [settings, handleFetchSettings] = useUnit([
+    $deliverySettings,
+    fetchDeliverySettings,
+  ]);
+
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const currentBalance = currentUser?.balance ?? 0;
-  const hasEnoughBalance = currentUser ? currentBalance >= cartTotal : true;
-  const remainingBalance = currentBalance - cartTotal;
 
   const deliveryAddressOptions = [
     { value: 'эк', label: 'Экономический корпус' },
     { value: 'гл', label: 'Главный корпус' },
   ];
 
-  const [settings, handleFetchSettings] = useUnit([
-    $deliverySettings,
-    fetchDeliverySettings,
-  ]);
+  const serviceFeeValue = Number(settings.serviceFeeValue) || 0;
+  const serviceFeeType = settings.serviceFeeType || 'percent';
+  const shouldApplyServiceFee = cart.length > 0 && serviceFeeValue > 0;
+  const rawServiceFeeAmount = shouldApplyServiceFee
+    ? serviceFeeType === 'percent'
+      ? (cartTotal * serviceFeeValue) / 100
+      : serviceFeeValue
+    : 0;
+  const serviceFeeAmount = Math.round(rawServiceFeeAmount * 100) / 100;
+  const cartTotalWithServiceFee =
+    Math.round((cartTotal + serviceFeeAmount) * 100) / 100;
+  const hasEnoughBalance = currentUser
+    ? currentBalance >= cartTotalWithServiceFee
+    : true;
+  const remainingBalance = Math.round(
+    (currentBalance - cartTotalWithServiceFee) * 100
+  ) / 100;
+  const serviceFeeLabel =
+    serviceFeeType === 'percent'
+      ? `${serviceFeeValue}%`
+      : `${formatCurrency(serviceFeeValue)} ₽`;
 
   useEffect(() => {
     handleFetchSettings();
   }, [handleFetchSettings]);
+
+  // Проверка доступности методов получения по времени
+  const checkTimeAvailability = (method: 'delivery' | 'pickup' | 'dine_in'): { available: boolean; message: string } => {
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    if (method === 'delivery') {
+      if (!settings.deliveryEnabled) {
+        return { available: false, message: 'Доставка временно недоступна' };
+      }
+      const start = settings.deliveryTimeStart || '00:00';
+      const end = settings.deliveryTimeEnd || '23:59';
+      if (currentTime < start || currentTime > end) {
+        return { available: false, message: `Доставка с ${start} до ${end}` };
+      }
+    } else if (method === 'pickup') {
+      const start = settings.pickupTimeStart || '00:00';
+      const end = settings.pickupTimeEnd || '23:59';
+      if (currentTime < start || currentTime > end) {
+        return { available: false, message: `Самовывоз с ${start} до ${end}` };
+      }
+    } else if (method === 'dine_in') {
+      const start = settings.dineInTimeStart || '00:00';
+      const end = settings.dineInTimeEnd || '23:59';
+      if (currentTime < start || currentTime > end) {
+        return { available: false, message: `Зал работает с ${start} до ${end}` };
+      }
+    }
+
+    return { available: true, message: '' };
+  };
+
+  const deliveryAvailability = checkTimeAvailability('delivery');
+  const pickupAvailability = checkTimeAvailability('pickup');
+  const dineInAvailability = checkTimeAvailability('dine_in');
 
   const handleSubmitOrder = async () => {
     if (!currentUser) {
@@ -77,7 +135,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
       return;
     }
 
-    if (currentUser && currentBalance < cartTotal) {
+    if (currentUser && currentBalance < cartTotalWithServiceFee) {
       alert('Недостаточно средств на балансе. Обратитесь к администратору.');
       return;
     }
@@ -111,44 +169,59 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
           <div className="flex gap-2">
             <button
               onClick={() => setDeliveryMethod('pickup')}
+              disabled={!pickupAvailability.available}
               className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
                 deliveryMethod === 'pickup'
                   ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-              }`}
-            >
-              Самовывоз
-            </button>
-            <button
-              onClick={() => setDeliveryMethod('dine_in')}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
-                deliveryMethod === 'dine_in'
-                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-              }`}
-            >
-              В зале
-            </button>
-            <button
-              onClick={() => setDeliveryMethod('delivery')}
-              disabled={!settings.deliveryEnabled}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
-                deliveryMethod === 'delivery'
-                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                  : settings.deliveryEnabled
+                  : pickupAvailability.available
                     ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {settings.deliveryEnabled ? 'Доставка' : '✕'}
+              {pickupAvailability.available ? 'Самовывоз' : '✕'}
+            </button>
+            <button
+              onClick={() => setDeliveryMethod('dine_in')}
+              disabled={!dineInAvailability.available}
+              className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
+                deliveryMethod === 'dine_in'
+                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
+                  : dineInAvailability.available
+                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {dineInAvailability.available ? 'В зале' : '✕'}
+            </button>
+            <button
+              onClick={() => setDeliveryMethod('delivery')}
+              disabled={!deliveryAvailability.available}
+              className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
+                deliveryMethod === 'delivery'
+                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
+                  : deliveryAvailability.available
+                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {deliveryAvailability.available ? 'Доставка' : '✕'}
             </button>
           </div>
 
-          {!settings.deliveryEnabled && (
+          {/* Сообщения о времени работы */}
+          {!pickupAvailability.available && deliveryMethod === 'pickup' && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">
-                Доставка временно недоступна
-              </p>
+              <p className="text-xs text-yellow-700">⏰ {pickupAvailability.message}</p>
+            </div>
+          )}
+          {!dineInAvailability.available && deliveryMethod === 'dine_in' && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs text-yellow-700">⏰ {dineInAvailability.message}</p>
+            </div>
+          )}
+          {!deliveryAvailability.available && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs text-yellow-700">⏰ {deliveryAvailability.message}</p>
             </div>
           )}
           {settings.deliveryEnabled && deliveryMethod === 'delivery' && (
@@ -175,7 +248,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
             <div className="flex items-center justify-between text-sm font-semibold text-gray-700">
               <span>Баланс</span>
               <span className="text-lg text-green-dark">
-                {currentBalance} ₽
+                {formatCurrency(currentBalance)} ₽
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
@@ -187,7 +260,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     : 'text-red-500 font-semibold'
                 }
               >
-                {remainingBalance >= 0 ? remainingBalance : 0} ₽
+                {formatCurrency(Math.max(remainingBalance, 0))} ₽
               </span>
             </div>
           </div>
@@ -267,11 +340,25 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
       {/* Футер корзины */}
       {cart.length > 0 && (
         <div className="border-t border-gray-100 p-6 bg-gray-50">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-lg font-semibold text-gray-900">Итого:</span>
-            <span className="text-2xl font-bold text-green-dark">
-              {cartTotal} ₽
-            </span>
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Сумма товаров</span>
+              <span>{formatCurrency(cartTotal)} ₽</span>
+            </div>
+            {serviceFeeAmount > 0 && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Сервисный сбор ({serviceFeeLabel})</span>
+                <span>{formatCurrency(serviceFeeAmount)} ₽</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-semibold text-gray-900">
+                Итого:
+              </span>
+              <span className="text-2xl font-bold text-green-dark">
+                {formatCurrency(cartTotalWithServiceFee)} ₽
+              </span>
+            </div>
           </div>
 
           {!hasEnoughBalance && currentUser && (

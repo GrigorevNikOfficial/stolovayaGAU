@@ -2,7 +2,11 @@ export interface Order {
   _id: string; // Из number в string (ObjectId)
   user_id: string; // Из number в string
   order_number: string;
-  total_amount: number;
+  items_total?: number; // Сумма без сервисного сбора
+  service_fee?: number; // Размер сервисного сбора
+  service_fee_type?: 'percent' | 'fixed' | 'none'; // Тип сбора
+  service_fee_value?: number; // Значение настройки, % или ₽
+  total_amount: number; // Итоговая сумма с учетом сбора
   status:
     | 'created'
     | 'cooking'

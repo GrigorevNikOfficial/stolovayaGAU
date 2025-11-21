@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
 import { useUnit } from 'effector-react';
-import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
-import { ItemsList } from '../components/Items/ItemsList.tsx';
-import { $currentUser } from '../models/users';
-import { OrdersList } from '../components/Orders/OrdersList.tsx';
-import { Settings } from '../components/Settings/Settings.tsx';
+import React, { useEffect, useState } from 'react';
 import { CategoriesList } from '../components/Categories/CategoriesList.tsx';
+import { ItemsList } from '../components/Items/ItemsList.tsx';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
+import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
 import CartModal from '../components/Modal/CardModal.tsx';
-import { $cart } from '../models/cart';
+import { OrdersList } from '../components/Orders/OrdersList.tsx';
+import { Settings } from '../components/Settings/Settings.tsx';
 import LogoSAU from '../images/LogoSAU.svg';
+import { $cart } from '../models/cart';
+import { $currentUser } from '../models/users';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -52,19 +52,19 @@ export const HomePage: React.FC = () => {
         id: 'menu',
         label: 'Меню',
         icon: '🛍️',
-        roles: ['admin', 'canteenManager', 'user', 'guest'],
+        roles: ['admin', 'canteenManager', 'cateenManager', 'user', 'guest'],
       },
       {
         id: 'categories',
         label: 'Категории',
         icon: '📂',
-        roles: ['admin', 'canteenManager'],
+        roles: ['admin', 'canteenManager', 'cateenManager'],
       },
       {
         id: 'orders',
         label: 'Заказы',
         icon: '📦',
-        roles: ['admin', 'canteenManager', 'storeManager', 'user'],
+        roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
       },
       { id: 'settings', label: 'Настройки', icon: '⚙️', roles: ['admin'] },
     ];

@@ -2,10 +2,11 @@
 import React from 'react';
 
 interface InputProps {
-  type?: 'text' | 'number' | 'email' | 'password';
+  type?: 'text' | 'number' | 'email' | 'password' | 'tel';
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
   className?: string;
   disabled?: boolean;
   icon?: string;
@@ -16,6 +17,7 @@ export const Input: React.FC<InputProps> = ({
   placeholder = '',
   value,
   onChange,
+  onFocus,
   className = '',
   disabled = false,
   icon,
@@ -27,6 +29,7 @@ export const Input: React.FC<InputProps> = ({
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
+        onFocus={onFocus}
         disabled={disabled}
         className={`
           w-full px-6 py-4 border border-gray-200 rounded-2xl 

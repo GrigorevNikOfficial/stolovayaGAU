@@ -20,6 +20,12 @@ export const $deliverySettings = createStore<DeliverySettings>({
   deliveryEnabled: false,
   deliveryTimeStart: '',
   deliveryTimeEnd: '',
+  pickupTimeStart: '',
+  pickupTimeEnd: '',
+  dineInTimeStart: '',
+  dineInTimeEnd: '',
+  serviceFeeType: 'percent',
+  serviceFeeValue: 0,
 });
 
 // Обработчики

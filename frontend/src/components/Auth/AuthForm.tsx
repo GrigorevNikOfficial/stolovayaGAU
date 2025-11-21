@@ -2,11 +2,11 @@
 import { useUnit } from 'effector-react';
 import React, { useState } from 'react';
 import {
-  $authError,
-  $currentUser,
-  $isLoading,
-  login,
-  register,
+    $authError,
+    $currentUser,
+    $isLoading,
+    login,
+    register,
 } from '../../models/users';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
@@ -271,6 +271,11 @@ export const AuthForm: React.FC = () => {
                   placeholder="Телефон (+79123456789)"
                   value={formData.phone}
                   onChange={handlePhoneChange}
+                  onFocus={() => {
+                    if (!formData.phone) {
+                      setFormData({ ...formData, phone: '+7' });
+                    }
+                  }}
                   className={formErrors.phone ? 'border-red-500' : ''}
                   icon="📱"
                 />

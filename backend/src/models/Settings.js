@@ -19,6 +19,32 @@ const settingsSchema = new mongoose.Schema({
     deliveryTimeEnd: {
         type: String,
         default: "10:00"
+    },
+    pickupTimeStart: {
+        type: String,
+        default: "08:00"
+    },
+    pickupTimeEnd: {
+        type: String,
+        default: "22:00"
+    },
+    dineInTimeStart: {
+        type: String,
+        default: "08:00"
+    },
+    dineInTimeEnd: {
+        type: String,
+        default: "22:00"
+    },
+    serviceFeeType: {
+        type: String,
+        enum: ['percent', 'fixed'],
+        default: 'percent'
+    },
+    serviceFeeValue: {
+        type: Number,
+        default: 0,
+        min: 0
     }
 }, {
     timestamps: true

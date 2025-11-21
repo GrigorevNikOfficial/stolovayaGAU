@@ -64,6 +64,26 @@ const orderSchema = new mongoose.Schema({
         required: true,
         min: 0
     },
+    items_total: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    service_fee: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    service_fee_value: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    service_fee_type: {
+        type: String,
+        enum: ['percent', 'fixed', 'none'],
+        default: 'none'
+    },
     status: {
         type: String,
         enum: ['created', 'cooking', 'waiting_delivery', 'in_transit', 'ready_for_pickup', 'completed', 'cancelled'],

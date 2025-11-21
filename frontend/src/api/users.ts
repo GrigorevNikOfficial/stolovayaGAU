@@ -1,8 +1,8 @@
 import type {
-  User,
-  LoginRequest,
-  RegisterRequest,
-  UpdateProfileRequest,
+    LoginRequest,
+    RegisterRequest,
+    UpdateProfileRequest,
+    User,
 } from '../types/user';
 import { httpClient } from './http-client';
 
@@ -109,6 +109,32 @@ export const usersApi = {
       message: string;
       user: User;
     }>(`/users/${id}/balance/top-up`, { amount });
+    return response;
+  },
+
+  // Создать сотрудника (админ)
+  createEmployee: async (
+    employeeData: RegisterRequest & { role: string }
+  ): Promise<{
+    message: string;
+    user: User;
+  }> => {
+    const response = await httpClient.post<{
+      message: string;
+      user: User;
+    }>('/users/employees', employeeData);
+    return response;
+  },
+
+  // Удалить пользователя (админ)
+  deleteUser: async (
+    id: string
+  ): Promise<{
+    message: string;
+  }> => {
+    const response = await httpClient.delete<{
+      message: string;
+    }>(`/users/${id}`);
     return response;
   },
 };

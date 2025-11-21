@@ -1,8 +1,8 @@
 // api/settingsApi.ts
-import { httpClient } from './http-client';
 import type { DeliverySettings } from '../types/settings';
+import { httpClient } from './http-client';
 
-export const settings = {
+export const settingsApi = {
   getDeliverySettings: async (): Promise<DeliverySettings> => {
     const response =
       await httpClient.get<DeliverySettings>('/settings/delivery');
@@ -19,3 +19,6 @@ export const settings = {
     return response;
   },
 };
+
+// Оставляем старый экспорт для совместимости
+export const settings = settingsApi;
