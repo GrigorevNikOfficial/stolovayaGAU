@@ -22,6 +22,7 @@ import { $currentUser } from '../../models/users.ts';
 import type { CreateItemRequest, UpdateItemRequest } from '../../types/item.ts';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
+import Select from '../layout/Select/Select.tsx';
 import ItemFormModal from '../Modal/ItemFormModal.tsx';
 import ItemModal from '../Modal/ItemModal.tsx';
 
@@ -47,6 +48,9 @@ export const ItemsList: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
+  const [sortOption, setSortOption] = useState<'default' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'>('default');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -89,7 +93,10 @@ export const ItemsList: React.FC = () => {
     }
   }, [menuOpen]);
 
-  // Фильтрация товаров
+  const minPriceValue = priceRange.min !== '' ? Number(priceRange.min) : null;
+  const maxPriceValue = priceRange.max !== '' ? Number(priceRange.max) : null;
+
+  // Фильтрация и сортировка товаров
   const filteredItems = Array.isArray(items)
     ? items.filter(item => {
         const matchesSearch =
@@ -98,11 +105,53 @@ export const ItemsList: React.FC = () => {
             item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesCategory =
           !selectedCategory || item.category_slug === selectedCategory;
-        return matchesSearch && matchesCategory;
+        const matchesPrice =
+          (minPriceValue === null || item.price >= minPriceValue) &&
+          (maxPriceValue === null || item.price <= maxPriceValue);
+        const isAvailable = item.is_available !== false;
+        const matchesAvailability =
+          availabilityFilter === 'all' ||
+          (availabilityFilter === 'available' && isAvailable) ||
+          (availabilityFilter === 'unavailable' && !isAvailable);
+
+        return (
+          matchesSearch &&
+          matchesCategory &&
+          matchesPrice &&
+          matchesAvailability
+        );
       })
     : [];
 
-  console.log('ItemsList: filteredItems.length =', filteredItems.length);
+  const sortedItems = [...filteredItems];
+  switch (sortOption) {
+    case 'price_asc':
+      sortedItems.sort((a, b) => a.price - b.price);
+      break;
+    case 'price_desc':
+      sortedItems.sort((a, b) => b.price - a.price);
+      break;
+    case 'name_asc':
+      sortedItems.sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '', 'ru', {
+          sensitivity: 'base',
+        })
+      );
+      break;
+    case 'name_desc':
+      sortedItems.sort((a, b) =>
+        (b.name || '').localeCompare(a.name || '', 'ru', {
+          sensitivity: 'base',
+        })
+      );
+      break;
+    default:
+      break;
+  }
+
+  const visibleItems = sortedItems;
+
+  console.log('ItemsList: filteredItems.length =', visibleItems.length);
 
   // Получение количества товара в корзине
   const getItemQuantity = (itemId: string) => {
@@ -139,13 +188,15 @@ export const ItemsList: React.FC = () => {
     setMenuOpen(menuOpen === itemId ? null : itemId);
   };
 
-  const handleEditClick = (item: any) => {
+  const handleEditClick = (e: React.MouseEvent, item: any) => {
+    e.stopPropagation();
     setSelectedItem(item);
     setMenuOpen(null);
     setShowEditModal(true);
   };
 
-  const handleDeleteClick = (item: any) => {
+  const handleDeleteClick = (e: React.MouseEvent, item: any) => {
+    e.stopPropagation();
     setSelectedItem(item);
     setMenuOpen(null);
     setShowDeleteModal(true);
@@ -259,6 +310,88 @@ export const ItemsList: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* Дополнительные фильтры */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ценовой диапазон (₽)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min="0"
+                placeholder="От"
+                value={priceRange.min}
+                onChange={value =>
+                  setPriceRange(prev => ({ ...prev, min: value }))
+                }
+              />
+              <Input
+                type="number"
+                min="0"
+                placeholder="До"
+                value={priceRange.max}
+                onChange={value =>
+                  setPriceRange(prev => ({ ...prev, max: value }))
+                }
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Статус наличия
+            </label>
+            <Select
+              value={availabilityFilter}
+              onChange={value =>
+                setAvailabilityFilter(value as 'all' | 'available' | 'unavailable')
+              }
+              options={[
+                { value: 'all', label: 'Все товары' },
+                { value: 'available', label: 'Только доступные' },
+                { value: 'unavailable', label: 'Недоступные' },
+              ]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Сортировка
+            </label>
+            <Select
+              value={sortOption}
+              onChange={value =>
+                setSortOption(
+                  value as 'default' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'
+                )
+              }
+              options={[
+                { value: 'default', label: 'Без сортировки' },
+                { value: 'price_asc', label: 'По цене ↑' },
+                { value: 'price_desc', label: 'По цене ↓' },
+                { value: 'name_asc', label: 'По алфавиту A→Я' },
+                { value: 'name_desc', label: 'По алфавиту Я→A' },
+              ]}
+            />
+          </div>
+
+          <div className="flex items-end">
+            <Button
+              variant="outline"
+              size="md"
+              className="w-full"
+              onClick={() => {
+                setPriceRange({ min: '', max: '' });
+                setAvailabilityFilter('all');
+                setSortOption('default');
+              }}
+            >
+              Сбросить фильтры
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Сетка товаров - 2 колонки на мобильных, 5 на десктопе */}
@@ -295,7 +428,7 @@ export const ItemsList: React.FC = () => {
             </div>
           )}
 
-          {filteredItems.map(item => {
+          {visibleItems.map(item => {
             const quantity = getItemQuantity(item._id);
             const isInCart = quantity > 0;
             const isAvailable = item.is_available !== false;
@@ -307,7 +440,7 @@ export const ItemsList: React.FC = () => {
               <div
                 key={item._id}
                 onClick={() => handleItemClick(item)}
-                className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 ease-out cursor-pointer group"
+                className="relative bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 ease-out cursor-pointer group"
               >
                 {/* Троеточие для админов */}
                 {isAdminOrCanteenManager && (
@@ -327,13 +460,13 @@ export const ItemsList: React.FC = () => {
                     {menuOpen === item._id && (
                       <div className="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-xl z-20 border border-gray-200 backdrop-blur-sm">
                         <button
-                          onClick={() => handleEditClick(item)}
+                          onClick={e => handleEditClick(e, item)}
                           className="block w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-green-light hover:text-green-darker transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
                         >
                           ✏️ Редактировать
                         </button>
                         <button
-                          onClick={() => handleDeleteClick(item)}
+                          onClick={e => handleDeleteClick(e, item)}
                           className="block w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
                         >
                           🗑️ Удалить
@@ -429,14 +562,18 @@ export const ItemsList: React.FC = () => {
       )}
 
       {/* Сообщение о пустом результате */}
-      {!isLoading && filteredItems.length === 0 && (
+      {!isLoading && visibleItems.length === 0 && (
         <div className="text-center py-16 fade-in">
           <div className="text-6xl text-gray-300 mb-4">🍽️</div>
           <p className="text-gray-500 text-xl font-medium mb-3">
             Товары не найдены
           </p>
           <p className="text-gray-400 text-sm mb-6">
-            {searchQuery || selectedCategory
+            {searchQuery ||
+            selectedCategory ||
+            priceRange.min ||
+            priceRange.max ||
+            availabilityFilter !== 'all'
               ? 'Попробуйте изменить параметры поиска'
               : 'Проверьте подключение к бэкенду или наличие товаров в базе'}
           </p>
@@ -444,6 +581,9 @@ export const ItemsList: React.FC = () => {
             onClick={() => {
               setSearchQuery('');
               setSelectedCategory('');
+              setPriceRange({ min: '', max: '' });
+              setAvailabilityFilter('all');
+              setSortOption('default');
               handleLoadItems({});
             }}
             variant="outline"
@@ -500,4 +640,40 @@ export const ItemsList: React.FC = () => {
   );
 };
 
-// Компоненты модальных окон остаются без изменений...
+const DeleteConfirmModal: React.FC<{
+  itemName: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}> = ({ itemName, onClose, onConfirm }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl my-8">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl text-red-600">⚠️</span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Подтверждение удаления
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Вы уверены, что хотите удалить блюдо{' '}
+            <strong>"{itemName}"</strong>? Это действие нельзя отменить.
+          </p>
+        </div>
+        <div className="flex justify-center gap-3">
+          <Button onClick={onClose} variant="outline" size="md">
+            Отмена
+          </Button>
+          <Button
+            onClick={onConfirm}
+            variant="secondary"
+            size="md"
+            className="bg-red-500 hover:bg-red-600 border-red-500"
+          >
+            Удалить
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
