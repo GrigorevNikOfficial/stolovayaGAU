@@ -1,22 +1,22 @@
 import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import {
-    $cart,
-    addToCart,
-    removeFromCart,
-    updateCartItemQuantity,
+  $cart,
+  addToCart,
+  removeFromCart,
+  updateCartItemQuantity,
 } from '../../models/cart.ts';
 import {
-    $categoriesForSelect,
-    loadCategories,
+  $categoriesForSelect,
+  loadCategories,
 } from '../../models/categories.ts';
 import {
-    $items,
-    $itemsError,
-    createItem,
-    deleteItem,
-    loadItems,
-    updateItem,
+  $items,
+  $itemsError,
+  createItem,
+  deleteItem,
+  loadItems,
+  updateItem,
 } from '../../models/items.ts';
 import { $currentUser } from '../../models/users.ts';
 import type { CreateItemRequest, UpdateItemRequest } from '../../types/item.ts';
@@ -24,7 +24,7 @@ import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
 import ItemFormModal from '../Modal/ItemFormModal.tsx';
 import ItemModal from '../Modal/ItemModal.tsx';
-
+import { showToast } from '../layout/Toast/stores/toastStore.ts';
 export const ItemsList: React.FC = () => {
   console.log('ItemsList: компонент рендерится');
 
@@ -95,7 +95,9 @@ export const ItemsList: React.FC = () => {
         const matchesSearch =
           item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (item.description &&
-            item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+            item.description
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()));
         const matchesCategory =
           !selectedCategory || item.category_slug === selectedCategory;
         return matchesSearch && matchesCategory;
@@ -173,6 +175,12 @@ export const ItemsList: React.FC = () => {
       image_url: item.image_url,
       preparation_time: item.preparation_time,
     });
+
+    showToast({
+      message: 'Товар добавлен в корзину',
+      type: 'success' as const,
+    });
+    console.log(1);
   };
 
   const handleIncreaseQuantity = (

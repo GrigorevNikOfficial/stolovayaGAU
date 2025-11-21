@@ -9,6 +9,7 @@ import {
 } from '../../models/cart';
 import { $currentUser } from '../../models/users';
 import Button from '../layout/Button/Button.tsx';
+import { showToast } from '../layout/Toast/stores/toastStore.ts';
 
 interface ItemModalProps {
   item: any;
@@ -61,6 +62,11 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       number_pribors: item.number_pribors,
       image_url: item.image_url,
       preparation_time: item.preparation_time,
+    });
+
+    showToast({
+      message: 'Товар добавлен в корзину',
+      type: 'success' as const,
     });
   };
 
