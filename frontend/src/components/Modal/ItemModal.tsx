@@ -1,11 +1,11 @@
 // components/ItemModal/ItemModal.tsx
-import React from 'react';
 import { useUnit } from 'effector-react';
+import React from 'react';
 import {
-  addToCart,
-  $cart,
-  updateCartItemQuantity,
-  removeFromCart,
+    $cart,
+    addToCart,
+    removeFromCart,
+    updateCartItemQuantity,
 } from '../../models/cart';
 import { $currentUser } from '../../models/users';
 import Button from '../layout/Button/Button.tsx';
@@ -198,7 +198,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 </div>
               </div>
 
-              {/* Кнопка добавления в корзину */}
+              {/* Кнопки действий */}
               {canAddToCart && (
                 <div className="flex items-center justify-center gap-4">
                   {quantity === 0 ? (

@@ -1,5 +1,5 @@
 // components/ItemFormModal/ItemFormModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
 import Select from '../layout/Select/Select.tsx';
@@ -28,7 +28,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
     calories: '',
     number_pribors: '',
     preparation_time: '',
-    is_active: true,
+    is_available: true,
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -45,7 +45,8 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
         calories: item.calories?.toString() || '',
         number_pribors: item.number_pribors?.toString() || '',
         preparation_time: item.preparation_time?.toString() || '',
-        is_active: item.is_active !== undefined ? item.is_active : true,
+        is_available:
+          item.is_available !== undefined ? item.is_available : true,
       });
       setImagePreview(item.image_url || item.image?.url || '');
     } else {
@@ -59,7 +60,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
         calories: '',
         number_pribors: '',
         preparation_time: '',
-        is_active: true,
+        is_available: true,
       });
       setSelectedImage(null);
       setImagePreview('');
@@ -113,7 +114,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
       preparation_time: formData.preparation_time
         ? Number(formData.preparation_time)
         : undefined,
-      is_active: formData.is_active,
+      is_available: formData.is_available,
     };
 
     console.log('Submitting item data:', submitData);
@@ -303,9 +304,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    checked={formData.is_active}
+                    checked={formData.is_available}
                     onChange={e =>
-                      handleInputChange('is_active', e.target.checked)
+                      handleInputChange('is_available', e.target.checked)
                     }
                     className="mr-3 w-5 h-5 text-green-dark rounded focus:ring-green-medium"
                   />
