@@ -1,17 +1,17 @@
 import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import {
-    $cart,
-    $cartTotal,
-    clearCart,
-    createOrderFromCart,
-    removeFromCart,
-    updateCartItemQuantity,
+  $cart,
+  $cartTotal,
+  clearCart,
+  createOrderFromCart,
+  removeFromCart,
+  updateCartItemQuantity,
 } from '../../models/cart.ts';
 import { $isCreating } from '../../models/orders.ts';
 import {
-    $deliverySettings,
-    fetchDeliverySettings,
+  $deliverySettings,
+  fetchDeliverySettings,
 } from '../../models/settings.ts';
 import { $currentUser } from '../../models/users.ts';
 import Button from '../layout/Button/Button.tsx';
@@ -75,9 +75,8 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const hasEnoughBalance = currentUser
     ? currentBalance >= cartTotalWithServiceFee
     : true;
-  const remainingBalance = Math.round(
-    (currentBalance - cartTotalWithServiceFee) * 100
-  ) / 100;
+  const remainingBalance =
+    Math.round((currentBalance - cartTotalWithServiceFee) * 100) / 100;
   const serviceFeeLabel =
     serviceFeeType === 'percent'
       ? `${serviceFeeValue}%`
@@ -88,7 +87,9 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   }, [handleFetchSettings]);
 
   // Проверка доступности методов получения по времени
-  const checkTimeAvailability = (method: 'delivery' | 'pickup' | 'dine_in'): { available: boolean; message: string } => {
+  const checkTimeAvailability = (
+    method: 'delivery' | 'pickup' | 'dine_in'
+  ): { available: boolean; message: string } => {
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
@@ -111,7 +112,10 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
       const start = settings.dineInTimeStart || '00:00';
       const end = settings.dineInTimeEnd || '23:59';
       if (currentTime < start || currentTime > end) {
-        return { available: false, message: `Зал работает с ${start} до ${end}` };
+        return {
+          available: false,
+          message: `Зал работает с ${start} до ${end}`,
+        };
       }
     }
 
@@ -178,7 +182,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {pickupAvailability.available ? 'Самовывоз' : '✕'}
+              {pickupAvailability.available ? 'Забрать с собой' : '✕'}
             </button>
             <button
               onClick={() => setDeliveryMethod('dine_in')}
@@ -191,7 +195,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {dineInAvailability.available ? 'В зале' : '✕'}
+              {dineInAvailability.available ? 'В столовой' : '✕'}
             </button>
             <button
               onClick={() => setDeliveryMethod('delivery')}
@@ -204,24 +208,30 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {deliveryAvailability.available ? 'Доставка' : '✕'}
+              {deliveryAvailability.available ? 'В буфете' : '✕'}
             </button>
           </div>
 
           {/* Сообщения о времени работы */}
           {!pickupAvailability.available && deliveryMethod === 'pickup' && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">⏰ {pickupAvailability.message}</p>
+              <p className="text-xs text-yellow-700">
+                ⏰ {pickupAvailability.message}
+              </p>
             </div>
           )}
           {!dineInAvailability.available && deliveryMethod === 'dine_in' && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">⏰ {dineInAvailability.message}</p>
+              <p className="text-xs text-yellow-700">
+                ⏰ {dineInAvailability.message}
+              </p>
             </div>
           )}
           {!deliveryAvailability.available && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">⏰ {deliveryAvailability.message}</p>
+              <p className="text-xs text-yellow-700">
+                ⏰ {deliveryAvailability.message}
+              </p>
             </div>
           )}
           {settings.deliveryEnabled && deliveryMethod === 'delivery' && (
