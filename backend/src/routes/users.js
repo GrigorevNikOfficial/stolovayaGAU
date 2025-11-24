@@ -2,16 +2,17 @@
 import express from "express";
 import { authenticateToken, requireAdmin } from "../controllers/auth.js";
 import {
-    createEmployee,
-    deleteUser,
-    getAllUsers,
-    getMe,
-    login,
-    register,
-    topUpUserBalance,
-    updateProfile,
-    updateUserAvatar,
-    updateUserRole,
+  createEmployee,
+  deleteUser,
+  getAllUsers,
+  getMe,
+  login,
+  register,
+  topUpUserBalance,
+  updateProfile,
+  updateUserAvatar,
+  updateUserRole,
+  updateEmployeeData,
 } from "../controllers/userController.js";
 import { singleImageUpload } from "../middleware/upload.js";
 
@@ -25,22 +26,23 @@ router.post("/login", login);
 router.get("/me", authenticateToken, getMe);
 router.put("/profile", authenticateToken, updateProfile);
 router.patch(
-    "/:id/avatar",
-    authenticateToken,
-    singleImageUpload("avatar"),
-    updateUserAvatar
+  "/:id/avatar",
+  authenticateToken,
+  singleImageUpload("avatar"),
+  updateUserAvatar
 );
 
 // Админ роуты
 router.get("/", authenticateToken, requireAdmin, getAllUsers);
 router.post("/employees", authenticateToken, requireAdmin, createEmployee);
 router.put("/:id/role", authenticateToken, requireAdmin, updateUserRole);
+router.put("/:id", authenticateToken, requireAdmin, updateEmployeeData);
 router.delete("/:id", authenticateToken, requireAdmin, deleteUser);
 router.post(
-    "/:id/balance/top-up",
-    authenticateToken,
-    requireAdmin,
-    topUpUserBalance
+  "/:id/balance/top-up",
+  authenticateToken,
+  requireAdmin,
+  topUpUserBalance
 );
 
 export { router };

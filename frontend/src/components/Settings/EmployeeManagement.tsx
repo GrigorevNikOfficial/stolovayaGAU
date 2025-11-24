@@ -183,6 +183,29 @@ export const EmployeeManagement: React.FC = () => {
     return roles[role] || role;
   };
 
+  const isPointRequiredForRole = (role: string) =>
+    role === 'canteenManager' || role === 'storeManager';
+
+  const getPointFieldTitle = (role: string) => {
+    if (role === 'canteenManager') {
+      return 'Назначьте столовую';
+    }
+    if (role === 'storeManager') {
+      return 'Назначьте буфет';
+    }
+    return 'Назначьте точку (опционально)';
+  };
+
+  const getPointPlaceholder = (role: string) => {
+    if (role === 'canteenManager') {
+      return 'Выберите столовую...';
+    }
+    if (role === 'storeManager') {
+      return 'Выберите буфет...';
+    }
+    return 'Без привязки';
+  };
+
   // Получаем название точки по ID
   const getPointName = (pointId: string) => {
     const point = points.find(p => p._id === pointId);
@@ -384,42 +407,34 @@ export const EmployeeManagement: React.FC = () => {
                 ]}
               />
 
-              {/* Выбор точки для менеджеров */}
-              {(formData.role === 'canteenManager' ||
-                formData.role === 'storeManager') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {formData.role === 'canteenManager'
-                      ? 'Выберите столовую'
-                      : 'Выберите буфет'}{' '}
-                    *
-                  </label>
-                  {isPointsLoading ? (
-                    <div className="text-sm text-gray-500">
-                      Загрузка точек...
-                    </div>
-                  ) : (
-                    <Select
-                      value={formData.point_id}
-                      onChange={value =>
-                        setFormData({ ...formData, point_id: value })
-                      }
-                      options={[
-                        {
-                          value: '',
-                          label: `Выберите ${formData.role === 'canteenManager' ? 'столовую' : 'буфет'}...`,
-                          disabled: true,
-                        },
-                        ...getFilteredPoints(formData.role).map(point => ({
-                          value: point._id,
-                          label: `${point.name} (${point.location})`,
-                        })),
-                      ]}
-                      required
-                    />
-                  )}
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {getPointFieldTitle(formData.role)}{' '}
+                  {isPointRequiredForRole(formData.role) && '*'}
+                </label>
+                {isPointsLoading ? (
+                  <div className="text-sm text-gray-500">Загрузка точек...</div>
+                ) : (
+                  <Select
+                    value={formData.point_id}
+                    onChange={value =>
+                      setFormData({ ...formData, point_id: value })
+                    }
+                    options={[
+                      {
+                        value: '',
+                        label: getPointPlaceholder(formData.role),
+                        disabled: isPointRequiredForRole(formData.role),
+                      },
+                      ...getFilteredPoints(formData.role).map(point => ({
+                        value: point._id,
+                        label: `${point.name} (${point.location})`,
+                      })),
+                    ]}
+                    required={isPointRequiredForRole(formData.role)}
+                  />
+                )}
+              </div>
 
               <div className="flex gap-3 pt-4">
                 <Button
@@ -440,8 +455,7 @@ export const EmployeeManagement: React.FC = () => {
                   size="md"
                   className="flex-1"
                   disabled={
-                    (formData.role === 'canteenManager' ||
-                      formData.role === 'storeManager') &&
+                    isPointRequiredForRole(formData.role) &&
                     !formData.point_id
                   }
                 >
@@ -503,42 +517,34 @@ export const EmployeeManagement: React.FC = () => {
                 ]}
               />
 
-              {/* Выбор точки для менеджеров */}
-              {(formData.role === 'canteenManager' ||
-                formData.role === 'storeManager') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {formData.role === 'canteenManager'
-                      ? 'Выберите столовую'
-                      : 'Выберите буфет'}{' '}
-                    *
-                  </label>
-                  {isPointsLoading ? (
-                    <div className="text-sm text-gray-500">
-                      Загрузка точек...
-                    </div>
-                  ) : (
-                    <Select
-                      value={formData.point_id}
-                      onChange={value =>
-                        setFormData({ ...formData, point_id: value })
-                      }
-                      options={[
-                        {
-                          value: '',
-                          label: `Выберите ${formData.role === 'canteenManager' ? 'столовую' : 'буфет'}...`,
-                          disabled: true,
-                        },
-                        ...getFilteredPoints(formData.role).map(point => ({
-                          value: point._id,
-                          label: `${point.name} (${point.location})`,
-                        })),
-                      ]}
-                      required
-                    />
-                  )}
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {getPointFieldTitle(formData.role)}{' '}
+                  {isPointRequiredForRole(formData.role) && '*'}
+                </label>
+                {isPointsLoading ? (
+                  <div className="text-sm text-gray-500">Загрузка точек...</div>
+                ) : (
+                  <Select
+                    value={formData.point_id}
+                    onChange={value =>
+                      setFormData({ ...formData, point_id: value })
+                    }
+                    options={[
+                      {
+                        value: '',
+                        label: getPointPlaceholder(formData.role),
+                        disabled: isPointRequiredForRole(formData.role),
+                      },
+                      ...getFilteredPoints(formData.role).map(point => ({
+                        value: point._id,
+                        label: `${point.name} (${point.location})`,
+                      })),
+                    ]}
+                    required={isPointRequiredForRole(formData.role)}
+                  />
+                )}
+              </div>
 
               <div className="flex gap-3 pt-4">
                 <Button
@@ -560,8 +566,7 @@ export const EmployeeManagement: React.FC = () => {
                   size="md"
                   className="flex-1"
                   disabled={
-                    (formData.role === 'canteenManager' ||
-                      formData.role === 'storeManager') &&
+                    isPointRequiredForRole(formData.role) &&
                     !formData.point_id
                   }
                 >

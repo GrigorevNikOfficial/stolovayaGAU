@@ -1,31 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { pointsApi } from '../../api/points';
-import { usersApi } from '../../api/users';
 import type { Point } from '../../types/points';
-import type { User } from '../../types/user';
 import Button from '../layout/Button/Button';
 import Input from '../layout/Input/Input';
 import Select from '../layout/Select/Select';
 import { showToast } from '../layout/Toast/stores/toastStore';
 
+type PointFormState = {
+  name: string;
+  type: 'canteen' | 'store';
+  location: string;
+  phone: string;
+  isActive: boolean;
+};
+
+const createInitialFormState = (): PointFormState => ({
+  name: '',
+  type: 'canteen',
+  location: '',
+  phone: '',
+  isActive: true,
+});
+
 export const PointManagement: React.FC = () => {
   const [points, setPoints] = useState<Point[]>([]);
-  const [managers, setManagers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isManagersLoading, setIsManagersLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    type: 'canteen' as 'canteen' | 'store',
-    location: '',
-    phone: '',
-    managerId: '',
-    isActive: true,
-  });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPoint, setEditingPoint] = useState<Point | null>(null);
+  const [formData, setFormData] = useState<PointFormState>(createInitialFormState());
+  const [editFormData, setEditFormData] = useState<PointFormState>(createInitialFormState());
 
   useEffect(() => {
     loadPoints();
-    loadManagers();
   }, []);
 
   const loadPoints = async () => {
@@ -43,46 +50,45 @@ export const PointManagement: React.FC = () => {
     }
   };
 
-  const loadManagers = async () => {
-    try {
-      setIsManagersLoading(true);
-      const data = await usersApi.getUsers();
-      // Фильтруем только менеджеров и администраторов
-      const managers = data.users.filter(
-        user =>
-          user.role === 'canteenManager' ||
-          user.role === 'storeManager' ||
-          user.role === 'admin'
-      );
-      setManagers(managers);
-    } catch (error: any) {
-      showToast({
-        message: error.message || 'Ошибка загрузки менеджеров',
-        type: 'error',
-      });
-    } finally {
-      setIsManagersLoading(false);
-    }
-  };
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await pointsApi.createPoint(formData);
       showToast({ message: 'Точка успешно создана', type: 'success' });
-      setShowCreateModal(false);
-      setFormData({
-        name: '',
-        type: 'canteen',
-        location: '',
-        phone: '',
-        managerId: '',
-        isActive: true,
-      });
+      closeCreateModal();
       loadPoints();
     } catch (error: any) {
       showToast({
         message: error.message || 'Ошибка создания точки',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleEditClick = (point: Point) => {
+    setEditingPoint(point);
+    setEditFormData({
+      name: point.name,
+      type: point.type,
+      location: point.location,
+      phone: point.phone,
+      isActive: point.isActive,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPoint) return;
+
+    try {
+      await pointsApi.updatePoint(editingPoint._id, editFormData);
+      showToast({ message: 'Точка успешно обновлена', type: 'success' });
+      closeEditModal();
+      loadPoints();
+    } catch (error: any) {
+      showToast({
+        message: error.message || 'Ошибка обновления точки',
         type: 'error',
       });
     }
@@ -116,35 +122,28 @@ export const PointManagement: React.FC = () => {
     }
   };
 
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingPoint(null);
+    setEditFormData(createInitialFormState());
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setFormData(createInitialFormState());
+  };
+
+  const openCreateModal = () => {
+    setFormData(createInitialFormState());
+    setShowCreateModal(true);
+  };
+
   const getTypeName = (type: string) => {
     const types: Record<string, string> = {
       canteen: 'Столовая',
       store: 'Буфет',
     };
     return types[type] || type;
-  };
-
-  const getManagerName = (managerId: string) => {
-    const manager = managers.find(m => m._id === managerId);
-    return manager
-      ? `${manager.first_name} ${manager.last_name}`
-      : 'Не назначен';
-  };
-
-  const getManagerRole = (managerId: string) => {
-    const manager = managers.find(m => m._id === managerId);
-    return manager ? manager.role : '';
-  };
-
-  const getRoleName = (role: string) => {
-    const roles: Record<string, string> = {
-      user: 'Пользователь',
-      admin: 'Администратор',
-      canteenManager: 'Админ столовой',
-      cateenManager: 'Админ столовой',
-      storeManager: 'Админ буфета',
-    };
-    return roles[role] || role;
   };
 
   return (
@@ -159,7 +158,7 @@ export const PointManagement: React.FC = () => {
           </p>
         </div>
         <Button
-          onClick={() => setShowCreateModal(true)}
+          onClick={openCreateModal}
           variant="primary"
           size="md"
         >
@@ -187,9 +186,6 @@ export const PointManagement: React.FC = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Телефон
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Менеджер
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Статус
@@ -225,14 +221,6 @@ export const PointManagement: React.FC = () => {
                     {point.phone}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {getManagerName(point.managerId)}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {getRoleName(getManagerRole(point.managerId))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 text-xs font-semibold rounded-full ${
                         point.isActive
@@ -243,23 +231,31 @@ export const PointManagement: React.FC = () => {
                       {point.isActive ? 'Активна' : 'Неактивна'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    <button
-                      onClick={() => handleToggleActive(point)}
-                      className={`${
-                        point.isActive
-                          ? 'text-orange-600 hover:text-orange-900'
-                          : 'text-green-600 hover:text-green-900'
-                      }`}
-                    >
-                      {point.isActive ? 'Деактивировать' : 'Активировать'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(point._id)}
-                      className="text-red-600 hover:text-red-900 ml-4"
-                    >
-                      Удалить
-                    </button>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end gap-4">
+                      <button
+                        onClick={() => handleEditClick(point)}
+                        className="text-green-600 hover:text-green-900"
+                      >
+                        Редактировать
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(point)}
+                        className={`${
+                          point.isActive
+                            ? 'text-orange-600 hover:text-orange-900'
+                            : 'text-green-600 hover:text-green-900'
+                        }`}
+                      >
+                        {point.isActive ? 'Деактивировать' : 'Активировать'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(point._id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -314,28 +310,6 @@ export const PointManagement: React.FC = () => {
                 required
               />
 
-              <Select
-                value={formData.managerId}
-                onChange={value =>
-                  setFormData({ ...formData, managerId: value })
-                }
-                options={[
-                  { value: '', label: 'Выберите менеджера', disabled: true },
-                  ...managers.map(manager => ({
-                    value: manager._id,
-                    label: `${manager.first_name} ${manager.last_name} (${getRoleName(manager.role)})`,
-                  })),
-                ]}
-                required
-                disabled={isManagersLoading}
-              />
-
-              {isManagersLoading && (
-                <div className="text-sm text-gray-500">
-                  Загрузка менеджеров...
-                </div>
-              )}
-
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -357,7 +331,7 @@ export const PointManagement: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={closeCreateModal}
                   variant="outline"
                   size="md"
                   className="flex-1"
@@ -369,9 +343,105 @@ export const PointManagement: React.FC = () => {
                   variant="primary"
                   size="md"
                   className="flex-1"
-                  disabled={!formData.managerId}
                 >
                   Создать
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold mb-4">
+              Редактировать точку {editingPoint ? `"${editingPoint.name}"` : ''}
+            </h3>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <Input
+                type="text"
+                placeholder="Название точки"
+                value={editFormData.name}
+                onChange={value =>
+                  setEditFormData({ ...editFormData, name: value })
+                }
+                required
+              />
+
+              <Select
+                value={editFormData.type}
+                onChange={value =>
+                  setEditFormData({
+                    ...editFormData,
+                    type: value as 'canteen' | 'store',
+                  })
+                }
+                options={[
+                  { value: 'canteen', label: 'Столовая' },
+                  { value: 'store', label: 'Буфет' },
+                ]}
+                required
+              />
+
+              <Input
+                type="text"
+                placeholder="Расположение"
+                value={editFormData.location}
+                onChange={value =>
+                  setEditFormData({ ...editFormData, location: value })
+                }
+                required
+              />
+
+              <Input
+                type="tel"
+                placeholder="Телефон"
+                value={editFormData.phone}
+                onChange={value =>
+                  setEditFormData({ ...editFormData, phone: value })
+                }
+                required
+              />
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="editIsActive"
+                  checked={editFormData.isActive}
+                  onChange={e =>
+                    setEditFormData({
+                      ...editFormData,
+                      isActive: e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="editIsActive"
+                  className="ml-2 block text-sm text-gray-900"
+                >
+                  Активная точка
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  onClick={closeEditModal}
+                  variant="outline"
+                  size="md"
+                  className="flex-1"
+                >
+                  Отмена
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  className="flex-1"
+                >
+                  Сохранить
                 </Button>
               </div>
             </form>

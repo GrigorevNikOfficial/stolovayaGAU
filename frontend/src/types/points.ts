@@ -5,7 +5,6 @@ export interface Point {
   type: 'canteen' | 'store';
   location: string;
   phone: string;
-  managerId: string;
   isActive: boolean;
   created_at: string;
   updated_at?: string;
@@ -16,7 +15,6 @@ export interface CreatePointRequest {
   type: 'canteen' | 'store';
   location: string;
   phone: string;
-  managerId: string;
   isActive?: boolean;
 }
 
@@ -25,6 +23,5 @@ export interface UpdatePointRequest {
   type?: 'canteen' | 'store';
   location?: string;
   phone?: string;
-  managerId?: string;
   isActive?: boolean;
 }

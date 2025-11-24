@@ -19,26 +19,6 @@ export const pointsApi = {
     return response;
   },
 
-  getPointsByManager: async (
-    managerId: string
-  ): Promise<{ points: Point[]; total: number }> => {
-    const response = await httpClient.get<{ points: Point[]; total: number }>(
-      `/points/manager/${managerId}`
-    );
-    return response;
-  },
-
-  getPointsWithoutManager: async (
-    type?: string
-  ): Promise<{ points: Point[]; total: number }> => {
-    const params = type ? { type } : {};
-    const response = await httpClient.get<{ points: Point[]; total: number }>(
-      '/points/without-manager',
-      { params }
-    );
-    return response;
-  },
-
   createPoint: async (
     pointData: CreatePointRequest
   ): Promise<{ message: string; point: Point }> => {

@@ -11,8 +11,6 @@ import { showToast } from '../components/layout/Toast/stores/toastStore';
 // Events
 export const loadPoints = createEvent();
 export const loadPoint = createEvent<string>();
-export const loadPointsByManager = createEvent<string>();
-export const loadPointsWithoutManager = createEvent<{ type?: string }>(); // НОВОЕ
 export const createPoint = createEvent<CreatePointRequest>();
 export const updatePoint = createEvent<{
   id: string;
@@ -29,18 +27,6 @@ export const loadPointsFx = createEffect(async () => {
 export const loadPointFx = createEffect(async (id: string): Promise<Point> => {
   return await pointsApi.getPoint(id);
 });
-
-export const loadPointsByManagerFx = createEffect(async (managerId: string) => {
-  const response = await pointsApi.getPointsByManager(managerId);
-  return response;
-});
-
-export const loadPointsWithoutManagerFx = createEffect(
-  async (params: { type?: string }) => {
-    const response = await pointsApi.getPointsWithoutManager(params.type);
-    return response;
-  }
-);
 
 export const createPointFx = createEffect(async (data: CreatePointRequest) => {
   const response = await pointsApi.createPoint(data);
@@ -62,8 +48,6 @@ export const deletePointFx = createEffect(async (id: string) => {
 // Stores
 export const $points = createStore<Point[]>([])
   .on(loadPointsFx.doneData, (_, { points }) => points)
-  .on(loadPointsByManagerFx.doneData, (_, { points }) => points)
-  .on(loadPointsWithoutManagerFx.doneData, (_, { points }) => points)
   .on(createPointFx.doneData, (state, { point }) => [...state, point])
   .on(updatePointFx.doneData, (state, { point }) =>
     state.map(p => (p._id === point._id ? point : p))
@@ -74,7 +58,7 @@ export const $points = createStore<Point[]>([])
 
 export const $currentPoint = createStore<Point | null>(null)
   .on(loadPointFx.doneData, (_, point) => point)
-  .reset([loadPoints, loadPointsByManager, loadPointsWithoutManager]);
+  .reset([loadPoints]);
 
 export const $pointsError = createStore<string | null>(null)
   .on(loadPointsFx.fail, (_, { error }) => error.message)
@@ -92,16 +76,6 @@ sample({
 sample({
   source: loadPoint,
   target: loadPointFx,
-});
-
-sample({
-  source: loadPointsByManager,
-  target: loadPointsByManagerFx,
-});
-
-sample({
-  source: loadPointsWithoutManager,
-  target: loadPointsWithoutManagerFx,
 });
 
 sample({
