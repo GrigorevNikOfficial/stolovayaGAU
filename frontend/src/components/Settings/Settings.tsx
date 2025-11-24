@@ -7,6 +7,7 @@ import { DeliverySettings } from './DeliverySettings.tsx';
 import { EmployeeManagement } from './EmployeeManagement.tsx';
 import { OrderSettings } from './OrderSettings.tsx';
 import { UserBalances } from './UserBalances.tsx';
+import { PointManagement } from './PointManagement.tsx';
 
 export const Settings: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
@@ -36,6 +37,12 @@ export const Settings: React.FC = () => {
       id: 'balances',
       label: 'Баланс пользователей',
       icon: '💰',
+      roles: ['admin'],
+    },
+    {
+      id: 'points',
+      label: 'Товарные точки',
+      icon: '',
       roles: ['admin'],
     },
     {
@@ -102,6 +109,8 @@ export const Settings: React.FC = () => {
           {visibleTabs[activeTab].id === 'employees' && <EmployeeManagement />}
 
           {visibleTabs[activeTab].id === 'balances' && <UserBalances />}
+
+          {visibleTabs[activeTab].id === 'points' && <PointManagement />}
 
           {visibleTabs[activeTab].id === 'notifications' && (
             <div className="text-center py-12">

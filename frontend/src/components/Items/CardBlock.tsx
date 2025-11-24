@@ -14,6 +14,10 @@ import {
   fetchDeliverySettings,
 } from '../../models/settings.ts';
 import { $currentUser } from '../../models/users.ts';
+import { $points, loadPoints } from '../../models/points.ts';
+import { $stockWithDetails, loadStockWithDetails } from '../../models/stock.ts';
+import type { Point } from '../../types/points.ts';
+import type { StockWithDetails } from '../../types/stock.ts';
 import Button from '../layout/Button/Button.tsx';
 import Select from '../layout/Select/Select.tsx';
 
@@ -21,31 +25,40 @@ const formatCurrency = (value: number) =>
   Number.isInteger(value) ? value.toString() : value.toFixed(2);
 
 interface CartBlockProps {
-  onOrderCreated?: () => void; // Добавляем callback
+  onOrderCreated?: () => void;
 }
 
 export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const [deliveryMethod, setDeliveryMethod] = useState<
     'dine_in' | 'pickup' | 'delivery'
   >('pickup');
+
   const [
     cart,
     cartTotal,
     currentUser,
     isCreating,
+    points,
+    stockWithDetails,
     handleRemoveFromCart,
     handleUpdateQuantity,
     handleClearCart,
     handleCreateOrder,
+    handleLoadPoints,
+    handleLoadStock,
   ] = useUnit([
     $cart,
     $cartTotal,
     $currentUser,
     $isCreating,
+    $points,
+    $stockWithDetails,
     removeFromCart,
     updateCartItemQuantity,
     clearCart,
     createOrderFromCart,
+    loadPoints,
+    loadStockWithDetails,
   ]);
 
   const [settings, handleFetchSettings] = useUnit([
@@ -53,13 +66,19 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     fetchDeliverySettings,
   ]);
 
-  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [selectedPoint, setSelectedPoint] = useState<string>('');
+  const [tableNumber, setTableNumber] = useState<string>('');
   const currentBalance = currentUser?.balance ?? 0;
 
-  const deliveryAddressOptions = [
-    { value: 'эк', label: 'Экономический корпус' },
-    { value: 'гл', label: 'Главный корпус' },
-  ];
+  // Фильтруем точки по типу доставки
+  const availablePoints = points.filter(point => {
+    if (deliveryMethod === 'delivery') {
+      return point.type === 'store' && point.isActive;
+    } else if (deliveryMethod === 'dine_in') {
+      return point.type === 'canteen' && point.isActive;
+    }
+    return point.isActive; // для pickup доступны все точки
+  });
 
   const serviceFeeValue = Number(settings.serviceFeeValue) || 0;
   const serviceFeeType = settings.serviceFeeType || 'percent';
@@ -77,14 +96,43 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     : true;
   const remainingBalance =
     Math.round((currentBalance - cartTotalWithServiceFee) * 100) / 100;
-  const serviceFeeLabel =
-    serviceFeeType === 'percent'
-      ? `${serviceFeeValue}%`
-      : `${formatCurrency(serviceFeeValue)} ₽`;
 
   useEffect(() => {
     handleFetchSettings();
-  }, [handleFetchSettings]);
+    handleLoadPoints();
+  }, [handleFetchSettings, handleLoadPoints]);
+
+  // Загружаем stock при выборе точки
+  useEffect(() => {
+    if (selectedPoint) {
+      handleLoadStock({ pointId: selectedPoint });
+    }
+  }, [selectedPoint, handleLoadStock]);
+
+  // Сбрасываем выбранную точку при смене метода доставки
+  useEffect(() => {
+    setSelectedPoint('');
+    setTableNumber('');
+  }, [deliveryMethod]);
+
+  // Проверка доступности товаров в корзине для выбранной точки
+  const getCartAvailability = () => {
+    if (!selectedPoint) return { allAvailable: true, unavailableItems: [] };
+
+    const unavailableItems = cart.filter(cartItem => {
+      const stock = stockWithDetails.find(
+        s => s.pointId === selectedPoint && s.productId === cartItem.item._id
+      );
+      return !stock || stock.available < cartItem.quantity;
+    });
+
+    return {
+      allAvailable: unavailableItems.length === 0,
+      unavailableItems,
+    };
+  };
+
+  const { allAvailable, unavailableItems } = getCartAvailability();
 
   // Проверка доступности методов получения по времени
   const checkTimeAvailability = (
@@ -133,9 +181,21 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
       return;
     }
 
-    // Валидация для доставки
-    if (deliveryMethod === 'delivery' && !deliveryAddress) {
-      alert('Пожалуйста, выберите адрес доставки');
+    // Валидация
+    if (!selectedPoint) {
+      alert('Пожалуйста, выберите точку для заказа');
+      return;
+    }
+
+    if (deliveryMethod === 'dine_in' && !tableNumber) {
+      alert('Пожалуйста, укажите номер стола');
+      return;
+    }
+
+    if (!allAvailable) {
+      alert(
+        'Некоторые товары в корзине недоступны в выбранной точке. Пожалуйста, обновите корзину.'
+      );
       return;
     }
 
@@ -145,15 +205,29 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     }
 
     try {
-      await handleCreateOrder({
-        delivery_method: deliveryMethod,
-        ...(deliveryMethod === 'dine_in' && { table_number: 1 }),
-        ...(deliveryMethod === 'delivery' && {
-          delivery_address: deliveryAddress,
-        }),
+      // Подготавливаем items с stock_id
+      const orderItems = cart.map(cartItem => {
+        const stock = stockWithDetails.find(
+          s => s.pointId === selectedPoint && s.productId === cartItem.item._id
+        );
+        return {
+          stock_id: stock?._id || '', // Используем stock_id
+          quantity: cartItem.quantity,
+        };
       });
 
-      // После успешного создания заказа вызываем callback
+      await handleCreateOrder({
+        delivery_method: deliveryMethod,
+        point_id: selectedPoint, // Добавляем ID точки
+        ...(deliveryMethod === 'dine_in' && {
+          table_number: Number(tableNumber),
+        }),
+        ...(deliveryMethod === 'delivery' && {
+          delivery_address: 'доставка в точку', // Можно уточнить адрес если нужно
+        }),
+        items: orderItems,
+      });
+
       if (onOrderCreated) {
         onOrderCreated();
       }
@@ -162,14 +236,22 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     }
   };
 
+  // Получаем информацию о выбранной точке
+  const getSelectedPointInfo = () => {
+    return availablePoints.find(point => point._id === selectedPoint);
+  };
+
+  const selectedPointInfo = getSelectedPointInfo();
+
   return (
     <div className="h-full flex flex-col">
       {/* Выбор способа получения */}
       {cart.length > 0 && (
-        <div className="p-6 border-b border-gray-100">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+        <div className="p-6 border-b border-gray-100 space-y-4">
+          <label className="block text-sm font-medium text-gray-700">
             Способ получения
           </label>
+
           <div className="flex gap-2">
             <button
               onClick={() => setDeliveryMethod('pickup')}
@@ -182,8 +264,9 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {pickupAvailability.available ? 'Забрать с собой' : '✕'}
+              {pickupAvailability.available ? 'Самовывоз' : '✕'}
             </button>
+
             <button
               onClick={() => setDeliveryMethod('dine_in')}
               disabled={!dineInAvailability.available}
@@ -195,8 +278,9 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {dineInAvailability.available ? 'В столовой' : '✕'}
+              {dineInAvailability.available ? 'В зале' : '✕'}
             </button>
+
             <button
               onClick={() => setDeliveryMethod('delivery')}
               disabled={!deliveryAvailability.available}
@@ -208,44 +292,86 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {deliveryAvailability.available ? 'В буфете' : '✕'}
+              {deliveryAvailability.available ? 'Доставка' : '✕'}
             </button>
           </div>
 
-          {/* Сообщения о времени работы */}
-          {!pickupAvailability.available && deliveryMethod === 'pickup' && (
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">
-                ⏰ {pickupAvailability.message}
-              </p>
-            </div>
-          )}
-          {!dineInAvailability.available && deliveryMethod === 'dine_in' && (
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">
-                ⏰ {dineInAvailability.message}
-              </p>
-            </div>
-          )}
-          {!deliveryAvailability.available && (
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">
-                ⏰ {deliveryAvailability.message}
-              </p>
-            </div>
-          )}
-          {settings.deliveryEnabled && deliveryMethod === 'delivery' && (
-            <div className="mt-4">
+          {/* Выбор точки */}
+          {availablePoints.length > 0 && (
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Выберите адрес доставки
+                {deliveryMethod === 'dine_in'
+                  ? 'Выберите столовую'
+                  : deliveryMethod === 'delivery'
+                    ? 'Выберите буфет'
+                    : 'Выберите точку получения'}
               </label>
               <Select
-                options={deliveryAddressOptions}
-                value={deliveryAddress}
-                onChange={setDeliveryAddress}
-                placeholder="Выберите корпус"
-                required={deliveryMethod === 'delivery'}
+                options={[
+                  {
+                    value: '',
+                    label: `Выберите ${deliveryMethod === 'dine_in' ? 'столовую' : deliveryMethod === 'delivery' ? 'буфет' : 'точку'}`,
+                    disabled: true,
+                  },
+                  ...availablePoints.map(point => ({
+                    value: point._id,
+                    label: `${point.name} (${point.location})`,
+                  })),
+                ]}
+                value={selectedPoint}
+                onChange={setSelectedPoint}
+                required={true}
               />
+            </div>
+          )}
+
+          {/* Номер стола для dine_in */}
+          {deliveryMethod === 'dine_in' && selectedPoint && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Номер стола
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={tableNumber}
+                onChange={e => setTableNumber(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent"
+                placeholder="Введите номер стола"
+                required
+              />
+            </div>
+          )}
+
+          {/* Информация о выбранной точке */}
+          {selectedPointInfo && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                📍 {selectedPointInfo.name} • {selectedPointInfo.location}
+                {deliveryMethod === 'dine_in' &&
+                  tableNumber &&
+                  ` • Стол №${tableNumber}`}
+              </p>
+            </div>
+          )}
+
+          {/* Предупреждение о недоступных товарах */}
+          {selectedPoint && !allAvailable && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs text-red-700 font-semibold mb-2">
+                ❌ Некоторые товары недоступны в выбранной точке:
+              </p>
+              {unavailableItems.map(item => (
+                <p key={item.item._id} className="text-xs text-red-600">
+                  • {item.item.name} (нужно: {item.quantity}, доступно:{' '}
+                  {stockWithDetails.find(
+                    s =>
+                      s.pointId === selectedPoint &&
+                      s.productId === item.item._id
+                  )?.available || 0}
+                  )
+                </p>
+              ))}
             </div>
           )}
         </div>
@@ -357,7 +483,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
             </div>
             {serviceFeeAmount > 0 && (
               <div className="flex justify-between text-sm text-gray-600">
-                <span>Сервисный сбор ({serviceFeeLabel})</span>
+                <span>Сервисный сбор</span>
                 <span>{formatCurrency(serviceFeeAmount)} ₽</span>
               </div>
             )}
@@ -383,8 +509,9 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
               onClick={handleSubmitOrder}
               disabled={
                 isCreating ||
-                (deliveryMethod === 'delivery' && !settings.deliveryEnabled) ||
-                (deliveryMethod === 'delivery' && !deliveryAddress) ||
+                (deliveryMethod === 'delivery' &&
+                  !deliveryAvailability.available) ||
+                (deliveryMethod === 'delivery' && !selectedPoint) ||
                 !hasEnoughBalance
               }
               variant="primary"
@@ -393,11 +520,12 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
             >
               {isCreating
                 ? 'Оформление...'
-                : deliveryMethod === 'delivery' && !settings.deliveryEnabled
+                : deliveryMethod === 'delivery' &&
+                    !deliveryAvailability.available
                   ? 'Доставка недоступна'
-                  : deliveryMethod === 'delivery' && !deliveryAddress
-                    ? 'Выберите адрес'
-                    : 'Оформить заказ'}
+                  : deliveryMethod === 'delivery' && !selectedPoint
+                    ? 'Выберите буфет'
+                    : `Оформить заказ ${deliveryMethod === 'delivery' ? `в ${getSelectedStoreName()}` : ''}`}
             </Button>
             <Button
               onClick={handleClearCart}

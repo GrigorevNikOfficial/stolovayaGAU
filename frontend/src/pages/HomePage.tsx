@@ -2,6 +2,8 @@ import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import { CategoriesList } from '../components/Categories/CategoriesList.tsx';
 import { ItemsList } from '../components/Items/ItemsList.tsx';
+import { PointItemsList } from '../components/Points/PointItemsList.tsx';
+import { StockManagement } from '../components/Stock/StockManagement.tsx';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
@@ -23,10 +25,23 @@ const hasRole = (user: any, roles: string | string[]): boolean => {
   return rolesArray.includes(user.role);
 };
 
+// Функция для определения типа администратора
+const getAdminType = (user: any) => {
+  if (!user) return null;
+
+  if (user.role === 'admin') return 'system';
+  if (user.role === 'canteenManager' || user.role === 'cateenManager')
+    return 'canteen';
+  if (user.role === 'storeManager') return 'store';
+
+  return null;
+};
+
 export const HomePage: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
   const [cart] = useUnit([$cart]);
   const [activeTab, setActiveTab] = useState(0);
+  const [activeSubTab, setActiveSubTab] = useState<'items' | 'stock'>('items');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
 
@@ -35,6 +50,12 @@ export const HomePage: React.FC = () => {
     ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() ||
       'U'
     : '';
+
+  const adminType = getAdminType(currentUser);
+  const isAdmin = adminType !== null;
+  const isSystemAdmin = adminType === 'system';
+  const isCanteenAdmin = adminType === 'canteen';
+  const isStoreAdmin = adminType === 'store';
 
   const handleNavigation = (path: string) => {
     window.history.pushState({}, '', path);
@@ -64,9 +85,20 @@ export const HomePage: React.FC = () => {
         id: 'orders',
         label: 'Заказы',
         icon: '📦',
-        roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
+        roles: [
+          'admin',
+          'canteenManager',
+          'cateenManager',
+          'storeManager',
+          'user',
+        ],
       },
-      { id: 'settings', label: 'Настройки', icon: '⚙️', roles: ['admin'] },
+      {
+        id: 'settings',
+        label: 'Настройки',
+        icon: '⚙️',
+        roles: ['admin'],
+      },
     ];
 
     return allTabs.filter(tab => hasRole(currentUser, tab.roles));
@@ -83,6 +115,87 @@ export const HomePage: React.FC = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [activeTab]);
+
+  // Сбрасываем субтаб при смене основного таба
+  useEffect(() => {
+    setActiveSubTab('items');
+  }, [activeTab]);
+
+  // Получаем заголовок для активного таба с учетом субтабов
+  const getActiveTabTitle = () => {
+    const currentTab = visibleTabs[activeTab];
+    if (!currentTab) return '';
+
+    if (currentTab.id === 'menu') {
+      if (isAdmin) {
+        return activeSubTab === 'items' ? 'Создание товаров' : 'Учет товаров';
+      }
+      return 'Выбор точки и товаров';
+    }
+
+    return currentTab.label;
+  };
+
+  // Получаем контент для активного таба
+  const renderActiveTabContent = () => {
+    const currentTab = visibleTabs[activeTab];
+    if (!currentTab) return null;
+
+    switch (currentTab.id) {
+      case 'menu':
+        if (isAdmin) {
+          // Для админов показываем субтабы
+          return (
+            <div className="h-full flex flex-col">
+              {/* Субтабы для админов */}
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => setActiveSubTab('items')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
+                    activeSubTab === 'items'
+                      ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                  }`}
+                >
+                  📦 Создание товаров
+                </button>
+                <button
+                  onClick={() => setActiveSubTab('stock')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
+                    activeSubTab === 'stock'
+                      ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                  }`}
+                >
+                  📊 Учет товаров
+                </button>
+              </div>
+
+              {/* Контент субтабов */}
+              <div className="flex-1 overflow-y-auto">
+                {activeSubTab === 'items' && <ItemsList />}
+                {activeSubTab === 'stock' && <StockManagement />}
+              </div>
+            </div>
+          );
+        } else {
+          // Для обычных пользователей - выбор точки и товаров
+          return <PointItemsList />;
+        }
+
+      case 'categories':
+        return <CategoriesList />;
+
+      case 'orders':
+        return <OrdersList />;
+
+      case 'settings':
+        return <Settings />;
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -173,69 +286,39 @@ export const HomePage: React.FC = () => {
 
           {/* Контент активного таба */}
           {activeTab < visibleTabs.length && (
-            <>
-              {visibleTabs[activeTab].id === 'menu' && (
-                <div className="h-full">
-                  <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                        Меню
-                      </h2>
-                      {/* Индикатор активного таба для мобильных */}
-                      <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                        <span>{visibleTabs[activeTab].icon}</span>
-                        <span>{visibleTabs[activeTab].label}</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <ItemsList />
-                    </div>
-                  </div>
+            <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+              {/* Заголовок таба */}
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  {getActiveTabTitle()}
+                </h2>
+
+                {/* Индикатор активного таба для мобильных */}
+                <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  <span>{visibleTabs[activeTab].icon}</span>
+                  <span>{visibleTabs[activeTab].label}</span>
+                </div>
+              </div>
+
+              {/* Дополнительная информация для админов в меню */}
+              {visibleTabs[activeTab].id === 'menu' && isAdmin && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    {isSystemAdmin &&
+                      '💼 Системный администратор: управление всеми товарами и точками'}
+                    {isCanteenAdmin &&
+                      '🏢 Администратор столовой: управление товарами столовой'}
+                    {isStoreAdmin &&
+                      '🏪 Администратор буфета: управление товарами буфета'}
+                  </p>
                 </div>
               )}
 
-              {visibleTabs[activeTab].id === 'categories' && (
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between ">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                      <span>{visibleTabs[activeTab].icon}</span>
-                      <span>{visibleTabs[activeTab].label}</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <CategoriesList />
-                  </div>
-                </div>
-              )}
-
-              {visibleTabs[activeTab].id === 'orders' && (
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between ">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                      <span>{visibleTabs[activeTab].icon}</span>
-                      <span>{visibleTabs[activeTab].label}</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <OrdersList />
-                  </div>
-                </div>
-              )}
-
-              {visibleTabs[activeTab].id === 'settings' && (
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between ">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                      <span>{visibleTabs[activeTab].icon}</span>
-                      <span>{visibleTabs[activeTab].label}</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <Settings />
-                  </div>
-                </div>
-              )}
-            </>
+              {/* Основной контент */}
+              <div className="flex-1 overflow-y-auto">
+                {renderActiveTabContent()}
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -1,3 +1,4 @@
+// models/Order.js
 import mongoose from 'mongoose';
 
 const statusHistorySchema = new mongoose.Schema({
@@ -16,6 +17,11 @@ const statusHistorySchema = new mongoose.Schema({
 });
 
 const orderItemSchema = new mongoose.Schema({
+    stock_id: { // ИЗМЕНЕНО: теперь ссылаемся на Stock
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Stock',
+        required: true
+    },
     item_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Item',
@@ -57,6 +63,16 @@ const orderSchema = new mongoose.Schema({
         last_name: String,
         phone: String,
         email: String
+    },
+    point_id: { // НОВОЕ: ID точки заказа
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Point',
+        required: true
+    },
+    point_info: { // НОВОЕ: информация о точке (для быстрого доступа)
+        name: String,
+        type: String,
+        location: String
     },
     items: [orderItemSchema],
     total_amount: {

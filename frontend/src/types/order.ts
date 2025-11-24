@@ -1,12 +1,13 @@
+// types/order.ts
 export interface Order {
-  _id: string; // Из number в string (ObjectId)
-  user_id: string; // Из number в string
+  _id: string;
+  user_id: string;
   order_number: string;
-  items_total?: number; // Сумма без сервисного сбора
-  service_fee?: number; // Размер сервисного сбора
-  service_fee_type?: 'percent' | 'fixed' | 'none'; // Тип сбора
-  service_fee_value?: number; // Значение настройки, % или ₽
-  total_amount: number; // Итоговая сумма с учетом сбора
+  items_total?: number;
+  service_fee?: number;
+  service_fee_type?: 'percent' | 'fixed' | 'none';
+  service_fee_value?: number;
+  total_amount: number;
   status:
     | 'created'
     | 'cooking'
@@ -15,59 +16,76 @@ export interface Order {
     | 'ready_for_pickup'
     | 'completed'
     | 'cancelled';
-  delivery_method: 'dine_in' | 'pickup' | 'delivery'; // Добавили dine_in
-  table_number?: number; // Новое поле для dine_in
-  delivery_address?: 'эк' | 'гл';
+  delivery_method: 'dine_in' | 'pickup' | 'delivery';
+  table_number?: number;
+  delivery_address?: string;
+  point_id?: string; // НОВОЕ: ID точки для заказа
   created_at: string;
   updated_at?: string;
-  // Новые поля из MongoDB
   user_info?: {
     first_name: string;
     last_name: string;
     phone: string;
     email: string;
   };
-  status_history?: OrderHistory[]; // Встроенная история
+  status_history?: OrderHistory[];
+  point_info?: {
+    // НОВОЕ: информация о точке
+    _id: string;
+    name: string;
+    type: 'canteen' | 'store';
+    location: string;
+  };
 }
 
 export interface OrderItem {
-  _id: string; // Из number в string
-  order_id: string; // Из number в string
-  item_id: string; // Из number в string
-  uniq_nom: string; // Новое поле
+  _id: string;
+  order_id: string;
+  item_id: string;
+  uniq_nom: string;
   name: string;
   quantity: number;
   price_at_time: number;
-  // image_url и description теперь не нужны, т.к. есть в items
+  stock_id?: string; // НОВОЕ: ID записи stock для отслеживания
 }
 
 export interface OrderWithDetails extends Order {
   items: OrderItem[];
   history: OrderHistory[];
+  point?: {
+    // НОВОЕ: детальная информация о точке
+    _id: string;
+    name: string;
+    type: 'canteen' | 'store';
+    location: string;
+    phone: string;
+  };
 }
 
 export interface OrderHistory {
-  _id: string; // Из number в string
-  order_id: string; // Из number в string
+  _id: string;
+  order_id: string;
   status: string;
   notes: string;
   changed_at: string;
 }
 
 export interface CreateOrderRequest {
+  delivery_method: 'dine_in' | 'pickup' | 'delivery';
+  table_number?: number;
+  delivery_address?: string;
+  point_id?: string; // НОВОЕ: ID точки для заказа
   items: Array<{
-    id: string; // Из number в string
+    stock_id: string; // ИЗМЕНЕНО: теперь используем stock_id вместо item_id
     quantity: number;
   }>;
-  delivery_method: 'dine_in' | 'pickup' | 'delivery';
-  table_number?: number; // Для dine_in
-  delivery_address?: string; // Для delivery
 }
 
 export interface UpdateOrderRequest {
-  id: string; // Из number в string
+  id: string;
   status?: Order['status'];
   delivery_method?: 'dine_in' | 'pickup' | 'delivery';
   table_number?: number;
   delivery_address?: string;
+  point_id?: string; // НОВОЕ: можно обновить точку
 }

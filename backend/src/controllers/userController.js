@@ -1,11 +1,13 @@
+// controllers/userController.js
 import { S3_FOLDERS } from "../config/storage.js";
 import { User } from "../models/User.js";
+import { Point } from "../models/Point.js"; // НОВОЕ: импорт модели Point
 import {
-    buildPublicUrl,
-    DEFAULT_PROFILE_PICTURE_KEY,
-    deleteObject,
-    StorageServiceError,
-    uploadImage,
+  buildPublicUrl,
+  DEFAULT_PROFILE_PICTURE_KEY,
+  deleteObject,
+  StorageServiceError,
+  uploadImage,
 } from "../services/storageService.js";
 import { generateToken } from "./auth.js";
 
@@ -41,6 +43,13 @@ const mapUserToResponse = (user) => {
     mail: user.email,
     role: user.role,
     balance: user.balance ?? 0,
+    point_id: user.point_id, // НОВОЕ: добавляем point_id
+    point_info: user.point_id ? { // НОВОЕ: добавляем информацию о точке
+      _id: user.point_id._id || user.point_id,
+      name: user.point_id.name,
+      type: user.point_id.type,
+      location: user.point_id.location
+    } : undefined,
     created_at: user.createdAt,
     avatar: {
       key: avatarKey,
@@ -51,12 +60,12 @@ const mapUserToResponse = (user) => {
 
 export const register = async (req, res) => {
   try {
-    const { first_name, last_name, phone, mail, password } = req.body;
+    const { first_name, last_name, phone, mail, password, role, point_id } = req.body;
 
     if (!first_name || !last_name || !phone || !mail || !password) {
       return res
-        .status(400)
-        .json({ error: "Все поля обязательны для заполнения" });
+          .status(400)
+          .json({ error: "Все поля обязательны для заполнения" });
     }
 
     // Форматируем телефон с +7
@@ -68,10 +77,26 @@ export const register = async (req, res) => {
 
     if (existingUser) {
       return res
-        .status(400)
-        .json({
-          error: "Пользователь с таким телефоном или почтой уже существует",
-        });
+          .status(400)
+          .json({
+            error: "Пользователь с таким телефоном или почтой уже существует",
+          });
+    }
+
+    // Для менеджеров точек проверяем существование точки
+    if ((role === 'canteenManager' || role === 'storeManager') && point_id) {
+      const point = await Point.findById(point_id);
+      if (!point) {
+        return res.status(400).json({ error: "Указанная точка не найдена" });
+      }
+
+      // Проверяем соответствие типа точки и роли
+      if (role === 'canteenManager' && point.type !== 'canteen') {
+        return res.status(400).json({ error: "Администратор столовой может быть привязан только к столовой" });
+      }
+      if (role === 'storeManager' && point.type !== 'store') {
+        return res.status(400).json({ error: "Администратор буфета может быть привязан только к буфету" });
+      }
     }
 
     const user = new User({
@@ -80,10 +105,16 @@ export const register = async (req, res) => {
       phone: formattedPhone,
       email: mail,
       password,
-      role: "user",
+      role: role || "user",
+      point_id: (role === 'canteenManager' || role === 'storeManager') ? point_id : undefined,
     });
 
     await user.save();
+
+    // Заполняем информацию о точке
+    if (user.point_id) {
+      await user.populate('point_id', 'name type location');
+    }
 
     const token = generateToken(user._id);
 
@@ -97,10 +128,10 @@ export const register = async (req, res) => {
 
     if (error.code === 11000) {
       return res
-        .status(409)
-        .json({
-          error: "Пользователь с таким телефоном или почтой уже существует",
-        });
+          .status(409)
+          .json({
+            error: "Пользователь с таким телефоном или почтой уже существует",
+          });
     }
 
     res.status(500).json({ error: "Ошибка при регистрации" });
@@ -118,7 +149,7 @@ export const login = async (req, res) => {
     // Форматируем телефон с +7
     const formattedPhone = formatPhone(phone);
 
-    const user = await User.findOne({ phone: formattedPhone });
+    const user = await User.findOne({ phone: formattedPhone }).populate('point_id', 'name type location');
     if (!user) {
       return res.status(401).json({ error: "Неверный телефон или пароль" });
     }
@@ -143,7 +174,8 @@ export const login = async (req, res) => {
 
 export const getMe = async (req, res) => {
   try {
-    res.json({ user: mapUserToResponse(req.user) });
+    const user = await User.findById(req.user._id).populate('point_id', 'name type location');
+    res.json({ user: mapUserToResponse(user) });
   } catch (error) {
     console.error("Get me error:", error);
     res.status(500).json({ error: "Ошибка при получении профиля" });
@@ -168,10 +200,10 @@ export const updateProfile = async (req, res) => {
 
       if (existingUser) {
         return res
-          .status(400)
-          .json({
-            error: "Пользователь с таким телефоном или почтой уже существует",
-          });
+            .status(400)
+            .json({
+              error: "Пользователь с таким телефоном или почтой уже существует",
+            });
       }
     }
 
@@ -184,7 +216,7 @@ export const updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
       new: true,
       runValidators: true,
-    }).select("-password");
+    }).select("-password").populate('point_id', 'name type location');
 
     res.json({
       message: "Профиль успешно обновлен",
@@ -199,8 +231,9 @@ export const updateProfile = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({})
-      .select("-password")
-      .sort({ createdAt: -1 });
+        .select("-password")
+        .populate('point_id', 'name type location')
+        .sort({ createdAt: -1 });
 
     res.json({ users: users.map(mapUserToResponse) });
   } catch (error) {
@@ -218,15 +251,15 @@ export const topUpUserBalance = async (req, res) => {
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       return res
-        .status(400)
-        .json({ error: "Сумма пополнения должна быть положительным числом" });
+          .status(400)
+          .json({ error: "Сумма пополнения должна быть положительным числом" });
     }
 
     const user = await User.findByIdAndUpdate(
-      id,
-      { $inc: { balance: parsedAmount } },
-      { new: true, runValidators: true }
-    ).select("-password");
+        id,
+        { $inc: { balance: parsedAmount } },
+        { new: true, runValidators: true }
+    ).select("-password").populate('point_id', 'name type location');
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
@@ -239,15 +272,15 @@ export const topUpUserBalance = async (req, res) => {
   } catch (error) {
     console.error("Top up balance error:", error);
     res
-      .status(500)
-      .json({ error: "Ошибка при пополнении баланса пользователя" });
+        .status(500)
+        .json({ error: "Ошибка при пополнении баланса пользователя" });
   }
 };
 
 export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { role } = req.body;
+    const { role, point_id } = req.body;
 
     const validRoles = [
       "user",
@@ -258,18 +291,44 @@ export const updateUserRole = async (req, res) => {
     ];
     if (!role || !validRoles.includes(role)) {
       return res
-        .status(400)
-        .json({
-          error:
-            "Неверная роль. Допустимые роли: user, admin, canteenManager, cateenManager, storeManager",
-        });
+          .status(400)
+          .json({
+            error:
+                "Неверная роль. Допустимые роли: user, admin, canteenManager, cateenManager, storeManager",
+          });
+    }
+
+    // Для менеджеров точек проверяем существование точки
+    let pointData = {};
+    if (role === 'canteenManager' || role === 'storeManager') {
+      if (!point_id) {
+        return res.status(400).json({ error: "Для менеджера точки необходимо указать точку" });
+      }
+
+      const point = await Point.findById(point_id);
+      if (!point) {
+        return res.status(400).json({ error: "Указанная точка не найдена" });
+      }
+
+      // Проверяем соответствие типа точки и роли
+      if (role === 'canteenManager' && point.type !== 'canteen') {
+        return res.status(400).json({ error: "Администратор столовой может быть привязан только к столовой" });
+      }
+      if (role === 'storeManager' && point.type !== 'store') {
+        return res.status(400).json({ error: "Администратор буфета может быть привязан только к буфету" });
+      }
+
+      pointData.point_id = point_id;
+    } else {
+      // Для других ролей сбрасываем точку
+      pointData.point_id = null;
     }
 
     const user = await User.findByIdAndUpdate(
-      id,
-      { role },
-      { new: true, runValidators: true }
-    ).select("-password");
+        id,
+        { role, ...pointData },
+        { new: true, runValidators: true }
+    ).select("-password").populate('point_id', 'name type location');
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
@@ -298,8 +357,8 @@ export const updateUserAvatar = async (req, res) => {
 
     if (!isSelf && !isAdmin) {
       return res
-        .status(403)
-        .json({ error: "Недостаточно прав для изменения аватара" });
+          .status(403)
+          .json({ error: "Недостаточно прав для изменения аватара" });
     }
 
     if (!req.file || !req.file.buffer) {
@@ -325,9 +384,9 @@ export const updateUserAvatar = async (req, res) => {
     await user.save();
 
     if (
-      previousKey &&
-      previousKey !== DEFAULT_PROFILE_PICTURE_KEY &&
-      previousKey !== uploadResult.key
+        previousKey &&
+        previousKey !== DEFAULT_PROFILE_PICTURE_KEY &&
+        previousKey !== uploadResult.key
     ) {
       try {
         await deleteObject(previousKey);
@@ -335,6 +394,9 @@ export const updateUserAvatar = async (req, res) => {
         console.warn("Failed to delete previous avatar from S3:", deleteError);
       }
     }
+
+    // Заполняем информацию о точке
+    await user.populate('point_id', 'name type location');
 
     res.json({
       message: "Аватар успешно обновлен",
@@ -345,10 +407,10 @@ export const updateUserAvatar = async (req, res) => {
 
     if (error instanceof StorageServiceError) {
       return res
-        .status(502)
-        .json({
-          error: "Ошибка при загрузке изображения. Повторите попытку позже.",
-        });
+          .status(502)
+          .json({
+            error: "Ошибка при загрузке изображения. Повторите попытку позже.",
+          });
     }
 
     res.status(500).json({ error: "Ошибка при обновлении аватара" });
@@ -358,19 +420,24 @@ export const updateUserAvatar = async (req, res) => {
 // Создать сотрудника (только для админа)
 export const createEmployee = async (req, res) => {
   try {
-    const { first_name, last_name, phone, mail, password, role } = req.body;
+    const { first_name, last_name, phone, mail, password, role, point_id } = req.body;
 
     // Проверка обязательных полей
     if (!first_name || !last_name || !phone || !mail || !password || !role) {
       return res
-        .status(400)
-        .json({ error: "Все поля обязательны для заполнения" });
+          .status(400)
+          .json({ error: "Все поля обязательны для заполнения" });
     }
 
     // Проверка допустимых ролей
     const allowedRoles = ["user", "admin", "canteenManager", "cateenManager", "storeManager"];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: "Недопустимая роль" });
+    }
+
+    // Для менеджеров точек проверяем наличие точки
+    if ((role === 'canteenManager' || role === 'storeManager') && !point_id) {
+      return res.status(400).json({ error: "Для менеджера точки необходимо указать точку" });
     }
 
     // Форматируем телефон
@@ -387,6 +454,22 @@ export const createEmployee = async (req, res) => {
       });
     }
 
+    // Для менеджеров точек проверяем существование точки
+    if ((role === 'canteenManager' || role === 'storeManager') && point_id) {
+      const point = await Point.findById(point_id);
+      if (!point) {
+        return res.status(400).json({ error: "Указанная точка не найдена" });
+      }
+
+      // Проверяем соответствие типа точки и роли
+      if (role === 'canteenManager' && point.type !== 'canteen') {
+        return res.status(400).json({ error: "Администратор столовой может быть привязан только к столовой" });
+      }
+      if (role === 'storeManager' && point.type !== 'store') {
+        return res.status(400).json({ error: "Администратор буфета может быть привязан только к буфету" });
+      }
+    }
+
     // Создаем пользователя с выбранной ролью
     const user = new User({
       first_name,
@@ -396,9 +479,15 @@ export const createEmployee = async (req, res) => {
       password,
       role: role,
       balance: 0,
+      point_id: (role === 'canteenManager' || role === 'storeManager') ? point_id : undefined,
     });
 
     await user.save();
+
+    // Заполняем информацию о точке
+    if (user.point_id) {
+      await user.populate('point_id', 'name type location');
+    }
 
     res.status(201).json({
       message: "Сотрудник успешно создан",
@@ -439,4 +528,3 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ error: "Ошибка при удалении пользователя" });
   }
 };
-

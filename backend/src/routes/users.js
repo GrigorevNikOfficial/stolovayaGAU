@@ -1,3 +1,4 @@
+// routes/users.js
 import express from "express";
 import { authenticateToken, requireAdmin } from "../controllers/auth.js";
 import {
@@ -24,10 +25,10 @@ router.post("/login", login);
 router.get("/me", authenticateToken, getMe);
 router.put("/profile", authenticateToken, updateProfile);
 router.patch(
-  "/:id/avatar",
-  authenticateToken,
-  singleImageUpload("avatar"),
-  updateUserAvatar
+    "/:id/avatar",
+    authenticateToken,
+    singleImageUpload("avatar"),
+    updateUserAvatar
 );
 
 // Админ роуты
@@ -36,10 +37,10 @@ router.post("/employees", authenticateToken, requireAdmin, createEmployee);
 router.put("/:id/role", authenticateToken, requireAdmin, updateUserRole);
 router.delete("/:id", authenticateToken, requireAdmin, deleteUser);
 router.post(
-  "/:id/balance/top-up",
-  authenticateToken,
-  requireAdmin,
-  topUpUserBalance
+    "/:id/balance/top-up",
+    authenticateToken,
+    requireAdmin,
+    topUpUserBalance
 );
 
 export { router };

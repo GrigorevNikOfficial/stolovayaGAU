@@ -1,8 +1,11 @@
+// api/users.ts
 import type {
-    LoginRequest,
-    RegisterRequest,
-    UpdateProfileRequest,
-    User,
+  LoginRequest,
+  RegisterRequest,
+  UpdateProfileRequest,
+  User,
+  CreateEmployeeRequest,
+  UpdateEmployeeRequest,
 } from '../types/user';
 import { httpClient } from './http-client';
 
@@ -22,7 +25,6 @@ export const usersApi = {
     return response;
   },
 
-  // Вход
   login: async (
     credentials: LoginRequest
   ): Promise<{
@@ -38,13 +40,11 @@ export const usersApi = {
     return response;
   },
 
-  // Получить профиль
   getMe: async (): Promise<{ user: User }> => {
     const response = await httpClient.get<{ user: User }>('/users/me');
     return response;
   },
 
-  // Обновить профиль
   updateProfile: async (
     userData: UpdateProfileRequest
   ): Promise<{
@@ -58,16 +58,15 @@ export const usersApi = {
     return response;
   },
 
-  // Получить всех пользователей (админ)
   getUsers: async (): Promise<{ users: User[] }> => {
     const response = await httpClient.get<{ users: User[] }>('/users');
     return response;
   },
 
-  // Обновить роль пользователя (админ)
   updateUserRole: async (
     id: string,
-    role: 'user' | 'admin'
+    role: 'user' | 'admin' | 'canteenManager' | 'storeManager',
+    point_id?: string
   ): Promise<{
     message: string;
     user: User;
@@ -75,11 +74,10 @@ export const usersApi = {
     const response = await httpClient.put<{
       message: string;
       user: User;
-    }>(`/users/${id}/role`, { role });
+    }>(`/users/${id}/role`, { role, point_id });
     return response;
   },
 
-  // Обновить аватар пользователя
   uploadAvatar: async (
     id: string,
     file: File
@@ -97,7 +95,6 @@ export const usersApi = {
     return response;
   },
 
-  // Пополнить баланс пользователя (админ)
   topUpBalance: async (
     id: string,
     amount: number
@@ -112,9 +109,8 @@ export const usersApi = {
     return response;
   },
 
-  // Создать сотрудника (админ)
   createEmployee: async (
-    employeeData: RegisterRequest & { role: string }
+    employeeData: CreateEmployeeRequest
   ): Promise<{
     message: string;
     user: User;
@@ -126,7 +122,20 @@ export const usersApi = {
     return response;
   },
 
-  // Удалить пользователя (админ)
+  updateEmployee: async (
+    id: string,
+    employeeData: UpdateEmployeeRequest
+  ): Promise<{
+    message: string;
+    user: User;
+  }> => {
+    const response = await httpClient.put<{
+      message: string;
+      user: User;
+    }>(`/users/${id}`, employeeData);
+    return response;
+  },
+
   deleteUser: async (
     id: string
   ): Promise<{

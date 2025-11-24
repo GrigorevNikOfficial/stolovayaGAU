@@ -1,3 +1,4 @@
+// models/users.ts
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { usersApi } from '../api/users';
 import type {
@@ -5,6 +6,8 @@ import type {
   RegisterRequest,
   UpdateProfileRequest,
   User,
+  CreateEmployeeRequest,
+  UpdateEmployeeRequest,
 } from '../types/user';
 import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 
@@ -13,11 +16,18 @@ export const login = createEvent<LoginRequest>();
 export const register = createEvent<RegisterRequest>();
 export const logout = createEvent();
 export const updateProfile = createEvent<UpdateProfileRequest>();
-export const loadUsers = createEvent(); // Админ
+export const loadUsers = createEvent();
 export const updateUserRole = createEvent<{
   id: string;
-  role: 'user' | 'admin';
-}>(); // Админ
+  role: 'user' | 'admin' | 'canteenManager' | 'storeManager';
+  point_id?: string;
+}>();
+export const createEmployee = createEvent<CreateEmployeeRequest>();
+export const updateEmployee = createEvent<{
+  id: string;
+  data: UpdateEmployeeRequest;
+}>();
+export const deleteUser = createEvent<string>();
 export const uploadAvatar = createEvent<{ id: string; file: File }>();
 export const topUpUserBalance = createEvent<{ id: string; amount: number }>();
 export const updateCurrentUserBalance = createEvent<number>();
@@ -51,11 +61,38 @@ export const loadUsersFx = createEffect(async (): Promise<User[]> => {
 });
 
 export const updateUserRoleFx = createEffect(
-  async ({ id, role }: { id: string; role: 'user' | 'admin' }) => {
-    const response = await usersApi.updateUserRole(id, role);
+  async ({
+    id,
+    role,
+    point_id,
+  }: {
+    id: string;
+    role: 'user' | 'admin' | 'canteenManager' | 'storeManager';
+    point_id?: string;
+  }) => {
+    const response = await usersApi.updateUserRole(id, role, point_id);
     return response.user;
   }
 );
+
+export const createEmployeeFx = createEffect(
+  async (employeeData: CreateEmployeeRequest) => {
+    const response = await usersApi.createEmployee(employeeData);
+    return response.user;
+  }
+);
+
+export const updateEmployeeFx = createEffect(
+  async ({ id, data }: { id: string; data: UpdateEmployeeRequest }) => {
+    const response = await usersApi.updateEmployee(id, data);
+    return response.user;
+  }
+);
+
+export const deleteUserFx = createEffect(async (id: string) => {
+  const response = await usersApi.deleteUser(id);
+  return { id, response };
+});
 
 export const uploadAvatarFx = createEffect(
   async ({ id, file }: { id: string; file: File }) => {
@@ -86,10 +123,17 @@ export const $currentUser = createStore<User | null>(null)
   )
   .reset(logout);
 
-export const $users = createStore<User[]>([]) // Админ
+export const $users = createStore<User[]>([])
   .on(loadUsersFx.doneData, (_, users) => users)
   .on(updateUserRoleFx.doneData, (state, updatedUser) =>
     state.map(user => (user._id === updatedUser._id ? updatedUser : user))
+  )
+  .on(createEmployeeFx.doneData, (state, newUser) => [...state, newUser])
+  .on(updateEmployeeFx.doneData, (state, updatedUser) =>
+    state.map(user => (user._id === updatedUser._id ? updatedUser : user))
+  )
+  .on(deleteUserFx.doneData, (state, { id }) =>
+    state.filter(user => user._id !== id)
   )
   .on(topUpUserBalanceFx.doneData, (state, updatedUser) =>
     state.map(user => (user._id === updatedUser._id ? updatedUser : user))
@@ -101,10 +145,23 @@ export const $authError = createStore<string | null>(null)
   .on(getMeFx.fail, (_, { error }) => error.message)
   .reset([login, register, logout]);
 
+export const $usersError = createStore<string | null>(null)
+  .on(loadUsersFx.fail, (_, { error }) => error.message)
+  .on(createEmployeeFx.fail, (_, { error }) => error.message)
+  .on(updateEmployeeFx.fail, (_, { error }) => error.message)
+  .on(deleteUserFx.fail, (_, { error }) => error.message)
+  .reset([loadUsers, createEmployee, updateEmployee, deleteUser]);
+
 export const $isLoading = createStore(false)
   .on(loginFx.pending, (_, pending) => pending)
   .on(registerFx.pending, (_, pending) => pending)
   .on(getMeFx.pending, (_, pending) => pending);
+
+export const $usersLoading = createStore(false)
+  .on(loadUsersFx.pending, (_, pending) => pending)
+  .on(createEmployeeFx.pending, (_, pending) => pending)
+  .on(updateEmployeeFx.pending, (_, pending) => pending)
+  .on(deleteUserFx.pending, (_, pending) => pending);
 
 // Samples
 sample({
@@ -133,6 +190,21 @@ sample({
 });
 
 sample({
+  clock: createEmployee,
+  target: createEmployeeFx,
+});
+
+sample({
+  clock: updateEmployee,
+  target: updateEmployeeFx,
+});
+
+sample({
+  clock: deleteUser,
+  target: deleteUserFx,
+});
+
+sample({
   clock: uploadAvatar,
   target: uploadAvatarFx,
 });
@@ -140,6 +212,55 @@ sample({
 sample({
   clock: topUpUserBalance,
   target: topUpUserBalanceFx,
+});
+
+// Toast уведомления
+sample({
+  clock: createEmployeeFx.done,
+  fn: () => ({ message: 'Сотрудник успешно создан', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: createEmployeeFx.fail,
+  fn: () => ({
+    message: 'Ошибка при создании сотрудника',
+    type: 'error' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: updateEmployeeFx.done,
+  fn: () => ({
+    message: 'Сотрудник успешно обновлен',
+    type: 'success' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: updateEmployeeFx.fail,
+  fn: () => ({
+    message: 'Ошибка при обновлении сотрудника',
+    type: 'error' as const,
+  }),
+  target: showToast,
+});
+
+sample({
+  clock: deleteUserFx.done,
+  fn: () => ({ message: 'Пользователь удален', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: deleteUserFx.fail,
+  fn: () => ({
+    message: 'Ошибка при удалении пользователя',
+    type: 'error' as const,
+  }),
+  target: showToast,
 });
 
 sample({
