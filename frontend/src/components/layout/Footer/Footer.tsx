@@ -26,7 +26,7 @@ export const Footer: React.FC = () => {
                 <div className="flex items-start space-x-3">
                   <span className="text-gray-400 mt-0.5">📞</span>
                   <div>
-                    <p className="text-gray-300">+7 (999) 123-45-67</p>
+                    <p className="text-gray-300">+7 (939) 782-06-57</p>
                     <p className="text-gray-400 text-xs">
                       Ежедневно 8:00-20:00
                     </p>
@@ -35,9 +35,9 @@ export const Footer: React.FC = () => {
                 <div className="flex items-start space-x-3">
                   <span className="text-gray-400 mt-0.5">📧</span>
                   <div>
-                    <p className="text-gray-300">stolovaya@gau.ru</p>
+                    <p className="text-gray-300">4bsolutefleur@gmail.com</p>
                     <p className="text-gray-400 text-xs">
-                      Ответим в течение дня
+                      Разработчик ответит в течении дня
                     </p>
                   </div>
                 </div>
