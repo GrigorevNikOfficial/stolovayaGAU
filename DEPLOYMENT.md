@@ -75,3 +75,8 @@ Workflow file: `.github/workflows/deploy.yml`.
 - **Frontend calling the API**: set `FRONTEND_API_BASE_URL` to the externally reachable backend URL before triggering the workflow so the built bundle points to the correct domain/subdomain.
 - **GHCR auth errors**: ensure the PAT (`GHCR_TOKEN`) belongs to an account with access to the repository’s packages.
 - **Failing workflow step**: rerun with `workflow_dispatch` after fixing secrets or server state.
+
+## 6. Realtime updates (Socket.IO)
+- The backend now spins up a Socket.IO server on the same port as the REST API. Set `SOCKET_ALLOWED_ORIGINS` (comma-separated list) if you need to restrict websocket origins; otherwise it defaults to `*` for local development.
+- The frontend automatically reuses `VITE_API_BASE_URL` to discover the websocket endpoint. Override it with `VITE_SOCKET_URL` (e.g. `https://api.example.com`) when the public API base differs from the websocket origin.
+- Connections reuse the existing JWT, so make sure the token storage (`localStorage`) remains in sync between tabs. Logging out disconnects the socket automatically.

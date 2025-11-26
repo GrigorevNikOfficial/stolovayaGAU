@@ -2,6 +2,7 @@ import { Item } from "../models/Item.js";
 import { Order } from "../models/Order.js";
 import { Settings } from "../models/Settings.js";
 import { User } from "../models/User.js";
+import { emitOrderCreated, emitOrderUpdated } from "../services/socketService.js";
 
 const normalizeId = (value) => {
   if (!value) return undefined;
@@ -231,9 +232,12 @@ export const createOrder = async (req, res) => {
 
     await order.save();
 
+    const mappedOrder = mapOrderToResponse(order);
+    emitOrderCreated(mappedOrder);
+
     res.status(201).json({
       message: "Заказ успешно создан",
-      order: mapOrderToResponse(order),
+      order: mappedOrder,
       order_number: orderNumber,
       balance: updatedUser.balance,
     });
@@ -471,9 +475,12 @@ export const updateOrder = async (req, res) => {
       refundedBalance = await refundOrderAmount(order);
     }
 
+    const mappedOrder = mapOrderToResponse(order);
+    emitOrderUpdated(mappedOrder);
+
     res.json({
       message: "Заказ успешно обновлен",
-      order: mapOrderToResponse(order),
+      order: mappedOrder,
       balance: refundedBalance,
     });
   } catch (error) {
@@ -608,8 +615,11 @@ export const updateOrderStatus = async (req, res) => {
       refundedBalance = await refundOrderAmount(order);
     }
 
+    const mappedOrder = mapOrderToResponse(order);
+    emitOrderUpdated(mappedOrder);
+
     res.json({
-      order: mapOrderToResponse(order),
+      order: mappedOrder,
       balance: refundedBalance,
     });
   } catch (error) {

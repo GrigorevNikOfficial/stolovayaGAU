@@ -7,6 +7,7 @@ import {
 } from 'effector';
 import { ordersApi } from '../api/orders';
 import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
+import { onSocketEvent } from '../lib/socket';
 import type {
     CreateOrderRequest,
     Order,
@@ -24,6 +25,22 @@ type OrderWithBalance = {
   balance?: number | null;
 };
 
+const sortByCreatedAtDesc = (orders: Order[]): Order[] =>
+  [...orders].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+const upsertOrder = (orders: Order[], candidate: Order): Order[] => {
+  const existingIndex = orders.findIndex(order => order._id === candidate._id);
+
+  if (existingIndex >= 0) {
+    return orders.map(order => (order._id === candidate._id ? candidate : order));
+  }
+
+  return sortByCreatedAtDesc([candidate, ...orders]);
+};
+
 // Events (остаются те же)
 export const loadOrders = createEvent();
 export const createOrder = createEvent<CreateOrderRequest>();
@@ -32,6 +49,13 @@ export const updateOrder = createEvent<UpdateOrderRequest>();
 export const cancelOrder = createEvent<string>(); // Из number в string
 export const clearOrders = createEvent();
 export const refreshOrders = createEvent();
+export const orderRealtimeCreated = createEvent<Order>();
+export const orderRealtimeUpdated = createEvent<Order>();
+
+if (typeof window !== 'undefined') {
+  onSocketEvent('orders:created', orderRealtimeCreated);
+  onSocketEvent('orders:updated', orderRealtimeUpdated);
+}
 
 // Effects с обновленными типами
 export const loadOrdersFx = createEffect(
@@ -108,6 +132,8 @@ export const $orders = createStore<Order[]>([])
       order._id === cancelledOrder._id ? cancelledOrder : order
     )
   )
+  .on(orderRealtimeCreated, (state, order) => upsertOrder(state, order))
+  .on(orderRealtimeUpdated, (state, order) => upsertOrder(state, order))
   .reset(clearOrders);
 
 // Store для отображаемых заказов
