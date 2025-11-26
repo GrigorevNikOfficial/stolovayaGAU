@@ -36,33 +36,58 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     removeFromCart,
   ]);
 
-  if (!isOpen || !item) return null;
+  const [desiredQuantity, setDesiredQuantity] = React.useState('1');
+  const itemId = item?._id ?? '';
 
   // Получение количества товара в корзине
-  const getItemQuantity = () => {
-    const cartItem = cart.find(cartItem => cartItem.item._id === item._id);
+  const getItemQuantity = React.useCallback(() => {
+    if (!itemId) return 0;
+    const cartItem = cart.find(cartItem => cartItem.item._id === itemId);
     return cartItem ? cartItem.quantity : 0;
-  };
+  }, [cart, itemId]);
 
   const quantity = getItemQuantity();
-  const isAvailable = item.is_available !== false;
+  const isAvailable = item?.is_available !== false;
+
+  const clampQuantityValue = (value: number) =>
+    Math.max(1, Math.min(999, Math.floor(value)));
+
+  React.useEffect(() => {
+    if (!isOpen || !itemId) return;
+    const baseQuantity = quantity > 0 ? quantity : 1;
+    setDesiredQuantity(String(baseQuantity));
+  }, [isOpen, itemId, quantity]);
 
   const handleAddToCartClick = () => {
     if (!isAvailable) {
       return;
     }
-    handleAddToCart({
-      _id: item._id,
-      uniq_nom: item.uniq_nom || item._id,
-      name: item.name,
-      price: item.price,
-      description: item.description,
-      category_slug: item.category_slug,
-      calories: item.calories,
-      number_pribors: item.number_pribors,
-      image_url: item.image_url,
-      preparation_time: item.preparation_time,
+    if (!itemId || !item) {
+      return;
+    }
+    const normalizedDesired = clampQuantityValue(Number(desiredQuantity) || 1);
+
+    if (quantity === 0) {
+      handleAddToCart({
+        _id: item._id,
+        uniq_nom: item.uniq_nom || itemId,
+        name: item.name,
+        price: item.price,
+        description: item.description,
+        category_slug: item.category_slug,
+        calories: item.calories,
+        number_pribors: item.number_pribors,
+        image_url: item.image_url,
+        preparation_time: item.preparation_time,
+      });
+    }
+
+    handleUpdateQuantity({
+      id: itemId,
+      quantity: normalizedDesired,
     });
+
+    setDesiredQuantity(String(normalizedDesired));
 
     showToast({
       message: 'Товар добавлен в корзину',
@@ -70,30 +95,62 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     });
   };
 
-  const handleIncreaseQuantity = () => {
-    if (!isAvailable) {
+  const handleAdjustQuantity = (delta: number) => {
+    if (!itemId) {
       return;
     }
-    handleUpdateQuantity({
-      id: item._id,
-      quantity: quantity + 1,
-    });
+
+    if (!isAvailable && delta > 0 && quantity === 0) {
+      return;
+    }
+
+    if (quantity === 0) {
+      const currentDesired = Number(desiredQuantity) || 1;
+      const nextDesired = clampQuantityValue(currentDesired + delta);
+      setDesiredQuantity(String(nextDesired));
+      return;
+    }
+
+    const nextQuantity = quantity + delta;
+    if (nextQuantity <= 0) {
+      handleRemoveFromCart(itemId);
+      setDesiredQuantity('1');
+      return;
+    }
+
+    const normalized = clampQuantityValue(nextQuantity);
+    handleUpdateQuantity({ id: itemId, quantity: normalized });
+    setDesiredQuantity(String(normalized));
   };
 
-  const handleDecreaseQuantity = () => {
-    if (quantity === 1) {
-      handleRemoveFromCart(item._id);
-    } else {
-      handleUpdateQuantity({
-        id: item._id,
-        quantity: quantity - 1,
-      });
+  const handleQuantityInputChange = (value: string) => {
+    if (!itemId) {
+      return;
+    }
+
+    const sanitized = value.replace(/[^0-9]/g, '');
+    if (sanitized === '') {
+      setDesiredQuantity('1');
+      if (quantity > 0) {
+        handleUpdateQuantity({ id: itemId, quantity: 1 });
+      }
+      return;
+    }
+
+    const normalized = clampQuantityValue(Number(sanitized));
+    setDesiredQuantity(String(normalized));
+    if (quantity > 0) {
+      handleUpdateQuantity({ id: itemId, quantity: normalized });
     }
   };
 
   const canAddToCart =
     currentUser &&
     (currentUser.role === 'admin' || currentUser.role === 'user');
+
+  if (!isOpen || !item) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -200,32 +257,33 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
               {/* Кнопки действий */}
               {canAddToCart && (
-                <div className="flex items-center justify-center gap-4">
-                  {quantity === 0 ? (
-                    <Button
-                      onClick={handleAddToCartClick}
-                      variant="primary"
-                      size="lg"
-                      className="flex-1"
-                      disabled={!isAvailable}
-                    >
-                      {isAvailable ? '🛒 Добавить в корзину' : 'Недоступно'}
-                    </Button>
-                  ) : (
-                    <>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Количество
+                    </label>
+                    <div className="flex items-center justify-center gap-3">
+                      {quantity > 0 && (
+                        <Button
+                          onClick={() => handleAdjustQuantity(-1)}
+                          variant="outline"
+                          size="lg"
+                          className="w-12 h-12 !p-0"
+                        >
+                          -
+                        </Button>
+                      )}
+                      <input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={desiredQuantity}
+                        onChange={e => handleQuantityInputChange(e.target.value)}
+                        className="w-24 text-center text-2xl font-bold text-green-dark border border-gray-200 rounded-2xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent"
+                        disabled={!isAvailable}
+                      />
                       <Button
-                        onClick={handleDecreaseQuantity}
-                        variant="outline"
-                        size="lg"
-                        className="w-12 h-12 !p-0"
-                      >
-                        -
-                      </Button>
-                      <span className="text-2xl font-bold text-green-dark min-w-[40px] text-center">
-                        {quantity}
-                      </span>
-                      <Button
-                        onClick={handleIncreaseQuantity}
+                        onClick={() => handleAdjustQuantity(1)}
                         variant="outline"
                         size="lg"
                         className="w-12 h-12 !p-0"
@@ -233,7 +291,43 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                       >
                         +
                       </Button>
-                    </>
+                    </div>
+                    {quantity === 0 && (
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        Укажите нужное количество и добавьте товар в корзину
+                      </p>
+                    )}
+                  </div>
+
+                  {quantity === 0 ? (
+                    <Button
+                      onClick={handleAddToCartClick}
+                      variant="primary"
+                      size="lg"
+                      className="w-full"
+                      disabled={!isAvailable}
+                    >
+                      {isAvailable ? '🛒 Добавить в корзину' : 'Недоступно'}
+                    </Button>
+                  ) : (
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => handleRemoveFromCart(item._id)}
+                        variant="outline"
+                        size="lg"
+                        className="flex-1"
+                      >
+                        Удалить из корзины
+                      </Button>
+                      <Button
+                        onClick={onClose}
+                        variant="primary"
+                        size="lg"
+                        className="flex-1"
+                      >
+                        Готово
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}

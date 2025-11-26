@@ -13,6 +13,7 @@ interface SelectProps {
   className?: string;
   disabled?: boolean;
   icon?: string;
+  required?: boolean;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -23,6 +24,7 @@ export const Select: React.FC<SelectProps> = ({
   className = '',
   disabled = false,
   icon,
+  required = false,
 }) => {
   return (
     <div className="relative">
@@ -30,6 +32,7 @@ export const Select: React.FC<SelectProps> = ({
         value={value}
         onChange={e => onChange(e.target.value)}
         disabled={disabled}
+        required={required}
         className={`
           w-full px-6 py-4 border border-gray-200 rounded-2xl 
           focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent 

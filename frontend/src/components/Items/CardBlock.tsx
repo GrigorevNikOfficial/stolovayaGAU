@@ -126,6 +126,25 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const pickupAvailability = checkTimeAvailability('pickup');
   const dineInAvailability = checkTimeAvailability('dine_in');
 
+  const handleQuantityInputChange = (
+    itemId: string,
+    value: string,
+    fallbackQuantity: number
+  ) => {
+    if (value === '') {
+      return;
+    }
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+    const normalized = Math.max(1, Math.floor(parsed));
+    if (normalized === fallbackQuantity) {
+      return;
+    }
+    handleUpdateQuantity({ id: itemId, quantity: normalized });
+  };
+
   const handleSubmitOrder = async () => {
     if (!currentUser) {
       alert('Для оформления заказа необходимо войти в систему');
@@ -316,18 +335,30 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() =>
-                        handleUpdateQuantity({
-                          id: item._id,
-                          quantity: quantity - 1,
-                        })
+                        quantity <= 1
+                          ? handleRemoveFromCart(item._id)
+                          : handleUpdateQuantity({
+                              id: item._id,
+                              quantity: quantity - 1,
+                            })
                       }
                       className="w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-300 hover:border-gray-400 text-sm font-bold"
                     >
                       -
                     </button>
-                    <span className="text-base font-semibold text-gray-900 w-8 text-center">
-                      {quantity}
-                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={quantity}
+                      onChange={e =>
+                        handleQuantityInputChange(
+                          item._id,
+                          e.target.value,
+                          quantity
+                        )
+                      }
+                      className="w-16 text-center border border-gray-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-green-dark/40 focus:border-green-dark"
+                    />
                     <button
                       onClick={() =>
                         handleUpdateQuantity({

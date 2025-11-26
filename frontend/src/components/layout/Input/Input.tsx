@@ -2,7 +2,7 @@
 import React from 'react';
 
 interface InputProps {
-  type?: 'text' | 'number' | 'email' | 'password' | 'tel';
+  type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'time';
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
@@ -10,6 +10,10 @@ interface InputProps {
   className?: string;
   disabled?: boolean;
   icon?: string;
+  min?: number | string;
+  max?: number | string;
+  step?: number | string;
+  required?: boolean;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -21,6 +25,10 @@ export const Input: React.FC<InputProps> = ({
   className = '',
   disabled = false,
   icon,
+  min,
+  max,
+  step,
+  required,
 }) => {
   return (
     <div className="relative">
@@ -31,6 +39,10 @@ export const Input: React.FC<InputProps> = ({
         onChange={e => onChange(e.target.value)}
         onFocus={onFocus}
         disabled={disabled}
+        min={min}
+        max={max}
+        step={step}
+        required={required}
         className={`
           w-full px-6 py-4 border border-gray-200 rounded-2xl 
           focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent 

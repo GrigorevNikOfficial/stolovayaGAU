@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
@@ -13,7 +13,7 @@ interface ButtonProps {
 }
 
 export const Button: React.FC<ButtonProps> = ({
-  children,
+  children = null,
   onClick,
   type = 'button',
   disabled = false,

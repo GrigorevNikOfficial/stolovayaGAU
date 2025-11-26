@@ -41,6 +41,18 @@ const upsertOrder = (orders: Order[], candidate: Order): Order[] => {
   return sortByCreatedAtDesc([candidate, ...orders]);
 };
 
+const statusLabels: Record<string, string> = {
+  created: 'Создан',
+  cooking: 'Готовится',
+  waiting_delivery: 'Ждёт отправления',
+  in_transit: 'Передан в доставку',
+  ready_for_pickup: 'Готов к получению',
+  completed: 'Завершён',
+  cancelled: 'Отменён',
+};
+
+const formatStatus = (status: string) => statusLabels[status] || status;
+
 // Events (остаются те же)
 export const loadOrders = createEvent();
 export const createOrder = createEvent<CreateOrderRequest>();
@@ -143,20 +155,35 @@ export const $displayedOrders = combine(
   (orders, currentUser) => {
     console.log('$displayedOrders: orders =', orders.length, 'currentUser =', currentUser?.role);
     if (!currentUser) return [];
-
-    // admin, storeManager и canteenManager видят все заказы (фильтрация по статусу уже на бэкенде)
-    if (
+    const isStaffRole =
       currentUser.role === 'admin' ||
       currentUser.role === 'storeManager' ||
       currentUser.role === 'canteenManager' ||
-      currentUser.role === 'cateenManager'
-    ) {
-      console.log('$displayedOrders: возвращаем все заказы для', currentUser.role, ':', orders.length);
-      return orders;
+      currentUser.role === 'cateenManager';
+
+    if (isStaffRole) {
+      // Для админов и менеджеров: скрываем завершённые заказы
+      // Для canteenManager дополнительно скрываем передачи в доставку (in_transit)
+      const filtered = orders.filter(order => {
+        if (order.status === 'completed') return false;
+        if (currentUser.role === 'canteenManager' || currentUser.role === 'cateenManager') {
+          if (order.status === 'in_transit') return false;
+        }
+        return true;
+      });
+
+      // Сортируем по возрастанию created_at — старые сначала, новые добавляются в конец
+      const sorted = [...filtered].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+
+      console.log('$displayedOrders: staff view for', currentUser.role, '->', sorted.length);
+      return sorted;
     } else {
+      // Обычный пользователь видит только свои заказы — оставляем порядок как есть (свежие наверху)
       const filtered = orders.filter(order => order.user_id === currentUser._id);
-      console.log('$displayedOrders: возвращаем отфильтрованные заказы:', filtered.length);
-      return filtered; // _id вместо id
+      console.log('$displayedOrders: returning filtered orders for user:', filtered.length);
+      return filtered;
     }
   }
 );
@@ -294,8 +321,29 @@ sample({
 });
 
 sample({
-  clock: updateOrderStatusFx.done,
-  fn: () => ({ message: 'Статус заказа обновлен', type: 'success' as const }),
+  clock: updateOrderStatusFx.doneData,
+  fn: ({ order }) => ({
+    message: `Статус заказа #${order.order_number} обновлён: ${formatStatus(order.status)}`,
+    type: 'success' as const,
+    durationMs: 15000,
+  }),
+  target: showToast,
+});
+
+sample({
+  source: $currentUser,
+  clock: orderRealtimeUpdated,
+  filter: (currentUser, updatedOrder) =>
+    Boolean(
+      currentUser &&
+        currentUser.role === 'user' &&
+        updatedOrder.user_id === currentUser._id
+    ),
+  fn: (_, updatedOrder) => ({
+    message: `Статус вашего заказа #${updatedOrder.order_number} обновлён: ${formatStatus(updatedOrder.status)}`,
+    type: 'success' as const,
+    durationMs: 15000,
+  }),
   target: showToast,
 });
 
