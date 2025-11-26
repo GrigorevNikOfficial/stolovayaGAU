@@ -1,3 +1,4 @@
+import { connectSocket, disconnectSocket } from '../lib/socket';
 import { getMeFx, loginFx, logout, registerFx } from './users';
 
 const AUTH_ERROR_MESSAGES = new Set([
@@ -12,7 +13,13 @@ if (typeof window !== 'undefined') {
 	const persistToken = (token?: string) => {
 		if (!token) return;
 		localStorage.setItem('authToken', token);
+		connectSocket(token);
 	};
+
+	const bootstrapToken = localStorage.getItem('authToken');
+	if (bootstrapToken) {
+		connectSocket(bootstrapToken);
+	}
 
 	loginFx.doneData.watch(({ token }) => {
 		persistToken(token);
@@ -24,6 +31,7 @@ if (typeof window !== 'undefined') {
 
 	logout.watch(() => {
 		localStorage.removeItem('authToken');
+		disconnectSocket();
 	});
 
 	getMeFx.fail.watch(({ error }) => {
