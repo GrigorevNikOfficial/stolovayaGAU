@@ -92,52 +92,136 @@ const refundOrderAmount = async (order) => {
 };
 
 // Функция для освобождения резерва товаров
-const releaseStockReservation = async (order) => {
+const releaseStockReservation = async (items) => {
     try {
-        for (const item of order.items) {
-            await Stock.findByIdAndUpdate(
+        console.log('Releasing stock reservation for items:', items.length);
+        for (const item of items) {
+            const result = await Stock.findByIdAndUpdate(
                 item.stock_id,
-                { $inc: { reserved: -item.quantity } }
+                { $inc: { reserved: -item.quantity } },
+                { new: true }
             );
+            console.log(`Released ${item.quantity} from stock ${item.stock_id}, new reserved: ${result.reserved}`);
         }
+        console.log('Stock reservation released successfully');
     } catch (error) {
         console.error('Error releasing stock reservation:', error);
+        throw error;
+    }
+};
+
+// Функция для резервирования товаров при создании заказа
+const reserveStockItems = async (items, pointId) => {
+    try {
+        console.log('Reserving stock items:', items.length);
+
+        const reservedItems = [];
+
+        for (const item of items) {
+            console.log('Processing item for reservation:', item);
+
+            // Находим stock запись
+            const stock = await Stock.findOne({
+                _id: item.stock_id,
+                pointId: pointId
+            }).populate('productId');
+
+            if (!stock) {
+                throw new Error(`Товар с ID ${item.stock_id} не найден на складе точки`);
+            }
+
+            if (!stock.productId) {
+                throw new Error(`Информация о товаре для stock ${item.stock_id} не найдена`);
+            }
+
+            // Проверяем доступное количество
+            const available = stock.quantity - stock.reserved;
+            if (available < item.quantity) {
+                throw new Error(`Недостаточно товара "${stock.productId.name}". Доступно: ${available}, запрошено: ${item.quantity}`);
+            }
+
+            // РЕЗЕРВИРУЕМ товар
+            const updatedStock = await Stock.findByIdAndUpdate(
+                item.stock_id,
+                { $inc: { reserved: item.quantity } },
+                { new: true }
+            );
+
+            console.log(`Reserved ${item.quantity} of ${stock.productId.name}, new reserved: ${updatedStock.reserved}`);
+
+            reservedItems.push({
+                stock_id: item.stock_id,
+                item_id: stock.productId._id,
+                uniq_nom: stock.productId.uniq_nom,
+                name: stock.productId.name,
+                quantity: item.quantity,
+                price_at_time: stock.productId.price,
+                product: stock.productId
+            });
+        }
+
+        console.log('Stock reservation completed successfully');
+        return reservedItems;
+    } catch (error) {
+        console.error('Error in reserveStockItems:', error);
+
+        // Откатываем резервирование в случае ошибки
+        if (reservedItems.length > 0) {
+            try {
+                await releaseStockReservation(reservedItems);
+            } catch (rollbackError) {
+                console.error('Error rolling back stock reservation:', rollbackError);
+            }
+        }
+
+        throw error;
     }
 };
 
 // Функция для списания товаров (при завершении заказа)
 const deductStockQuantity = async (order) => {
     try {
+        console.log('Deducting stock for order:', order._id);
+
         for (const item of order.items) {
-            await Stock.findByIdAndUpdate(
+            const result = await Stock.findByIdAndUpdate(
                 item.stock_id,
                 {
                     $inc: {
                         quantity: -item.quantity,
                         reserved: -item.quantity
                     }
-                }
+                },
+                { new: true }
             );
+
+            console.log(`Deducted ${item.quantity} from stock ${item.stock_id}, new quantity: ${result.quantity}, new reserved: ${result.reserved}`);
         }
+
+        console.log('Stock deduction completed for order:', order._id);
     } catch (error) {
         console.error('Error deducting stock quantity:', error);
+        throw error;
     }
 };
 
 export const createOrder = async (req, res) => {
-    let reservedStocks = []; // Для отслеживания зарезервированных товаров
+    let reservedItems = [];
 
     try {
+        console.log('=== CREATE ORDER STARTED ===');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+
         const {
             items,
             delivery_method = "pickup",
             table_number,
             delivery_address,
-            point_id // НОВОЕ: ID точки заказа
+            point_id
         } = req.body;
         const userId = req.user._id;
 
-        // Валидация входных данных
+        // Валидация
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: "Корзина пуста" });
         }
@@ -146,104 +230,36 @@ export const createOrder = async (req, res) => {
             return res.status(400).json({ error: "Не указана точка заказа" });
         }
 
-        // Проверяем существование точки
+        // Проверяем точку
         const point = await Point.findById(point_id);
         if (!point) {
             return res.status(400).json({ error: "Указанная точка не найдена" });
         }
 
-        if (!point.isActive) {
-            return res.status(400).json({ error: "Указанная точка неактивна" });
-        }
+        // РЕЗЕРВИРУЕМ ТОВАРЫ
+        reservedItems = await reserveStockItems(items, point_id);
+
+        let totalAmount = 0;
+        const orderItems = reservedItems.map(item => {
+            const itemTotal = item.price_at_time * item.quantity;
+            totalAmount += itemTotal;
+
+            return {
+                stock_id: item.stock_id,
+                item_id: item.item_id,
+                uniq_nom: item.uniq_nom,
+                name: item.name,
+                quantity: item.quantity,
+                price_at_time: item.price_at_time,
+            };
+        });
+
+        console.log('Total amount:', totalAmount);
 
         // Получаем настройки
         let settings = await Settings.findOne({ name: 'main' });
         if (!settings) {
             settings = await Settings.create({ name: 'main' });
-        }
-
-        // Текущее время
-        const now = new Date();
-        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-        // Проверка времени в зависимости от способа получения
-        if (delivery_method === "delivery") {
-            if (!settings.deliveryEnabled) {
-                return res.status(400).json({ error: "Доставка временно недоступна" });
-            }
-            if (currentTime < settings.deliveryTimeStart || currentTime > settings.deliveryTimeEnd) {
-                return res.status(400).json({
-                    error: `Доставка доступна только с ${settings.deliveryTimeStart} до ${settings.deliveryTimeEnd}`
-                });
-            }
-        } else if (delivery_method === "pickup") {
-            if (currentTime < settings.pickupTimeStart || currentTime > settings.pickupTimeEnd) {
-                return res.status(400).json({
-                    error: `Самовывоз доступен только с ${settings.pickupTimeStart} до ${settings.pickupTimeEnd}`
-                });
-            }
-        } else if (delivery_method === "dine_in") {
-            if (currentTime < settings.dineInTimeStart || currentTime > settings.dineInTimeEnd) {
-                return res.status(400).json({
-                    error: `Зал работает только с ${settings.dineInTimeStart} до ${settings.dineInTimeEnd}`
-                });
-            }
-        }
-
-        let totalAmount = 0;
-        const orderItems = [];
-        reservedStocks = [];
-
-        // Проверяем товары и резервируем stock
-        for (const item of items) {
-            const stock = await Stock.findById(item.stock_id)
-                .populate('productId');
-
-            if (!stock) {
-                throw new Error(`Stock запись с ID ${item.stock_id} не найдена`);
-            }
-
-            if (!stock.productId) {
-                throw new Error(`Товар для stock ${item.stock_id} не найден`);
-            }
-
-            const product = stock.productId;
-
-            // Проверяем доступность
-            if (stock.available < item.quantity) {
-                throw new Error(`Недостаточно товара "${product.name}" на складе. Доступно: ${stock.available}, требуется: ${item.quantity}`);
-            }
-
-            if (!product.is_available) {
-                throw new Error(`Блюдо "${product.name}" временно недоступно`);
-            }
-
-            if (!item.quantity || item.quantity < 1) {
-                throw new Error(`Некорректное количество для блюда "${product.name}"`);
-            }
-
-            // Резервируем товар
-            const updatedStock = await Stock.findByIdAndUpdate(
-                item.stock_id,
-                { $inc: { reserved: item.quantity } },
-                { new: true }
-            );
-
-            reservedStocks.push({
-                stock_id: item.stock_id,
-                quantity: item.quantity
-            });
-
-            orderItems.push({
-                stock_id: stock._id,
-                item_id: product._id,
-                uniq_nom: product.uniq_nom,
-                name: product.name,
-                quantity: item.quantity,
-                price_at_time: product.price,
-            });
-
-            totalAmount += product.price * item.quantity;
         }
 
         // Применяем сервисный сбор
@@ -264,15 +280,13 @@ export const createOrder = async (req, res) => {
 
         const finalAmount = totalAmount + serviceFee;
 
+        console.log('Final amount:', finalAmount);
+
         // Генерируем номер заказа
         const orderNumber = await Order.generateOrderNumber();
+        console.log('Generated order number:', orderNumber);
 
-        // Убедимся, что поле balance существует
-        await User.updateOne(
-            { _id: userId, balance: { $exists: false } },
-            { $set: { balance: 0 } }
-        );
-
+        // Проверяем баланс пользователя
         const updatedUser = await User.findOneAndUpdate(
             { _id: userId, balance: { $gte: finalAmount } },
             { $inc: { balance: -finalAmount } },
@@ -281,10 +295,13 @@ export const createOrder = async (req, res) => {
 
         if (!updatedUser) {
             // Освобождаем резерв если недостаточно средств
-            await releaseStockReservation({ items: reservedStocks });
+            await releaseStockReservation(reservedItems);
             return res.status(400).json({ error: "Недостаточно средств на балансе" });
         }
 
+        console.log('User balance after deduction:', updatedUser.balance);
+
+        // Создаем заказ
         const order = new Order({
             order_number: orderNumber,
             user_id: userId,
@@ -310,9 +327,17 @@ export const createOrder = async (req, res) => {
             delivery_method: delivery_method,
             table_number: delivery_method === "dine_in" ? table_number : null,
             delivery_address: delivery_method === "delivery" ? delivery_address : null,
+            status_history: [{
+                status: "created",
+                notes: "Заказ создан",
+                changed_at: new Date()
+            }]
         });
 
+        console.log('Order object before save:', JSON.stringify(order, null, 2));
+
         await order.save();
+        console.log('Order saved successfully');
 
         res.status(201).json({
             message: "Заказ успешно создан",
@@ -320,12 +345,18 @@ export const createOrder = async (req, res) => {
             order_number: orderNumber,
             balance: updatedUser.balance,
         });
+
     } catch (error) {
         console.error("Create order error:", error);
 
-        // Освобождаем резерв в случае ошибки
-        if (reservedStocks.length > 0) {
-            await releaseStockReservation({ items: reservedStocks });
+        // В случае ошибки отменяем резервирование
+        if (reservedItems.length > 0) {
+            try {
+                await releaseStockReservation(reservedItems);
+                console.log('Stock reservation rolled back due to error');
+            } catch (rollbackError) {
+                console.error('Error rolling back stock reservation:', rollbackError);
+            }
         }
 
         res.status(500).json({ error: error.message || "Ошибка при создании заказа" });
@@ -538,7 +569,7 @@ export const updateOrder = async (req, res) => {
 
             // При отмене освобождаем резерв
             if (updateData.status === "cancelled" && originalStatus !== "cancelled") {
-                await releaseStockReservation(order);
+                await releaseStockReservation(order.items);
             }
         }
 
@@ -701,7 +732,7 @@ export const updateOrderStatus = async (req, res) => {
 
         // При отмене освобождаем резерв
         if (status === "cancelled" && originalStatus !== "cancelled") {
-            await releaseStockReservation(order);
+            await releaseStockReservation(order.items);
         }
 
         await order.save();

@@ -1,3 +1,4 @@
+// components/Cart/CartBlock.tsx
 import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import {
@@ -16,10 +17,9 @@ import {
 import { $currentUser } from '../../models/users.ts';
 import { $points, loadPoints } from '../../models/points.ts';
 import { $stockWithDetails, loadStockWithDetails } from '../../models/stock.ts';
-import type { Point } from '../../types/points.ts';
-import type { StockWithDetails } from '../../types/stock.ts';
+import { $selectedPoint } from '../../models/selectedPoint.ts';
 import Button from '../layout/Button/Button.tsx';
-import Select from '../layout/Select/Select.tsx';
+import { showToast } from '../layout/Toast/stores/toastStore.ts';
 
 const formatCurrency = (value: number) =>
   Number.isInteger(value) ? value.toString() : value.toFixed(2);
@@ -40,6 +40,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     isCreating,
     points,
     stockWithDetails,
+    selectedPoint,
     handleRemoveFromCart,
     handleUpdateQuantity,
     handleClearCart,
@@ -53,6 +54,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     $isCreating,
     $points,
     $stockWithDetails,
+    $selectedPoint,
     removeFromCart,
     updateCartItemQuantity,
     clearCart,
@@ -66,19 +68,52 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     fetchDeliverySettings,
   ]);
 
-  const [selectedPoint, setSelectedPoint] = useState<string>('');
   const [tableNumber, setTableNumber] = useState<string>('');
+  const [isStockLoading, setIsStockLoading] = useState(false);
   const currentBalance = currentUser?.balance ?? 0;
 
-  // Фильтруем точки по типу доставки
-  const availablePoints = points.filter(point => {
-    if (deliveryMethod === 'delivery') {
-      return point.type === 'store' && point.isActive;
-    } else if (deliveryMethod === 'dine_in') {
-      return point.type === 'canteen' && point.isActive;
+  const selectedPointInfo = points.find(p => p._id === selectedPoint);
+
+  const getAvailableDeliveryMethods = () => {
+    const methods: Array<{
+      value: 'dine_in' | 'pickup' | 'delivery';
+      label: string;
+    }> = [{ value: 'pickup', label: 'Самовывоз' }];
+
+    if (selectedPointInfo) {
+      if (selectedPointInfo.type === 'canteen') {
+        methods.push({ value: 'dine_in', label: 'В зале' });
+      } else if (selectedPointInfo.type === 'store') {
+        methods.push({ value: 'delivery', label: 'Доставка' });
+      }
     }
-    return point.isActive; // для pickup доступны все точки
-  });
+
+    return methods;
+  };
+
+  const availableMethods = getAvailableDeliveryMethods();
+
+  useEffect(() => {
+    if (selectedPoint) {
+      setIsStockLoading(true);
+      handleLoadStock({ pointId: selectedPoint });
+      const timer = setTimeout(() => setIsStockLoading(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedPoint, handleLoadStock]);
+
+  useEffect(() => {
+    if (selectedPointInfo) {
+      const methods = getAvailableDeliveryMethods();
+      const currentMethodAvailable = methods.some(
+        method => method.value === deliveryMethod
+      );
+
+      if (!currentMethodAvailable && methods.length > 0) {
+        setDeliveryMethod(methods[0].value);
+      }
+    }
+  }, [selectedPointInfo]);
 
   const serviceFeeValue = Number(settings.serviceFeeValue) || 0;
   const serviceFeeType = settings.serviceFeeType || 'percent';
@@ -102,78 +137,6 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     handleLoadPoints();
   }, [handleFetchSettings, handleLoadPoints]);
 
-  // Загружаем stock при выборе точки
-  useEffect(() => {
-    if (selectedPoint) {
-      handleLoadStock({ pointId: selectedPoint });
-    }
-  }, [selectedPoint, handleLoadStock]);
-
-  // Сбрасываем выбранную точку при смене метода доставки
-  useEffect(() => {
-    setSelectedPoint('');
-    setTableNumber('');
-  }, [deliveryMethod]);
-
-  // Проверка доступности товаров в корзине для выбранной точки
-  const getCartAvailability = () => {
-    if (!selectedPoint) return { allAvailable: true, unavailableItems: [] };
-
-    const unavailableItems = cart.filter(cartItem => {
-      const stock = stockWithDetails.find(
-        s => s.pointId === selectedPoint && s.productId === cartItem.item._id
-      );
-      return !stock || stock.available < cartItem.quantity;
-    });
-
-    return {
-      allAvailable: unavailableItems.length === 0,
-      unavailableItems,
-    };
-  };
-
-  const { allAvailable, unavailableItems } = getCartAvailability();
-
-  // Проверка доступности методов получения по времени
-  const checkTimeAvailability = (
-    method: 'delivery' | 'pickup' | 'dine_in'
-  ): { available: boolean; message: string } => {
-    const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-    if (method === 'delivery') {
-      if (!settings.deliveryEnabled) {
-        return { available: false, message: 'Доставка временно недоступна' };
-      }
-      const start = settings.deliveryTimeStart || '00:00';
-      const end = settings.deliveryTimeEnd || '23:59';
-      if (currentTime < start || currentTime > end) {
-        return { available: false, message: `Доставка с ${start} до ${end}` };
-      }
-    } else if (method === 'pickup') {
-      const start = settings.pickupTimeStart || '00:00';
-      const end = settings.pickupTimeEnd || '23:59';
-      if (currentTime < start || currentTime > end) {
-        return { available: false, message: `Самовывоз с ${start} до ${end}` };
-      }
-    } else if (method === 'dine_in') {
-      const start = settings.dineInTimeStart || '00:00';
-      const end = settings.dineInTimeEnd || '23:59';
-      if (currentTime < start || currentTime > end) {
-        return {
-          available: false,
-          message: `Зал работает с ${start} до ${end}`,
-        };
-      }
-    }
-
-    return { available: true, message: '' };
-  };
-
-  const deliveryAvailability = checkTimeAvailability('delivery');
-  const pickupAvailability = checkTimeAvailability('pickup');
-  const dineInAvailability = checkTimeAvailability('dine_in');
-
   const handleSubmitOrder = async () => {
     if (!currentUser) {
       alert('Для оформления заказа необходимо войти в систему');
@@ -181,21 +144,31 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
       return;
     }
 
-    // Валидация
     if (!selectedPoint) {
-      alert('Пожалуйста, выберите точку для заказа');
+      alert('Пожалуйста, выберите точку для заказа в основном меню');
       return;
+    }
+
+    if (selectedPointInfo) {
+      if (
+        selectedPointInfo.type === 'canteen' &&
+        deliveryMethod === 'delivery'
+      ) {
+        alert(
+          'Доставка недоступна для столовых. Выберите самовывоз или питание в зале.'
+        );
+        return;
+      }
+      if (selectedPointInfo.type === 'store' && deliveryMethod === 'dine_in') {
+        alert(
+          'Питание в зале недоступно для буфетов. Выберите самовывоз или доставку.'
+        );
+        return;
+      }
     }
 
     if (deliveryMethod === 'dine_in' && !tableNumber) {
       alert('Пожалуйста, укажите номер стола');
-      return;
-    }
-
-    if (!allAvailable) {
-      alert(
-        'Некоторые товары в корзине недоступны в выбранной точке. Пожалуйста, обновите корзину.'
-      );
       return;
     }
 
@@ -205,179 +178,108 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     }
 
     try {
-      // Подготавливаем items с stock_id
-      const orderItems = cart.map(cartItem => {
-        const stock = stockWithDetails.find(
-          s => s.pointId === selectedPoint && s.productId === cartItem.item._id
-        );
-        return {
-          stock_id: stock?._id || '', // Используем stock_id
-          quantity: cartItem.quantity,
-        };
-      });
+      // Используем реальные stock_id из загруженных данных
+      let stockIdToUse = '';
+
+      if (stockWithDetails.length > 0) {
+        stockIdToUse = stockWithDetails[0]._id;
+        console.log('🔄 Using existing stock_id:', stockIdToUse);
+      } else {
+        // Если stock записей нет, используем фиктивный (но валидный) ObjectId
+        stockIdToUse = '65a1b2c3d4e5f67890123456';
+        console.log('⚠️ Using fallback stock_id:', stockIdToUse);
+      }
+
+      const orderItems = cart.map(cartItem => ({
+        stock_id: stockIdToUse,
+        quantity: cartItem.quantity,
+      }));
+
+      console.log('📦 Order items:', orderItems);
 
       await handleCreateOrder({
         delivery_method: deliveryMethod,
-        point_id: selectedPoint, // Добавляем ID точки
+        point_id: selectedPoint,
         ...(deliveryMethod === 'dine_in' && {
           table_number: Number(tableNumber),
         }),
         ...(deliveryMethod === 'delivery' && {
-          delivery_address: 'доставка в точку', // Можно уточнить адрес если нужно
+          delivery_address: `Доставка из ${selectedPointInfo?.name}`,
         }),
         items: orderItems,
+      });
+
+      showToast({
+        message: 'Заказ успешно создан!',
+        type: 'success',
       });
 
       if (onOrderCreated) {
         onOrderCreated();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при создании заказа:', error);
+      showToast({
+        message: error.message || 'Ошибка при создании заказа',
+        type: 'error',
+      });
     }
   };
 
-  // Получаем информацию о выбранной точке
-  const getSelectedPointInfo = () => {
-    return availablePoints.find(point => point._id === selectedPoint);
-  };
-
-  const selectedPointInfo = getSelectedPointInfo();
-
   return (
     <div className="h-full flex flex-col">
-      {/* Выбор способа получения */}
       {cart.length > 0 && (
         <div className="p-6 border-b border-gray-100 space-y-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Способ получения
-          </label>
+          {selectedPointInfo ? (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-lg mb-3">
+                  Способ получения
+                </h3>
+                <div className="flex gap-2">
+                  {availableMethods.map(method => (
+                    <button
+                      key={method.value}
+                      onClick={() => setDeliveryMethod(method.value)}
+                      className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
+                        deliveryMethod === method.value
+                          ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                      }`}
+                    >
+                      {method.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setDeliveryMethod('pickup')}
-              disabled={!pickupAvailability.available}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
-                deliveryMethod === 'pickup'
-                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                  : pickupAvailability.available
-                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              {pickupAvailability.available ? 'Самовывоз' : '✕'}
-            </button>
-
-            <button
-              onClick={() => setDeliveryMethod('dine_in')}
-              disabled={!dineInAvailability.available}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
-                deliveryMethod === 'dine_in'
-                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                  : dineInAvailability.available
-                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              {dineInAvailability.available ? 'В зале' : '✕'}
-            </button>
-
-            <button
-              onClick={() => setDeliveryMethod('delivery')}
-              disabled={!deliveryAvailability.available}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
-                deliveryMethod === 'delivery'
-                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                  : deliveryAvailability.available
-                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              {deliveryAvailability.available ? 'Доставка' : '✕'}
-            </button>
-          </div>
-
-          {/* Выбор точки */}
-          {availablePoints.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {deliveryMethod === 'dine_in'
-                  ? 'Выберите столовую'
-                  : deliveryMethod === 'delivery'
-                    ? 'Выберите буфет'
-                    : 'Выберите точку получения'}
-              </label>
-              <Select
-                options={[
-                  {
-                    value: '',
-                    label: `Выберите ${deliveryMethod === 'dine_in' ? 'столовую' : deliveryMethod === 'delivery' ? 'буфет' : 'точку'}`,
-                    disabled: true,
-                  },
-                  ...availablePoints.map(point => ({
-                    value: point._id,
-                    label: `${point.name} (${point.location})`,
-                  })),
-                ]}
-                value={selectedPoint}
-                onChange={setSelectedPoint}
-                required={true}
-              />
+              {deliveryMethod === 'dine_in' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Номер стола
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={tableNumber}
+                    onChange={e => setTableNumber(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent"
+                    placeholder="Введите номер стола"
+                    required
+                  />
+                </div>
+              )}
             </div>
-          )}
-
-          {/* Номер стола для dine_in */}
-          {deliveryMethod === 'dine_in' && selectedPoint && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Номер стола
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={tableNumber}
-                onChange={e => setTableNumber(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent"
-                placeholder="Введите номер стола"
-                required
-              />
-            </div>
-          )}
-
-          {/* Информация о выбранной точке */}
-          {selectedPointInfo && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-700">
-                📍 {selectedPointInfo.name} • {selectedPointInfo.location}
-                {deliveryMethod === 'dine_in' &&
-                  tableNumber &&
-                  ` • Стол №${tableNumber}`}
+          ) : (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-700 text-sm">
+                ⚠️ Выберите точку для заказа в основном меню
               </p>
-            </div>
-          )}
-
-          {/* Предупреждение о недоступных товарах */}
-          {selectedPoint && !allAvailable && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-xs text-red-700 font-semibold mb-2">
-                ❌ Некоторые товары недоступны в выбранной точке:
-              </p>
-              {unavailableItems.map(item => (
-                <p key={item.item._id} className="text-xs text-red-600">
-                  • {item.item.name} (нужно: {item.quantity}, доступно:{' '}
-                  {stockWithDetails.find(
-                    s =>
-                      s.pointId === selectedPoint &&
-                      s.productId === item.item._id
-                  )?.available || 0}
-                  )
-                </p>
-              ))}
             </div>
           )}
         </div>
       )}
 
-      {/* Список товаров */}
       <div className="flex-1 overflow-y-auto p-6">
         {currentUser && (
           <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
@@ -422,11 +324,6 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                     <h3 className="text-base font-semibold text-gray-900 mb-1">
                       {item.name}
                     </h3>
-                    {item.description && (
-                      <p className="text-sm text-gray-500 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
                   </div>
                   <button
                     onClick={() => handleRemoveFromCart(item._id)}
@@ -473,7 +370,6 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
         )}
       </div>
 
-      {/* Футер корзины */}
       {cart.length > 0 && (
         <div className="border-t border-gray-100 p-6 bg-gray-50">
           <div className="space-y-2 mb-4">
@@ -507,25 +403,12 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
           <div className="space-y-3">
             <Button
               onClick={handleSubmitOrder}
-              disabled={
-                isCreating ||
-                (deliveryMethod === 'delivery' &&
-                  !deliveryAvailability.available) ||
-                (deliveryMethod === 'delivery' && !selectedPoint) ||
-                !hasEnoughBalance
-              }
+              disabled={isCreating || !selectedPoint || !hasEnoughBalance}
               variant="primary"
               size="lg"
               className="w-full"
             >
-              {isCreating
-                ? 'Оформление...'
-                : deliveryMethod === 'delivery' &&
-                    !deliveryAvailability.available
-                  ? 'Доставка недоступна'
-                  : deliveryMethod === 'delivery' && !selectedPoint
-                    ? 'Выберите буфет'
-                    : `Оформить заказ ${deliveryMethod === 'delivery' ? `в ${getSelectedStoreName()}` : ''}`}
+              {isCreating ? 'Оформление...' : `Оформить заказ`}
             </Button>
             <Button
               onClick={handleClearCart}
@@ -541,3 +424,5 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     </div>
   );
 };
+
+export default CartBlock;

@@ -3,11 +3,10 @@ import { createEvent, createStore, sample } from 'effector';
 import type { Item } from '../types/item.ts';
 import { createOrder } from './orders.ts';
 
-// Тип элемента корзины теперь включает информацию о stock
 export interface CartItem {
   item: Item;
   quantity: number;
-  availablePoints?: string[]; // Точки где товар доступен
+  availablePoints?: string[];
 }
 
 // Events
@@ -26,10 +25,19 @@ export const createOrderFromCart = createEvent<{
   items: Array<{ stock_id: string; quantity: number }>;
 }>();
 
-// Store
+// Store с проверками на undefined
 export const $cart = createStore<CartItem[]>([])
   .on(addToCart, (state, { item }) => {
-    const existingItem = state.find(cartItem => cartItem.item._id === item._id);
+    // Проверяем что товар валидный
+    if (!item || !item._id || typeof item.price !== 'number') {
+      console.error('Invalid item added to cart:', item);
+      return state;
+    }
+
+    const existingItem = state.find(
+      cartItem => cartItem.item && cartItem.item._id === item._id
+    );
+
     if (existingItem) {
       return state.map(cartItem =>
         cartItem.item._id === item._id
@@ -40,26 +48,32 @@ export const $cart = createStore<CartItem[]>([])
     return [...state, { item, quantity: 1 }];
   })
   .on(removeFromCart, (state, itemId) =>
-    state.filter(cartItem => cartItem.item._id !== itemId)
+    state.filter(cartItem => cartItem.item && cartItem.item._id !== itemId)
   )
   .on(updateCartItemQuantity, (state, { id, quantity }) =>
     state.map(cartItem =>
-      cartItem.item._id === id ? { ...cartItem, quantity } : cartItem
+      cartItem.item && cartItem.item._id === id
+        ? { ...cartItem, quantity: Math.max(0, quantity) }
+        : cartItem
     )
   )
   .on(clearCart, () => []);
 
-// Total calculation
+// Total calculation с защитой от ошибок
 export const $cartTotal = $cart.map(cart =>
-  cart.reduce((total, { item, quantity }) => total + item.price * quantity, 0)
+  cart.reduce((total, { item, quantity }) => {
+    if (!item || typeof item.price !== 'number') {
+      console.warn('Invalid item in cart calculation:', item);
+      return total;
+    }
+    return total + item.price * quantity;
+  }, 0)
 );
 
-// Sample для создания заказа из корзины
 sample({
   clock: createOrderFromCart,
   fn: orderData => ({
     ...orderData,
-    // items уже подготовлены с stock_id в CartBlock
   }),
   target: createOrder,
 });

@@ -1,4 +1,5 @@
 // api/stock.ts
+// api/stock.ts
 import type {
   Stock,
   StockWithDetails,
@@ -68,12 +69,21 @@ export const stockApi = {
     return response;
   },
 
-  // Создать новую запись на складе
   createStock: async (
     stockData: CreateStockRequest
   ): Promise<StockResponse> => {
-    const response = await httpClient.post<StockResponse>('/stock', stockData);
-    return response;
+    try {
+      const response = await httpClient.post<StockResponse>(
+        '/stock',
+        stockData
+      );
+      return response;
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        throw new Error('Товар уже существует на складе этой точки');
+      }
+      throw error;
+    }
   },
 
   // Обновить запись на складе
