@@ -223,9 +223,14 @@ export const HomePage: React.FC = () => {
                 alt="Логотип столовой ГАУ"
                 className="w-8 h-8 sm:w-10 sm:h-10"
               />
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
-                Столовая ГАУ
-              </h1>
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                  Столовая ГАУ
+                </h1>
+                <span className="text-[10px] sm:text-xs lg:text-sm font-semibold uppercase tracking-wide text-red-600 whitespace-nowrap">
+                  тестовая версия
+                </span>
+              </div>
             </div>
 
             {/* Центральная часть: табы */}
