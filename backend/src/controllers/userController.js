@@ -1,11 +1,11 @@
 import { S3_FOLDERS } from "../config/storage.js";
 import { User } from "../models/User.js";
 import {
-    buildPublicUrl,
-    DEFAULT_PROFILE_PICTURE_KEY,
-    deleteObject,
-    StorageServiceError,
-    uploadImage,
+  buildPublicUrl,
+  DEFAULT_PROFILE_PICTURE_KEY,
+  deleteObject,
+  StorageServiceError,
+  uploadImage,
 } from "../services/storageService.js";
 import { generateToken } from "./auth.js";
 
@@ -67,11 +67,9 @@ export const register = async (req, res) => {
     });
 
     if (existingUser) {
-      return res
-        .status(400)
-        .json({
-          error: "Пользователь с таким телефоном или почтой уже существует",
-        });
+      return res.status(400).json({
+        error: "Пользователь с таким телефоном или почтой уже существует",
+      });
     }
 
     const user = new User({
@@ -81,6 +79,7 @@ export const register = async (req, res) => {
       email: mail,
       password,
       role: "user",
+      balance: 1000,
     });
 
     await user.save();
@@ -96,11 +95,9 @@ export const register = async (req, res) => {
     console.error("Register error:", error);
 
     if (error.code === 11000) {
-      return res
-        .status(409)
-        .json({
-          error: "Пользователь с таким телефоном или почтой уже существует",
-        });
+      return res.status(409).json({
+        error: "Пользователь с таким телефоном или почтой уже существует",
+      });
     }
 
     res.status(500).json({ error: "Ошибка при регистрации" });
@@ -167,11 +164,9 @@ export const updateProfile = async (req, res) => {
       });
 
       if (existingUser) {
-        return res
-          .status(400)
-          .json({
-            error: "Пользователь с таким телефоном или почтой уже существует",
-          });
+        return res.status(400).json({
+          error: "Пользователь с таким телефоном или почтой уже существует",
+        });
       }
     }
 
@@ -292,12 +287,10 @@ export const updateUserRole = async (req, res) => {
       "storeManager",
     ];
     if (!role || !validRoles.includes(role)) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Неверная роль. Допустимые роли: user, admin, canteenManager, cateenManager, storeManager",
-        });
+      return res.status(400).json({
+        error:
+          "Неверная роль. Допустимые роли: user, admin, canteenManager, cateenManager, storeManager",
+      });
     }
 
     const user = await User.findByIdAndUpdate(
@@ -379,11 +372,9 @@ export const updateUserAvatar = async (req, res) => {
     console.error("Update user avatar error:", error);
 
     if (error instanceof StorageServiceError) {
-      return res
-        .status(502)
-        .json({
-          error: "Ошибка при загрузке изображения. Повторите попытку позже.",
-        });
+      return res.status(502).json({
+        error: "Ошибка при загрузке изображения. Повторите попытку позже.",
+      });
     }
 
     res.status(500).json({ error: "Ошибка при обновлении аватара" });
@@ -403,7 +394,13 @@ export const createEmployee = async (req, res) => {
     }
 
     // Проверка допустимых ролей
-    const allowedRoles = ["user", "admin", "canteenManager", "cateenManager", "storeManager"];
+    const allowedRoles = [
+      "user",
+      "admin",
+      "canteenManager",
+      "cateenManager",
+      "storeManager",
+    ];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: "Недопустимая роль" });
     }
@@ -474,4 +471,3 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ error: "Ошибка при удалении пользователя" });
   }
 };
-
