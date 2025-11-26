@@ -1,7 +1,7 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import connectDB from './src/config/database.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import connectDB from "./src/config/database.js";
 
 // Загружаем переменные окружения
 dotenv.config();
@@ -10,38 +10,42 @@ dotenv.config();
 connectDB();
 
 // Routes
-import { router as userRoutes } from './src/routes/users.js';
-import { router as itemRoutes } from './src/routes/items.js';
-import { router as orderRoutes } from './src/routes/orders.js';
-import { router as categoryRoutes } from './src/routes/categories.js';
-import { router as settingsRoutes } from './src/routes/settings.js';
-import { router as pointsRoutes } from './src/routes/points.js';
-import { router as stockRoutes } from './src/routes/stock.js';
+import { router as userRoutes } from "./src/routes/users.js";
+import { router as itemRoutes } from "./src/routes/items.js";
+import { router as orderRoutes } from "./src/routes/orders.js";
+import { router as categoryRoutes } from "./src/routes/categories.js";
+import { router as settingsRoutes } from "./src/routes/settings.js";
+import { router as pointsRoutes } from "./src/routes/points.js";
+import { router as stockRoutes } from "./src/routes/stock.js";
+import { router as topUpRoutes } from "./src/routes/topups.js";
 
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: '*', // Разрешить все домены (для тестирования)
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: "*", // Разрешить все домены (для тестирования)
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
 // Подключаем роуты
-app.use('/api/users', userRoutes);
-app.use('/api/items', itemRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/points', pointsRoutes);
-app.use('/api/stock', stockRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/items", itemRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/points", pointsRoutes);
+app.use("/api/stock", stockRoutes);
+app.use("/api/topups", topUpRoutes);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get("/health", (req, res) => {
   res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString()
+    status: "OK",
+    timestamp: new Date().toISOString(),
   });
 });
 

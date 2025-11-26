@@ -102,19 +102,14 @@ export const register = async (req, res) => {
 
       // Проверяем соответствие типа точки и роли
       if (role === "canteenManager" && point.type !== "canteen") {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Администратор столовой может быть привязан только к столовой",
-          });
+        return res.status(400).json({
+          error: "Администратор столовой может быть привязан только к столовой",
+        });
       }
       if (role === "storeManager" && point.type !== "store") {
-        return res
-          .status(400)
-          .json({
-            error: "Администратор буфета может быть привязан только к буфету",
-          });
+        return res.status(400).json({
+          error: "Администратор буфета может быть привязан только к буфету",
+        });
       }
     }
 
@@ -305,6 +300,43 @@ export const topUpUserBalance = async (req, res) => {
   }
 };
 
+export const setUserBalance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    const parsedAmount = Number(amount);
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+      return res
+        .status(400)
+        .json({ error: "Баланс должен быть неотрицательным числом" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { balance: parsedAmount },
+      { new: true, runValidators: true }
+    )
+      .select("-password")
+      .populate("point_id", "name type location");
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({
+      message: `Баланс установлен на ${parsedAmount} ₽`,
+      user: mapUserToResponse(user),
+    });
+  } catch (error) {
+    console.error("Set balance error:", error);
+    res
+      .status(500)
+      .json({ error: "Ошибка при обновлении баланса пользователя" });
+  }
+};
+
 export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
@@ -340,19 +372,14 @@ export const updateUserRole = async (req, res) => {
 
       // Проверяем соответствие типа точки и роли
       if (role === "canteenManager" && point.type !== "canteen") {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Администратор столовой может быть привязан только к столовой",
-          });
+        return res.status(400).json({
+          error: "Администратор столовой может быть привязан только к столовой",
+        });
       }
       if (role === "storeManager" && point.type !== "store") {
-        return res
-          .status(400)
-          .json({
-            error: "Администратор буфета может быть привязан только к буфету",
-          });
+        return res.status(400).json({
+          error: "Администратор буфета может быть привязан только к буфету",
+        });
       }
 
       pointData.point_id = point_id;
@@ -509,19 +536,14 @@ export const createEmployee = async (req, res) => {
 
       // Проверяем соответствие типа точки и роли
       if (role === "canteenManager" && point.type !== "canteen") {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Администратор столовой может быть привязан только к столовой",
-          });
+        return res.status(400).json({
+          error: "Администратор столовой может быть привязан только к столовой",
+        });
       }
       if (role === "storeManager" && point.type !== "store") {
-        return res
-          .status(400)
-          .json({
-            error: "Администратор буфета может быть привязан только к буфету",
-          });
+        return res.status(400).json({
+          error: "Администратор буфета может быть привязан только к буфету",
+        });
       }
     }
 

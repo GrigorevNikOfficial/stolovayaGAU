@@ -5,4 +5,4 @@ export { httpClient } from './http-client';
 export { itemsApi } from './items';
 export { ordersApi } from './orders';
 export { settings } from './settings';
-
+export { topUpsApi } from './topups';

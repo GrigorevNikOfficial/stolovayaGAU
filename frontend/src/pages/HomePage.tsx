@@ -13,6 +13,8 @@ import { Settings } from '../components/Settings/Settings.tsx';
 import LogoSAU from '../images/LogoSAU.svg';
 import { $cart } from '../models/cart';
 import { $currentUser } from '../models/users';
+import { TopUpRequestModal } from '../components/Modal/TopUpRequestModal.tsx';
+import { TopUpRequestsAdmin } from '../components/TopUpRequests/TopUpRequestsAdmin.tsx';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -44,6 +46,7 @@ export const HomePage: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'items' | 'stock'>('items');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
@@ -97,6 +100,12 @@ export const HomePage: React.FC = () => {
         id: 'settings',
         label: 'Настройки',
         icon: '⚙️',
+        roles: ['admin'],
+      },
+      {
+        id: 'topups',
+        label: 'Пополнения',
+        icon: '💳',
         roles: ['admin'],
       },
     ];
@@ -192,6 +201,9 @@ export const HomePage: React.FC = () => {
       case 'settings':
         return <Settings />;
 
+      case 'topups':
+        return <TopUpRequestsAdmin />;
+
       default:
         return null;
     }
@@ -242,6 +254,24 @@ export const HomePage: React.FC = () => {
                       {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
                     </span>
                   </div>
+                  {currentUser.role === 'user' && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="hidden sm:inline-flex"
+                        onClick={() => setIsTopUpModalOpen(true)}
+                      >
+                        Пополнить
+                      </Button>
+                      <button
+                        onClick={() => setIsTopUpModalOpen(true)}
+                        className="sm:hidden inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-light text-green-dark text-sm font-semibold"
+                      >
+                        💳
+                      </button>
+                    </>
+                  )}
                 </>
               )}
               {currentUser ? (
@@ -344,6 +374,11 @@ export const HomePage: React.FC = () => {
           </Button>
         </div>
       )}
+
+      <TopUpRequestModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+      />
 
       {/* Модальное окно корзины */}
       <CartModal

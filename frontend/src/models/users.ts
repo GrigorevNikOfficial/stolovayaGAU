@@ -29,7 +29,7 @@ export const updateEmployee = createEvent<{
 }>();
 export const deleteUser = createEvent<string>();
 export const uploadAvatar = createEvent<{ id: string; file: File }>();
-export const topUpUserBalance = createEvent<{ id: string; amount: number }>();
+export const setUserBalance = createEvent<{ id: string; amount: number }>();
 export const updateCurrentUserBalance = createEvent<number>();
 
 // Effects
@@ -101,9 +101,9 @@ export const uploadAvatarFx = createEffect(
   }
 );
 
-export const topUpUserBalanceFx = createEffect(
+export const setUserBalanceFx = createEffect(
   async ({ id, amount }: { id: string; amount: number }) => {
-    const response = await usersApi.topUpBalance(id, amount);
+    const response = await usersApi.setBalance(id, amount);
     return response.user;
   }
 );
@@ -115,7 +115,7 @@ export const $currentUser = createStore<User | null>(null)
   .on(getMeFx.doneData, (_, user) => user)
   .on(updateProfileFx.doneData, (_, user) => user)
   .on(uploadAvatarFx.doneData, (_, user) => user)
-  .on(topUpUserBalanceFx.doneData, (state, user) =>
+  .on(setUserBalanceFx.doneData, (state, user) =>
     state && state._id === user._id ? user : state
   )
   .on(updateCurrentUserBalance, (state, balance) =>
@@ -135,7 +135,7 @@ export const $users = createStore<User[]>([])
   .on(deleteUserFx.doneData, (state, { id }) =>
     state.filter(user => user._id !== id)
   )
-  .on(topUpUserBalanceFx.doneData, (state, updatedUser) =>
+  .on(setUserBalanceFx.doneData, (state, updatedUser) =>
     state.map(user => (user._id === updatedUser._id ? updatedUser : user))
   );
 
@@ -210,8 +210,8 @@ sample({
 });
 
 sample({
-  clock: topUpUserBalance,
-  target: topUpUserBalanceFx,
+  clock: setUserBalance,
+  target: setUserBalanceFx,
 });
 
 // Toast уведомления
@@ -264,15 +264,15 @@ sample({
 });
 
 sample({
-  clock: topUpUserBalanceFx.done,
-  fn: () => ({ message: 'Баланс пополнен', type: 'success' as const }),
+  clock: setUserBalanceFx.done,
+  fn: () => ({ message: 'Баланс обновлен', type: 'success' as const }),
   target: showToast,
 });
 
 sample({
-  clock: topUpUserBalanceFx.fail,
+  clock: setUserBalanceFx.fail,
   fn: () => ({
-    message: 'Не удалось пополнить баланс',
+    message: 'Не удалось обновить баланс',
     type: 'error' as const,
   }),
   target: showToast,

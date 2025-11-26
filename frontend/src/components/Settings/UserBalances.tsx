@@ -3,18 +3,18 @@ import { useUnit } from 'effector-react';
 import {
   $users,
   loadUsers,
-  topUpUserBalance,
-  topUpUserBalanceFx,
+  setUserBalance,
+  setUserBalanceFx,
 } from '../../models/users';
 import Input from '../layout/Input/Input.tsx';
 import Button from '../layout/Button/Button.tsx';
 
 export const UserBalances: React.FC = () => {
-  const [users, handleLoadUsers, handleTopUp, isTopUpPending] = useUnit([
+  const [users, handleLoadUsers, handleSetBalance, isSetPending] = useUnit([
     $users,
     loadUsers,
-    topUpUserBalance,
-    topUpUserBalanceFx.pending,
+    setUserBalance,
+    setUserBalanceFx.pending,
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,16 +49,26 @@ export const UserBalances: React.FC = () => {
     }
   };
 
-  const handleTopUpClick = (userId: string) => {
+  const handleSetBalanceClick = (userId: string, currentBalance: number) => {
     const rawValue = amounts[userId];
     const parsedAmount = Number(rawValue);
 
-    if (!rawValue || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert('Введите положительную сумму пополнения');
+    if (rawValue === undefined || rawValue === '') {
+      alert('Введите новое значение баланса');
       return;
     }
 
-    handleTopUp({ id: userId, amount: parsedAmount });
+    if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
+      alert('Баланс должен быть неотрицательным числом');
+      return;
+    }
+
+    if (parsedAmount === (currentBalance ?? 0)) {
+      alert('Новое значение совпадает с текущим балансом');
+      return;
+    }
+
+    handleSetBalance({ id: userId, amount: parsedAmount });
     setAmounts(prev => ({ ...prev, [userId]: '' }));
   };
 
@@ -104,18 +114,20 @@ export const UserBalances: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-2 w-full md:w-80">
                 <Input
                   type="number"
-                  placeholder="Сумма пополнения"
+                  placeholder="Новый баланс"
                   value={amounts[user._id] ?? ''}
                   onChange={value => handleAmountChange(user._id, value)}
                   className="h-12"
                 />
                 <Button
-                  onClick={() => handleTopUpClick(user._id)}
-                  disabled={isTopUpPending}
+                  onClick={() =>
+                    handleSetBalanceClick(user._id, user.balance ?? 0)
+                  }
+                  disabled={isSetPending}
                   variant="primary"
                   className="h-12"
                 >
-                  💸 Пополнить
+                  💾 Установить
                 </Button>
               </div>
             </div>

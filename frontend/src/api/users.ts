@@ -95,7 +95,7 @@ export const usersApi = {
     return response;
   },
 
-  topUpBalance: async (
+  setBalance: async (
     id: string,
     amount: number
   ): Promise<{
@@ -105,7 +105,7 @@ export const usersApi = {
     const response = await httpClient.post<{
       message: string;
       user: User;
-    }>(`/users/${id}/balance/top-up`, { amount });
+    }>(`/users/${id}/balance/set`, { amount });
     return response;
   },
 

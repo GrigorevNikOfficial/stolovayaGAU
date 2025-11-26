@@ -9,6 +9,7 @@ import {
   login,
   register,
   topUpUserBalance,
+  setUserBalance,
   updateProfile,
   updateUserAvatar,
   updateUserRole,
@@ -43,6 +44,12 @@ router.post(
   authenticateToken,
   requireAdmin,
   topUpUserBalance
+);
+router.post(
+  "/:id/balance/set",
+  authenticateToken,
+  requireAdmin,
+  setUserBalance
 );
 
 export { router };
