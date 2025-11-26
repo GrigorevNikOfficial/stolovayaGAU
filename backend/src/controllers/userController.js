@@ -244,6 +244,41 @@ export const topUpUserBalance = async (req, res) => {
   }
 };
 
+export const setUserBalance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    const parsedAmount = Number(amount);
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+      return res
+        .status(400)
+        .json({ error: "Баланс должен быть неотрицательным числом" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { balance: parsedAmount },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({
+      message: `Баланс установлен на ${parsedAmount} ₽`,
+      user: mapUserToResponse(user),
+    });
+  } catch (error) {
+    console.error("Set balance error:", error);
+    res
+      .status(500)
+      .json({ error: "Ошибка при обновлении баланса пользователя" });
+  }
+};
+
 export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;

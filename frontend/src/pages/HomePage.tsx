@@ -11,6 +11,7 @@ import { Settings } from '../components/Settings/Settings.tsx';
 import LogoSAU from '../images/LogoSAU.svg';
 import { $cart } from '../models/cart';
 import { $currentUser } from '../models/users';
+import TopUpRequestModal from '../components/Modal/TopUpRequestModal.tsx';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -29,6 +30,7 @@ export const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
@@ -98,9 +100,14 @@ export const HomePage: React.FC = () => {
                 alt="Логотип столовой ГАУ"
                 className="w-8 h-8 sm:w-10 sm:h-10"
               />
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
-                Столовая ГАУ
-              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                  Столовая ГАУ
+                </h1>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-orange-100 text-orange-700 border border-orange-200">
+                  тестовая версия
+                </span>
+              </div>
             </div>
 
             {/* Центральная часть: табы */}
@@ -121,6 +128,14 @@ export const HomePage: React.FC = () => {
                   <div className="sm:hidden mr-1 text-xs font-semibold text-green-dark bg-green-light/60 px-2 py-1 rounded-full">
                     {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="sm:hidden"
+                    onClick={() => setIsTopUpModalOpen(true)}
+                  >
+                    Пополнить
+                  </Button>
                   <div className="hidden sm:flex flex-col items-end text-right mr-1">
                     <span className="text-[11px] uppercase tracking-wide text-gray-400">
                       Баланс
@@ -129,6 +144,14 @@ export const HomePage: React.FC = () => {
                       {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
                     </span>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hidden sm:inline-flex"
+                    onClick={() => setIsTopUpModalOpen(true)}
+                  >
+                    Пополнить
+                  </Button>
                 </>
               )}
               {currentUser ? (
@@ -266,6 +289,11 @@ export const HomePage: React.FC = () => {
       <CartModal
         isOpen={isCartModalOpen}
         onClose={() => setIsCartModalOpen(false)}
+      />
+
+      <TopUpRequestModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
       />
 
       {/* Мобильная навигация */}
