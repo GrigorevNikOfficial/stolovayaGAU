@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
   $cart,
   $cartTotal,
+  $cartPreparationTime,
   clearCart,
   createOrderFromCart,
   removeFromCart,
@@ -53,6 +54,41 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     fetchDeliverySettings,
   ]);
 
+  const [cartPreparationTime] = useUnit([$cartPreparationTime]);
+  const [selectedReadyTimeIso, setSelectedReadyTimeIso] = useState<string | null>(null);
+  const [readyTimeOptions, setReadyTimeOptions] = useState<Array<{ label: string; iso: string }>>([]);
+
+  const roundUpToInterval = (date: Date, intervalMinutes: number) => {
+    const ms = 1000 * 60 * intervalMinutes;
+    return new Date(Math.ceil(date.getTime() / ms) * ms);
+  };
+
+  const formatHM = (date: Date) =>
+    `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+  const generateReadyTimeOptions = (start: Date, hours = 4, interval = 15) => {
+    const opts: Array<{ label: string; iso: string }> = [];
+    const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
+    let cur = new Date(start);
+    while (cur <= end) {
+      opts.push({ label: formatHM(cur), iso: cur.toISOString() });
+      cur = new Date(cur.getTime() + interval * 60 * 1000);
+    }
+    return opts;
+  };
+
+  // compute default ready time options when cartPreparationTime or deliveryMethod changes
+  useEffect(() => {
+    if (!(deliveryMethod === 'pickup' || deliveryMethod === 'dine_in')) return;
+
+    const now = new Date();
+    const minimal = Math.max(10, (cartPreparationTime || 0) + 5); // минимум 10 минут, плюс буфер 5 минут
+    const roundedStart = roundUpToInterval(new Date(now.getTime() + minimal * 60 * 1000), 5);
+    const opts = generateReadyTimeOptions(roundedStart, 6, 15); // next 6 hours
+    setReadyTimeOptions(opts);
+    if (opts.length > 0) setSelectedReadyTimeIso(opts[0].iso);
+  }, [cartPreparationTime, deliveryMethod]);
+
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const currentBalance = currentUser?.balance ?? 0;
 
@@ -75,8 +111,6 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const hasEnoughBalance = currentUser
     ? currentBalance >= cartTotalWithServiceFee
     : true;
-  const remainingBalance =
-    Math.round((currentBalance - cartTotalWithServiceFee) * 100) / 100;
   const serviceFeeLabel =
     serviceFeeType === 'percent'
       ? `${serviceFeeValue}%`
@@ -164,13 +198,29 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
     }
 
     try {
-      await handleCreateOrder({
+      if (
+        (deliveryMethod === 'pickup' || deliveryMethod === 'dine_in') &&
+        !selectedReadyTimeIso
+      ) {
+        alert('Пожалуйста, выберите время, к которому нужно приготовить заказ.');
+        return;
+      }
+
+      const payload: any = {
         delivery_method: deliveryMethod,
         ...(deliveryMethod === 'dine_in' && { table_number: 1 }),
         ...(deliveryMethod === 'delivery' && {
           delivery_address: deliveryAddress,
         }),
-      });
+      };
+
+      if (deliveryMethod === 'pickup' || deliveryMethod === 'dine_in') {
+        if (selectedReadyTimeIso) {
+          payload.ready_time = selectedReadyTimeIso;
+        }
+      }
+
+      await handleCreateOrder(payload);
 
       // После успешного создания заказа вызываем callback
       if (onOrderCreated) {
@@ -182,7 +232,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col">
       {/* Выбор способа получения */}
       {cart.length > 0 && (
         <div className="p-6 border-b border-gray-100">
@@ -253,6 +303,11 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
               </p>
             </div>
           )}
+          {deliveryMethod === 'delivery' && settings.deliveryEnabled && deliveryAvailability.available && (
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-darker">
+              ⏰ Доставка активна с {settings.deliveryTimeStart || '00:00'} до {settings.deliveryTimeEnd || '23:59'}
+            </div>
+          )}
           {settings.deliveryEnabled && deliveryMethod === 'delivery' && (
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -267,33 +322,34 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
               />
             </div>
           )}
+
+          {/* Время готовности для самовывоза/в зале */}
+          {(deliveryMethod === 'pickup' || deliveryMethod === 'dine_in') && (
+            <div className="p-6 border-b border-gray-100">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Время готовности
+              </label>
+              {readyTimeOptions.length > 0 ? (
+                <Select
+                  options={readyTimeOptions.map(o => ({ value: o.iso, label: o.label }))}
+                  value={selectedReadyTimeIso ?? ''}
+                  onChange={val => setSelectedReadyTimeIso(val)}
+                  placeholder="Выберите время"
+                />
+              ) : (
+                <p className="text-sm text-gray-500">Загрузка вариантов времени...</p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Минимальное время: {readyTimeOptions[0]?.label ?? '-'}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Список товаров */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {currentUser && (
-          <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
-            <div className="flex items-center justify-between text-sm font-semibold text-gray-700">
-              <span>Баланс</span>
-              <span className="text-lg text-green-dark">
-                {formatCurrency(currentBalance)} ₽
-              </span>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-              <span>После заказа</span>
-              <span
-                className={
-                  remainingBalance >= 0
-                    ? 'text-green-darker font-semibold'
-                    : 'text-red-500 font-semibold'
-                }
-              >
-                {formatCurrency(Math.max(remainingBalance, 0))} ₽
-              </span>
-            </div>
-          </div>
-        )}
+      <div className="p-6">
+        {/* Баланс перенесен в заголовок модального окна */}
 
         {cart.length === 0 ? (
           <div className="text-center py-12">

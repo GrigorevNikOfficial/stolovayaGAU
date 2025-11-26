@@ -7,6 +7,7 @@ export interface Order {
   service_fee_type?: 'percent' | 'fixed' | 'none'; // Тип сбора
   service_fee_value?: number; // Значение настройки, % или ₽
   total_amount: number; // Итоговая сумма с учетом сбора
+  ready_time?: string; // Время, к которому заказ должен быть готов
   status:
     | 'created'
     | 'cooking'
@@ -62,6 +63,7 @@ export interface CreateOrderRequest {
   delivery_method: 'dine_in' | 'pickup' | 'delivery';
   table_number?: number; // Для dine_in
   delivery_address?: string; // Для delivery
+  ready_time?: string; // ISO string or HH:MM - время, к которому заказ должен быть готов
 }
 
 export interface UpdateOrderRequest {

@@ -34,6 +34,7 @@ export const createOrderFromCart = createEvent<{
   delivery_method: 'dine_in' | 'pickup' | 'delivery'; // Обновленный тип
   table_number?: number; // Новое поле для dine_in
   delivery_address?: string; // Для delivery
+  ready_time?: string; // ISO string or time
 }>();
 
 // Stores
@@ -110,6 +111,7 @@ sample({
     delivery_method: orderData.delivery_method, // Обновленное поле
     table_number: orderData.table_number, // Новое поле
     delivery_address: orderData.delivery_address, // Новое поле
+    ready_time: orderData.ready_time,
   }),
   target: createOrder,
 });

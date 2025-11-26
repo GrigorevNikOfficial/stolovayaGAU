@@ -193,6 +193,9 @@ export const OrdersList: React.FC = () => {
     handleCancelOrder(orderId);
   };
 
+  const staffRoles = ['admin', 'storeManager', 'canteenManager', 'cateenManager'];
+  const isStaffUser = currentUser ? staffRoles.includes(currentUser.role) : false;
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -230,6 +233,20 @@ export const OrdersList: React.FC = () => {
       </div>
 
       {orders.map((order: any) => {
+        const readyTime = order.ready_time ? new Date(order.ready_time) : null;
+        const isOrderOverdue =
+          isStaffUser &&
+          readyTime !== null &&
+          new Date() > readyTime &&
+          order.status !== 'completed' &&
+          order.status !== 'cancelled';
+        const readyTimeLabel = readyTime
+          ? readyTime.toLocaleTimeString('ru-RU', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : null;
+
         const availableActions = getAvailableActions(order);
         const serviceFeeLabel =
           order.service_fee_type === 'percent'
@@ -238,10 +255,16 @@ export const OrdersList: React.FC = () => {
               ? ` (${order.service_fee_value ?? order.service_fee} ₽)`
               : '';
 
+        const cardBorderClass = isOrderOverdue
+          ? 'border-red-200'
+          : isStaffUser && readyTime
+            ? 'border-green-100'
+            : 'border-gray-100';
+
         return (
           <div
             key={order._id}
-            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300"
+            className={`bg-white rounded-2xl shadow-lg p-6 border ${cardBorderClass} hover:shadow-xl transition-all duration-300`}
           >
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
               <div className="space-y-2">
@@ -276,6 +299,14 @@ export const OrdersList: React.FC = () => {
                 {order.delivery_address && (
                   <p className="text-sm text-gray-600">
                     📍 Адрес: {order.delivery_address}
+                  </p>
+                )}
+                {isStaffUser && readyTimeLabel && (
+                  <p
+                    className={`text-sm font-semibold flex items-center gap-2 ${isOrderOverdue ? 'text-red-600' : 'text-green-600'}`}
+                  >
+                    ⏱️ Готовность: {readyTimeLabel}
+                    {isOrderOverdue && <span className="text-xs">(не успеваем)</span>}
                   </p>
                 )}
               </div>

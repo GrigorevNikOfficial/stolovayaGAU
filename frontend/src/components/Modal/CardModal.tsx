@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useUnit } from 'effector-react';
 import { CartBlock } from '../Items/CardBlock.tsx';
+import { $currentUser } from '../../models/users.ts';
 
 interface CartModalProps {
   isOpen: boolean;
@@ -7,10 +9,24 @@ interface CartModalProps {
 }
 
 export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
+  const currentUser = useUnit($currentUser);
   const handleOrderCreated = () => {
     // Закрываем модальное окно после успешного создания заказа
     onClose();
   };
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -26,8 +42,18 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
       <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl transform transition-transform duration-400 ease-out">
         <div className="flex flex-col h-full">
           {/* Заголовок */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
-            <h2 className="text-xl font-bold text-gray-900">Корзина</h2>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Корзина</h2>
+              {currentUser && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Баланс:{' '}
+                  <span className="font-semibold text-green-dark">
+                    {(currentUser.balance ?? 0).toFixed(2)} ₽
+                  </span>
+                </p>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-300 hover:scale-110"
@@ -49,7 +75,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Контент корзины */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
             <CartBlock onOrderCreated={handleOrderCreated} />
           </div>
         </div>
