@@ -325,7 +325,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
           {/* Время готовности для самовывоза/в зале */}
           {(deliveryMethod === 'pickup' || deliveryMethod === 'dine_in') && (
-            <div className="p-6 border-b border-gray-100">
+            <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Время готовности
               </label>
