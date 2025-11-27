@@ -64,7 +64,13 @@ export const HomePage: React.FC = () => {
         id: 'orders',
         label: 'Заказы',
         icon: '📦',
-        roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
+        roles: [
+          'admin',
+          'canteenManager',
+          'cateenManager',
+          'storeManager',
+          'user',
+        ],
       },
       { id: 'settings', label: 'Настройки', icon: '⚙️', roles: ['admin'] },
     ];
@@ -178,9 +184,15 @@ export const HomePage: React.FC = () => {
                 <div className="h-full">
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                     <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                        Меню
-                      </h2>
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                          Меню
+                        </h2>
+                        <h3 className="text-[14px] font-bold text-red-500">
+                          Все ценны приблизительны. Это тестовая версия,
+                          относитесь с пониманием
+                        </h3>
+                      </div>
                       {/* Индикатор активного таба для мобильных */}
                       <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                         <span>{visibleTabs[activeTab].icon}</span>
