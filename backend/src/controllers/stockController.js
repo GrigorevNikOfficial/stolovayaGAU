@@ -1,6 +1,10 @@
-import { Stock } from '../models/Stock.js';
 import { Item } from '../models/Item.js';
 import { Point } from '../models/Point.js';
+import { Stock } from '../models/Stock.js';
+import {
+    buildPublicUrl,
+    DEFAULT_ITEM_PICTURE_KEY,
+} from '../services/storageService.js';
 
 const mapStockToResponse = (stock) => {
     return {
@@ -15,6 +19,9 @@ const mapStockToResponse = (stock) => {
 };
 
 const mapStockWithDetails = (stock) => {
+    const imageKey = stock.productId?.image?.key || DEFAULT_ITEM_PICTURE_KEY;
+    const imageUrl = buildPublicUrl(imageKey);
+
     return {
         _id: stock._id,
         pointId: stock.pointId,
@@ -27,7 +34,11 @@ const mapStockWithDetails = (stock) => {
             _id: stock.productId._id,
             name: stock.productId.name,
             price: stock.productId.price,
-            image: stock.productId.image
+            image_url: imageUrl,
+            image: {
+                key: imageKey,
+                url: imageUrl
+            }
         } : undefined,
         point: stock.pointId ? {
             _id: stock.pointId._id,

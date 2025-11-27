@@ -1,5 +1,6 @@
 // components/ItemFormModal/ItemFormModal.tsx
 import React, { useEffect, useState } from 'react';
+import ImageCropper from '../ImageCropper/ImageCropper.tsx';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
 import Select from '../layout/Select/Select.tsx';
@@ -32,6 +33,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [isCropping, setIsCropping] = useState(false);
 
   // Заполняем форму данными при редактировании
   useEffect(() => {
@@ -74,11 +76,13 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      // Создаем превью
       const reader = new FileReader();
-      reader.onload = e => {
-        setImagePreview(e.target?.result as string);
+      reader.onload = async ev => {
+        const src = ev.target?.result as string;
+        setImagePreview(src);
+        setSelectedImage(file);
+        // Открыть кроппер для ручного кадрирования
+        setIsCropping(true);
       };
       reader.readAsDataURL(file);
     }
@@ -152,7 +156,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                 Изображение товара
               </label>
               <div className="flex items-center gap-4">
-                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="w-36 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
                   {imagePreview ? (
                     <img
                       src={imagePreview}
@@ -334,6 +338,23 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
           </form>
         </div>
       </div>
+    {isCropping && imagePreview && selectedImage && (
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-6 max-w-3xl w-full">
+          <ImageCropper
+            src={imagePreview}
+            aspect={3 / 2}
+            fileName={formData.uniq_nom || 'item-image'}
+            onCancel={() => setIsCropping(false)}
+            onComplete={(file, previewUrl) => {
+              setSelectedImage(file);
+              setImagePreview(previewUrl);
+              setIsCropping(false);
+            }}
+          />
+        </div>
+      </div>
+    )}
     </div>
   );
 };

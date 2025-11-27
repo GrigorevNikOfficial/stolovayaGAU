@@ -2,19 +2,19 @@ import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import { CategoriesList } from '../components/Categories/CategoriesList.tsx';
 import { ItemsList } from '../components/Items/ItemsList.tsx';
-import { PointItemsList } from '../components/Points/PointItemsList.tsx';
-import { StockManagement } from '../components/Stock/StockManagement.tsx';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
 import CartModal from '../components/Modal/CardModal.tsx';
+import { TopUpRequestModal } from '../components/Modal/TopUpRequestModal.tsx';
 import { OrdersList } from '../components/Orders/OrdersList.tsx';
+import { PointItemsList } from '../components/Points/PointItemsList.tsx';
 import { Settings } from '../components/Settings/Settings.tsx';
+import { StockManagement } from '../components/Stock/StockManagement.tsx';
+import { TopUpRequestsAdmin } from '../components/TopUpRequests/TopUpRequestsAdmin.tsx';
 import LogoSAU from '../images/LogoSAU.svg';
 import { $cart } from '../models/cart';
 import { $currentUser } from '../models/users';
-import { TopUpRequestModal } from '../components/Modal/TopUpRequestModal.tsx';
-import { TopUpRequestsAdmin } from '../components/TopUpRequests/TopUpRequestsAdmin.tsx';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -43,7 +43,6 @@ export const HomePage: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
   const [cart] = useUnit([$cart]);
   const [activeTab, setActiveTab] = useState(0);
-  const [activeSubTab, setActiveSubTab] = useState<'items' | 'stock'>('items');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
@@ -77,6 +76,18 @@ export const HomePage: React.FC = () => {
         label: 'Меню',
         icon: '🛍️',
         roles: ['admin', 'canteenManager', 'cateenManager', 'user', 'guest'],
+      },
+      {
+        id: 'items',
+        label: 'Создание товаров',
+        icon: '📦',
+        roles: ['admin', 'canteenManager', 'cateenManager'],
+      },
+      {
+        id: 'stock',
+        label: 'Учет товаров',
+        icon: '📊',
+        roles: ['admin', 'canteenManager', 'cateenManager'],
       },
       {
         id: 'categories',
@@ -125,22 +136,10 @@ export const HomePage: React.FC = () => {
     setIsMobileMenuOpen(false);
   }, [activeTab]);
 
-  // Сбрасываем субтаб при смене основного таба
-  useEffect(() => {
-    setActiveSubTab('items');
-  }, [activeTab]);
-
   // Получаем заголовок для активного таба с учетом субтабов
   const getActiveTabTitle = () => {
     const currentTab = visibleTabs[activeTab];
     if (!currentTab) return '';
-
-    if (currentTab.id === 'menu') {
-      if (isAdmin) {
-        return activeSubTab === 'items' ? 'Создание товаров' : 'Учет товаров';
-      }
-      return 'Выбор точки и товаров';
-    }
 
     return currentTab.label;
   };
@@ -152,58 +151,22 @@ export const HomePage: React.FC = () => {
 
     switch (currentTab.id) {
       case 'menu':
-        if (isAdmin) {
-          // Для админов показываем субтабы
-          return (
-            <div className="h-full flex flex-col">
-              {/* Субтабы для админов */}
-              <div className="flex gap-2 mb-6">
-                <button
-                  onClick={() => setActiveSubTab('items')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
-                    activeSubTab === 'items'
-                      ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                  }`}
-                >
-                  📦 Создание товаров
-                </button>
-                <button
-                  onClick={() => setActiveSubTab('stock')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
-                    activeSubTab === 'stock'
-                      ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                  }`}
-                >
-                  📊 Учет товаров
-                </button>
-              </div>
-
-              {/* Контент субтабов */}
-              <div className="flex-1 overflow-y-auto">
-                {activeSubTab === 'items' && <ItemsList />}
-                {activeSubTab === 'stock' && <StockManagement />}
-              </div>
-            </div>
-          );
-        } else {
-          // Для обычных пользователей - выбор точки и товаров
-          return <PointItemsList />;
-        }
-
+        // Для обычных пользователей и гостей показываем выбор точки и товаров
+        return <PointItemsList />;
+      case 'items':
+        // Создание товаров (только для админов)
+        return <ItemsList />;
+      case 'stock':
+        // Учет товаров (только для админов)
+        return <StockManagement />;
       case 'categories':
         return <CategoriesList />;
-
       case 'orders':
         return <OrdersList />;
-
       case 'settings':
         return <Settings />;
-
       case 'topups':
         return <TopUpRequestsAdmin />;
-
       default:
         return null;
     }

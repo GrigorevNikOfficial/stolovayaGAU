@@ -1,5 +1,5 @@
 // components/layout/Input/Input.tsx
-import React from 'react';
+import React, { useState } from 'react';
 
 interface InputProps {
   type?: 'text' | 'number' | 'email' | 'password' | 'tel';
@@ -28,10 +28,14 @@ export const Input: React.FC<InputProps> = ({
   max,
   step,
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+  const inputType = isPassword && showPassword ? 'text' : type;
+
   return (
     <div className="relative">
       <input
-        type={type}
+        type={inputType}
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -45,11 +49,21 @@ export const Input: React.FC<InputProps> = ({
           focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent 
           transition-all duration-300 bg-white shadow-sm hover:shadow-md
           disabled:opacity-50 disabled:cursor-not-allowed
-          ${icon ? 'pr-12' : ''}
+          ${icon || isPassword ? 'pr-12' : ''}
           ${className}
         `}
       />
-      {icon && (
+      {isPassword && (
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg transition-colors"
+          tabIndex={-1}
+        >
+          {showPassword ? '👁️' : '👁️‍🗨️'}
+        </button>
+      )}
+      {icon && !isPassword && (
         <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
           {icon}
         </div>

@@ -3,6 +3,9 @@ import { pointsApi } from '../../api/points';
 import type { Point } from '../../types/points';
 import Button from '../layout/Button/Button';
 import Input from '../layout/Input/Input';
+import PhoneInput, {
+    cleanPhoneNumber,
+} from '../layout/PhoneInput/PhoneInput';
 import Select from '../layout/Select/Select';
 import { showToast } from '../layout/Toast/stores/toastStore';
 
@@ -53,7 +56,10 @@ export const PointManagement: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await pointsApi.createPoint(formData);
+      await pointsApi.createPoint({
+        ...formData,
+        phone: cleanPhoneNumber(formData.phone),
+      });
       showToast({ message: 'Точка успешно создана', type: 'success' });
       closeCreateModal();
       loadPoints();
@@ -82,7 +88,10 @@ export const PointManagement: React.FC = () => {
     if (!editingPoint) return;
 
     try {
-      await pointsApi.updatePoint(editingPoint._id, editFormData);
+      await pointsApi.updatePoint(editingPoint._id, {
+        ...editFormData,
+        phone: cleanPhoneNumber(editFormData.phone),
+      });
       showToast({ message: 'Точка успешно обновлена', type: 'success' });
       closeEditModal();
       loadPoints();
@@ -286,8 +295,8 @@ export const PointManagement: React.FC = () => {
                   })
                 }
                 options={[
-                  { value: 'canteen', label: 'Столовая' },
-                  { value: 'store', label: 'Буфет' },
+                  { value: 'canteen', label: '🍽️ Столовая' },
+                  { value: 'store', label: '🏪 Буфет' },
                 ]}
                 required
               />
@@ -302,12 +311,9 @@ export const PointManagement: React.FC = () => {
                 required
               />
 
-              <Input
-                type="tel"
-                placeholder="Телефон"
+              <PhoneInput
                 value={formData.phone}
                 onChange={value => setFormData({ ...formData, phone: value })}
-                required
               />
 
               <div className="flex items-center">
@@ -378,8 +384,8 @@ export const PointManagement: React.FC = () => {
                   })
                 }
                 options={[
-                  { value: 'canteen', label: 'Столовая' },
-                  { value: 'store', label: 'Буфет' },
+                  { value: 'canteen', label: '🍽️ Столовая' },
+                  { value: 'store', label: '🏪 Буфет' },
                 ]}
                 required
               />
@@ -394,14 +400,11 @@ export const PointManagement: React.FC = () => {
                 required
               />
 
-              <Input
-                type="tel"
-                placeholder="Телефон"
+              <PhoneInput
                 value={editFormData.phone}
                 onChange={value =>
                   setEditFormData({ ...editFormData, phone: value })
                 }
-                required
               />
 
               <div className="flex items-center">

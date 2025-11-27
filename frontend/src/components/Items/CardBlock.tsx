@@ -1,23 +1,23 @@
 // components/Cart/CartBlock.tsx
 import { useUnit } from 'effector-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  $cart,
-  $cartTotal,
-  clearCart,
-  createOrderFromCart,
-  removeFromCart,
-  updateCartItemQuantity,
+    $cart,
+    $cartTotal,
+    clearCart,
+    createOrderFromCart,
+    removeFromCart,
+    updateCartItemQuantity,
 } from '../../models/cart.ts';
 import { $isCreating } from '../../models/orders.ts';
-import {
-  $deliverySettings,
-  fetchDeliverySettings,
-} from '../../models/settings.ts';
-import { $currentUser } from '../../models/users.ts';
 import { $points, loadPoints } from '../../models/points.ts';
-import { $stockWithDetails, loadStockWithDetails } from '../../models/stock.ts';
 import { $selectedPoint } from '../../models/selectedPoint.ts';
+import {
+    $deliverySettings,
+    fetchDeliverySettings,
+} from '../../models/settings.ts';
+import { $stockWithDetails, loadStockWithDetails } from '../../models/stock.ts';
+import { $currentUser } from '../../models/users.ts';
 import Button from '../layout/Button/Button.tsx';
 import { showToast } from '../layout/Toast/stores/toastStore.ts';
 
@@ -74,6 +74,85 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
   const selectedPointInfo = points.find(p => p._id === selectedPoint);
 
+  const parseMinutes = (time?: string) => {
+    if (!time) return null;
+    const [hours, minutes] = time.split(':').map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    return hours * 60 + minutes;
+  };
+
+  const isNowWithinRange = (start?: string, end?: string) => {
+    const startMinutes = parseMinutes(start);
+    const endMinutes = parseMinutes(end);
+    if (startMinutes === null || endMinutes === null) {
+      return true;
+    }
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    if (startMinutes <= endMinutes) {
+      return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    }
+    return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+  };
+
+  const methodAvailability = useMemo(() => ({
+    pickup: isNowWithinRange(
+      settings.pickupTimeStart,
+      settings.pickupTimeEnd
+    ),
+    delivery:
+      settings.deliveryEnabled &&
+      isNowWithinRange(settings.deliveryTimeStart, settings.deliveryTimeEnd),
+    dine_in: isNowWithinRange(
+      settings.dineInTimeStart,
+      settings.dineInTimeEnd
+    ),
+  }), [
+    settings.deliveryEnabled,
+    settings.deliveryTimeEnd,
+    settings.deliveryTimeStart,
+    settings.dineInTimeEnd,
+    settings.dineInTimeStart,
+    settings.pickupTimeEnd,
+    settings.pickupTimeStart,
+  ]);
+
+  const getMethodSchedule = (
+    method: 'pickup' | 'delivery' | 'dine_in'
+  ): { label: string; start?: string; end?: string } => {
+    switch (method) {
+      case 'delivery':
+        return {
+          label: 'Доставка',
+          start: settings.deliveryTimeStart,
+          end: settings.deliveryTimeEnd,
+        };
+      case 'dine_in':
+        return {
+          label: 'Питание в зале',
+          start: settings.dineInTimeStart,
+          end: settings.dineInTimeEnd,
+        };
+      default:
+        return {
+          label: 'Самовывоз',
+          start: settings.pickupTimeStart,
+          end: settings.pickupTimeEnd,
+        };
+    }
+  };
+
+  const getMethodWarning = (method: 'pickup' | 'delivery' | 'dine_in') => {
+    const schedule = getMethodSchedule(method);
+    if (method === 'delivery' && !settings.deliveryEnabled) {
+      return 'Доставка временно отключена администратором';
+    }
+    if (!schedule.start || !schedule.end) {
+      return `${schedule.label} временно недоступен. Обратитесь к администратору.`;
+    }
+    return `${schedule.label} недоступен сейчас. Рабочие часы: ${schedule.start} - ${schedule.end}`;
+  };
+
   const getAvailableDeliveryMethods = () => {
     const methods: Array<{
       value: 'dine_in' | 'pickup' | 'delivery';
@@ -93,6 +172,8 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
   const availableMethods = getAvailableDeliveryMethods();
 
+  const selectedMethodAvailable = methodAvailability[deliveryMethod] ?? true;
+
   useEffect(() => {
     if (selectedPoint) {
       setIsStockLoading(true);
@@ -108,12 +189,18 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
       const currentMethodAvailable = methods.some(
         method => method.value === deliveryMethod
       );
-
+      const firstAvailableBySchedule = methods.find(
+        method => methodAvailability[method.value]
+      );
       if (!currentMethodAvailable && methods.length > 0) {
         setDeliveryMethod(methods[0].value);
+        return;
+      }
+      if (!methodAvailability[deliveryMethod] && firstAvailableBySchedule) {
+        setDeliveryMethod(firstAvailableBySchedule.value);
       }
     }
-  }, [selectedPointInfo]);
+  }, [selectedPointInfo, methodAvailability, deliveryMethod]);
 
   const serviceFeeValue = Number(settings.serviceFeeValue) || 0;
   const serviceFeeType = settings.serviceFeeType || 'percent';
@@ -146,6 +233,14 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
     if (!selectedPoint) {
       alert('Пожалуйста, выберите точку для заказа в основном меню');
+      return;
+    }
+
+    if (!methodAvailability[deliveryMethod]) {
+      showToast({
+        message: getMethodWarning(deliveryMethod),
+        type: 'error',
+      });
       return;
     }
 
@@ -240,18 +335,39 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                   {availableMethods.map(method => (
                     <button
                       key={method.value}
-                      onClick={() => setDeliveryMethod(method.value)}
-                      className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 ${
+                      onClick={() =>
+                        methodAvailability[method.value] &&
+                        setDeliveryMethod(method.value)
+                      }
+                      disabled={!methodAvailability[method.value]}
+                      className={`flex-1 py-3 px-4 text-sm rounded-xl transition-all duration-300 border ${
                         deliveryMethod === method.value
-                          ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                          ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25 border-green-dark'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md border-transparent'
+                      } ${
+                        !methodAvailability[method.value]
+                          ? 'opacity-50 cursor-not-allowed'
+                          : ''
                       }`}
                     >
-                      {method.label}
+                      <div className="flex flex-col">
+                        <span>{method.label}</span>
+                        {!methodAvailability[method.value] && (
+                          <span className="text-[11px] text-red-500 font-medium">
+                            Недоступно сейчас
+                          </span>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
+
+              {!selectedMethodAvailable && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800">
+                  ⚠️ {getMethodWarning(deliveryMethod)}
+                </div>
+              )}
 
               {deliveryMethod === 'dine_in' && (
                 <div>
@@ -403,7 +519,12 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
           <div className="space-y-3">
             <Button
               onClick={handleSubmitOrder}
-              disabled={isCreating || !selectedPoint || !hasEnoughBalance}
+              disabled={
+                isCreating ||
+                !selectedPoint ||
+                !hasEnoughBalance ||
+                !selectedMethodAvailable
+              }
               variant="primary"
               size="lg"
               className="w-full"

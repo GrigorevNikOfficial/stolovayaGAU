@@ -1,21 +1,23 @@
 // components/Settings/EmployeeManagement.tsx
-import React, { useEffect, useState } from 'react';
 import { useUnit } from 'effector-react';
-import { usersApi } from '../../api/users';
+import React, { useEffect, useState } from 'react';
 import { pointsApi } from '../../api/points';
 import {
-  $users,
-  $usersLoading,
-  $usersError,
-  loadUsers,
-  createEmployee,
-  updateEmployee,
-  deleteUser,
+    $users,
+    $usersError,
+    $usersLoading,
+    createEmployee,
+    deleteUser,
+    loadUsers,
+    updateEmployee,
 } from '../../models/users';
-import type { User } from '../../types/user';
 import type { Point } from '../../types/points';
+import type { User } from '../../types/user';
 import Button from '../layout/Button/Button';
 import Input from '../layout/Input/Input';
+import PhoneInput, {
+    cleanPhoneNumber,
+} from '../layout/PhoneInput/PhoneInput';
 import Select from '../layout/Select/Select';
 import { showToast } from '../layout/Toast/stores/toastStore';
 
@@ -81,7 +83,10 @@ export const EmployeeManagement: React.FC = () => {
         return;
       }
 
-      await handleCreateEmployee(formData);
+      await handleCreateEmployee({
+        ...formData,
+        phone: cleanPhoneNumber(formData.phone),
+      });
       showToast({ message: 'Сотрудник успешно создан', type: 'success' });
       setShowCreateModal(false);
       resetForm();
@@ -116,7 +121,7 @@ export const EmployeeManagement: React.FC = () => {
         data: {
           first_name: formData.first_name,
           last_name: formData.last_name,
-          phone: formData.phone,
+          phone: cleanPhoneNumber(formData.phone),
           mail: formData.mail,
           role: formData.role,
           point_id: formData.point_id,
@@ -372,12 +377,9 @@ export const EmployeeManagement: React.FC = () => {
                 }
                 required
               />
-              <Input
-                type="tel"
-                placeholder="Телефон"
+              <PhoneInput
                 value={formData.phone}
                 onChange={value => setFormData({ ...formData, phone: value })}
-                required
               />
               <Input
                 type="email"
@@ -491,12 +493,9 @@ export const EmployeeManagement: React.FC = () => {
                 }
                 required
               />
-              <Input
-                type="tel"
-                placeholder="Телефон"
+              <PhoneInput
                 value={formData.phone}
                 onChange={value => setFormData({ ...formData, phone: value })}
-                required
               />
               <Input
                 type="email"

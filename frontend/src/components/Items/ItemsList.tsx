@@ -1,31 +1,32 @@
 import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import {
-  $cart,
-  addToCart,
-  removeFromCart,
-  updateCartItemQuantity,
+    $cart,
+    addToCart,
+    removeFromCart,
+    updateCartItemQuantity,
 } from '../../models/cart.ts';
 import {
-  $categoriesForSelect,
-  loadCategories,
+    $categoriesForSelect,
+    loadCategories,
 } from '../../models/categories.ts';
 import {
-  $items,
-  $itemsError,
-  createItem,
-  deleteItem,
-  loadItems,
-  updateItem,
+    $items,
+    $itemsError,
+    createItem,
+    deleteItem,
+    loadItems,
+    updateItem,
 } from '../../models/items.ts';
 import { $currentUser } from '../../models/users.ts';
 import type { CreateItemRequest, UpdateItemRequest } from '../../types/item.ts';
 import Button from '../layout/Button/Button.tsx';
+import ImageBox from '../layout/ImageBox.tsx';
 import Input from '../layout/Input/Input.tsx';
 import Select from '../layout/Select/Select.tsx';
+import { showToast } from '../layout/Toast/stores/toastStore.ts';
 import ItemFormModal from '../Modal/ItemFormModal.tsx';
 import ItemModal from '../Modal/ItemModal.tsx';
-import { showToast } from '../layout/Toast/stores/toastStore.ts';
 export const ItemsList: React.FC = () => {
   console.log('ItemsList: компонент рендерится');
 
@@ -455,27 +456,22 @@ export const ItemsList: React.FC = () => {
                   <div className="absolute top-2 right-2 z-10">
                     <button
                       onClick={e => handleMenuClick(e, item._id)}
-                      className="w-5 h-5 rounded-full bg-white/80 hover:bg-white shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-700 backdrop-blur-sm transition-all duration-300 text-xs"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/90 border border-gray-200 text-[11px] font-semibold text-gray-600 shadow-sm hover:border-green-medium hover:text-green-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-light transition-all"
                     >
-                      <svg
-                        className="w-3 h-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
+                      <span className="text-base leading-none">⋮</span>
+                      <span>Меню</span>
                     </button>
                     {menuOpen === item._id && (
-                      <div className="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-xl z-20 border border-gray-200 backdrop-blur-sm">
+                      <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl z-20 border border-gray-200 backdrop-blur-sm overflow-hidden">
                         <button
                           onClick={e => handleEditClick(e, item)}
-                          className="block w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-green-light hover:text-green-darker transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-light/60 hover:text-green-darker transition-colors"
                         >
                           ✏️ Редактировать
                         </button>
                         <button
                           onClick={e => handleDeleteClick(e, item)}
-                          className="block w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
                           🗑️ Удалить
                         </button>
@@ -485,18 +481,13 @@ export const ItemsList: React.FC = () => {
                 )}
 
                 {/* Изображение товара */}
-                <div className="relative mb-3">
-                  {item.image_url || item.image?.url ? (
-                    <img
-                      src={item.image_url || item.image?.url}
-                      alt={item.name}
-                      className="w-full h-28 object-cover rounded-xl shadow-sm group-hover:shadow-md transition-shadow duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-28 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
-                      <span className="text-2xl text-gray-300">🍽️</span>
-                    </div>
-                  )}
+                <div className="mb-3 w-full">
+                  <ImageBox
+                    src={item.image_url || item.image?.url}
+                    alt={item.name}
+                    aspect={3 / 2}
+                    imgClassName="shadow-sm group-hover:shadow-md transition-shadow duration-300"
+                  />
                 </div>
 
                 {/* Информация о товаре */}
@@ -607,6 +598,22 @@ export const ItemsList: React.FC = () => {
         item={selectedItemForModal}
         isOpen={itemModalOpen}
         onClose={() => setItemModalOpen(false)}
+        onEdit={
+          isAdminOrCanteenManager
+            ? item => {
+                setSelectedItem(item);
+                setShowEditModal(true);
+              }
+            : undefined
+        }
+        onDelete={
+          isAdminOrCanteenManager
+            ? item => {
+                setSelectedItem(item);
+                setShowDeleteModal(true);
+              }
+            : undefined
+        }
       />
 
       {showCreateModal && (

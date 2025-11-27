@@ -15,12 +15,16 @@ interface ItemModalProps {
   item: any;
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: (item: any) => void;
+  onDelete?: (item: any) => void;
 }
 
 export const ItemModal: React.FC<ItemModalProps> = ({
   item,
   isOpen,
   onClose,
+  onEdit,
+  onDelete,
 }) => {
   const [
     currentUser,
@@ -46,6 +50,11 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
   const quantity = getItemQuantity();
   const isAvailable = item.is_available !== false;
+
+  const isAdminOrCanteenManager =
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'canteenManager' ||
+    currentUser?.role === 'cateenManager';
 
   const handleAddToCartClick = () => {
     if (!isAvailable) {
@@ -129,15 +138,15 @@ export const ItemModal: React.FC<ItemModalProps> = ({
           {/* Контент */}
           <div className="flex flex-col lg:flex-row">
             {/* Изображение */}
-            <div className="lg:w-1/2">
+            <div className="lg:w-1/2 h-80 lg:h-auto overflow-hidden">
               {item.image_url || item.image?.url ? (
                 <img
                   src={item.image_url || item.image?.url}
                   alt={item.name}
-                  className="w-full h-64 lg:h-full object-cover"
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-64 lg:h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
                   <span className="text-6xl text-gray-300">🍽️</span>
                 </div>
               )}
@@ -237,6 +246,39 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   )}
                 </div>
               )}
+
+              {/* Кнопки администратора */}
+              {isAdminOrCanteenManager && (onEdit || onDelete) && (
+                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-200">
+                  {onEdit && (
+                    <Button
+                      onClick={() => {
+                        onEdit(item);
+                        onClose();
+                      }}
+                      variant="outline"
+                      size="md"
+                      className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50"
+                    >
+                      ✏️ Редактировать
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      onClick={() => {
+                        onDelete(item);
+                        onClose();
+                      }}
+                      variant="outline"
+                      size="md"
+                      className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+                    >
+                      🗑️ Удалить
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {!isAvailable && (
                 <p className="text-sm text-red-500 text-center mt-4">
                   Товар временно недоступен для заказа

@@ -10,6 +10,9 @@ import {
 } from '../../models/users';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
+import PhoneInput, {
+    cleanPhoneNumber,
+} from '../layout/PhoneInput/PhoneInput.tsx';
 
 export const AuthForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,35 +28,6 @@ export const AuthForm: React.FC = () => {
 
   const [isLoading, authError, currentUser, handleLogin, handleRegister] =
     useUnit([$isLoading, $authError, $currentUser, login, register]);
-
-  // Функция для форматирования телефона с +7
-  const formatPhone = (value: string): string => {
-    let cleaned = value.replace(/[^\d+]/g, '');
-
-    if (cleaned.startsWith('+')) {
-      cleaned = cleaned.substring(1);
-    }
-
-    if (cleaned.startsWith('8')) {
-      cleaned = '7' + cleaned.substring(1);
-    }
-
-    if (cleaned && !cleaned.startsWith('7')) {
-      cleaned = '7' + cleaned;
-    }
-
-    if (cleaned.length > 12) {
-      cleaned = cleaned.substring(0, 12);
-    }
-
-    return cleaned ? '+' + cleaned : '';
-  };
-
-  // Обработчик изменения телефона
-  const handlePhoneChange = (value: string) => {
-    const formatted = formatPhone(value);
-    setFormData({ ...formData, phone: formatted });
-  };
 
   // Валидация формы
   const validateForm = () => {
@@ -71,8 +45,8 @@ export const AuthForm: React.FC = () => {
 
     if (!formData.phone.trim()) {
       errors.phone = 'Телефон обязателен';
-    } else if (!/^\+7\d{10}$/.test(formData.phone)) {
-      errors.phone = 'Введите корректный номер телефона (+79123456789)';
+    } else if (cleanPhoneNumber(formData.phone).length !== 11) {
+      errors.phone = 'Введите корректный номер телефона';
     }
 
     if (!formData.password) {
@@ -102,14 +76,14 @@ export const AuthForm: React.FC = () => {
 
     if (isLogin) {
       handleLogin({
-        phone: formData.phone,
+        phone: cleanPhoneNumber(formData.phone),
         password: formData.password,
       });
     } else {
       handleRegister({
         first_name: formData.firstName,
         last_name: formData.lastName,
-        phone: formData.phone,
+        phone: cleanPhoneNumber(formData.phone),
         mail: formData.email,
         password: formData.password,
       });
@@ -266,18 +240,10 @@ export const AuthForm: React.FC = () => {
             {/* Общие поля */}
             <div className="space-y-4">
               <div>
-                <Input
-                  type="tel"
-                  placeholder="Телефон (+79123456789)"
+                <PhoneInput
                   value={formData.phone}
-                  onChange={handlePhoneChange}
-                  onFocus={() => {
-                    if (!formData.phone) {
-                      setFormData({ ...formData, phone: '+7' });
-                    }
-                  }}
+                  onChange={value => setFormData({ ...formData, phone: value })}
                   className={formErrors.phone ? 'border-red-500' : ''}
-                  icon="📱"
                 />
                 {formErrors.phone && (
                   <p className="text-red-500 text-xs mt-2">

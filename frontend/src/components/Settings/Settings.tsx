@@ -6,8 +6,8 @@ import Tabs from '../layout/Tabs/Tabs.tsx';
 import { DeliverySettings } from './DeliverySettings.tsx';
 import { EmployeeManagement } from './EmployeeManagement.tsx';
 import { OrderSettings } from './OrderSettings.tsx';
-import { UserBalances } from './UserBalances.tsx';
 import { PointManagement } from './PointManagement.tsx';
+import { UserBalances } from './UserBalances.tsx';
 
 export const Settings: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
@@ -42,7 +42,7 @@ export const Settings: React.FC = () => {
     {
       id: 'points',
       label: 'Товарные точки',
-      icon: '',
+      icon: '🏬',
       roles: ['admin'],
     },
     {

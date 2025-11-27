@@ -1,24 +1,28 @@
 // components/Points/PointItemsList.tsx
 import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
-import { $points, loadPoints } from '../../models/points.ts';
-import { $stockWithDetails, loadStockWithDetails } from '../../models/stock.ts';
 import {
-  $cart,
-  addToCart,
-  removeFromCart,
-  updateCartItemQuantity,
+    $cart,
+    addToCart,
+    removeFromCart,
+    updateCartItemQuantity,
 } from '../../models/cart.ts';
-import { $currentUser } from '../../models/users.ts';
+import { $points, loadPoints } from '../../models/points.ts';
 import {
-  $selectedPoint,
-  setSelectedPoint,
+    $selectedPoint,
+    setSelectedPoint,
 } from '../../models/selectedPoint.ts';
-import PointSelector from './PointSelector.tsx';
+import { $stockWithDetails, loadStockWithDetails } from '../../models/stock.ts';
+import { $currentUser } from '../../models/users.ts';
+import type { StockWithDetails } from '../../types/stock.ts';
 import Button from '../layout/Button/Button.tsx';
+import ImageBox from '../layout/ImageBox.tsx';
 import Input from '../layout/Input/Input.tsx';
 import Select from '../layout/Select/Select.tsx';
 import { showToast } from '../layout/Toast/stores/toastStore.ts';
+import PointSelector from './PointSelector.tsx';
+
+const FALLBACK_IMAGE_EMOJI = '🍽️';
 
 export const PointItemsList: React.FC = () => {
   const [points, stockWithDetails, cart, currentUser, selectedPoint] = useUnit([
@@ -196,7 +200,8 @@ export const PointItemsList: React.FC = () => {
       category_slug: stock.product.category_slug || '',
       calories: stock.product.calories || 0,
       number_pribors: stock.product.number_pribors || 1,
-      image_url: stock.product.image_url || '',
+      image_url:
+        stock.product.image_url || stock.product.image?.url || '',
       preparation_time: stock.product.preparation_time || 0,
       is_available: stock.product.is_available !== false,
       // Добавляем обязательные поля из типа Item
@@ -330,27 +335,25 @@ export const PointItemsList: React.FC = () => {
                         stock.available
                       );
 
+                      const productImage =
+                        stock.product.image_url ||
+                        stock.product.image?.url ||
+                        '';
+
                       return (
                         <div
                           key={stock._id}
                           className="bg-gray-50 rounded-2xl p-4 border border-gray-200 hover:shadow-md hover:border-green-300 transition-all duration-300 hover:scale-105"
                         >
                           {/* Изображение */}
-                          <div className="relative mb-3">
-                            {stock.product.image_url ? (
-                              <img
-                                src={stock.product.image_url}
-                                alt={stock.product.name}
-                                className="w-full h-32 object-cover rounded-xl"
-                              />
-                            ) : (
-                              <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
-                                <span className="text-3xl text-gray-400">
-                                  🍽️
-                                </span>
+                              <div className="relative mb-3">
+                                <ImageBox
+                                  src={productImage || undefined}
+                                  alt={stock.product.name}
+                                  aspect={3 / 2}
+                                  placeholder={<span className="text-3xl text-gray-400">{FALLBACK_IMAGE_EMOJI}</span>}
+                                />
                               </div>
-                            )}
-                          </div>
 
                           {/* Информация */}
                           <div className="space-y-3">
