@@ -40,16 +40,25 @@ function App() {
 
   // Перенаправления
   React.useEffect(() => {
-    if (currentPath === '/login' || currentPath === '/register') {
+    const isAuthPage = currentPath === '/login' || currentPath === '/register';
+    const hasToken = Boolean(localStorage.getItem('authToken'));
+
+    if (isAuthPage) {
       // Если пользователь уже авторизован, перенаправляем на главную
       if (currentUser) {
         navigate('/');
       }
-    } else if (currentPath === '/profile') {
-      // Если пользователь не авторизован, перенаправляем на логин
-      if (!currentUser) {
-        navigate('/login');
-      }
+      return;
+    }
+
+    // Любой защищенный маршрут перенаправляем на логин, если нет токена/пользователя
+    if (!currentUser && !hasToken) {
+      navigate('/login');
+      return;
+    }
+
+    if (currentPath === '/profile' && !currentUser) {
+      navigate('/login');
     }
   }, [currentPath, currentUser, navigate]);
 
@@ -57,7 +66,10 @@ function App() {
   const getCurrentPage = () => {
     console.log('App: текущий путь', currentPath, 'пользователь', currentUser);
 
-    if (currentPath === '/login' || currentPath === '/register') {
+    const isAuthPage = currentPath === '/login' || currentPath === '/register';
+    const hasToken = Boolean(localStorage.getItem('authToken'));
+
+    if (isAuthPage) {
       // Если пользователь уже авторизован, показываем главную
       if (currentUser) {
         return <HomePage />;
@@ -70,6 +82,9 @@ function App() {
       }
       return <ProfilePage />;
     } else {
+      if (!currentUser && !hasToken) {
+        return <AuthForm />;
+      }
       return <HomePage />;
     }
   };
