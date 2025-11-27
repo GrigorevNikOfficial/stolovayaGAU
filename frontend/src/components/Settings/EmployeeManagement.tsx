@@ -73,13 +73,13 @@ export const EmployeeManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-100">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-gray-100 mb-2">
             Управление сотрудниками
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-400">
             Создание и управление учетными записями сотрудников
           </p>
         </div>
@@ -93,43 +93,43 @@ export const EmployeeManagement: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-dark"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-[#1f2022] rounded-xl border border-[#2f3032] shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-[#2f3032]">
+            <thead className="bg-[#161718]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Имя</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Телефон</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Роль</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Баланс</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Действия</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Имя</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Телефон</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Роль</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Баланс</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wide">Действия</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-[#1f2022] divide-y divide-[#2f3032]">
               {users.map(user => (
-                <tr key={user._id} className="hover:bg-gray-50">
+                <tr key={user._id} className="hover:bg-[#242527] transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-100">
                       {user.first_name} {user.last_name}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.mail}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{user.phone}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{user.mail}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                      user.role === 'canteenManager' || user.role === 'cateenManager' ? 'bg-blue-100 text-blue-800' :
-                      user.role === 'storeManager' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                      user.role === 'admin' ? 'bg-purple-500/20 text-purple-200' :
+                      user.role === 'canteenManager' || user.role === 'cateenManager' ? 'bg-blue-500/20 text-blue-200' :
+                      user.role === 'storeManager' ? 'bg-green-500/20 text-green-200' :
+                      'bg-gray-500/20 text-gray-200'
                     }`}>
                       {getRoleName(user.role)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.balance}₽</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">{user.balance}₽</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => handleDelete(user._id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-300 hover:text-red-200 transition-colors"
                     >
                       Удалить
                     </button>
@@ -143,7 +143,7 @@ export const EmployeeManagement: React.FC = () => {
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+          <div className="bg-[#1f2022] border border-[#2f3032] rounded-2xl p-6 max-w-md w-full mx-4 text-gray-100">
             <h3 className="text-xl font-bold mb-4">Создать сотрудника</h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <Input

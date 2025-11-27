@@ -35,12 +35,12 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      'bg-green-dark border-2 border-green-darker text-white shadow-sm hover:bg-green-darker hover:border-green-800 hover:shadow-lg shadow-green-dark/25 transform hover:translate-y-[-2px] transition-all duration-400 ease-out',
+      'bg-[#106157] border-2 border-[#0c4a43] text-white shadow-sm hover:bg-[#0d584c] hover:border-[#0a3c35] hover:shadow-lg shadow-[#106157]/30 transform hover:translate-y-[-2px] transition-all duration-400 ease-out',
     secondary:
-      'bg-green-medium border border-green-dark text-white shadow-sm hover:bg-green-dark focus:ring-green-darker',
+      'bg-[#0d4a43] border border-[#106157] text-white shadow-sm hover:bg-[#106157] focus:ring-[#106157]/40',
     outline:
-      'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-green-medium',
-    icon: 'bg-transparent border-none shadow-none hover:bg-gray-100 focus:ring-green-medium rounded-full',
+      'bg-transparent border border-[#455252] text-white hover:bg-[#2d2d2c] focus:ring-[#106157]/40',
+    icon: 'bg-transparent border-none shadow-none hover:bg-[#2d2d2c] focus:ring-[#106157]/40 rounded-full text-white',
   };
 
   const disabledClasses = 'opacity-50 cursor-not-allowed';

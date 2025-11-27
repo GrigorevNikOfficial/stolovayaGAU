@@ -160,9 +160,9 @@ export const HomePage: React.FC = () => {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#161718] text-gray-100 flex flex-col">
       {/* Шапка */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
+      <header className="bg-[#1c1d1f] border-b border-[#455252] shadow-sm sticky top-0 z-40">
         <div className="px-3 sm:px-4 lg:px-6">
           {/* Вся навигация в одной строке */}
           <div className="flex items-center justify-between py-3 sm:py-4 gap-4">
@@ -174,7 +174,7 @@ export const HomePage: React.FC = () => {
                 className="w-8 h-8 sm:w-10 sm:h-10"
               />
               <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-100 whitespace-nowrap">
                   Столовая ГАУ
                 </h1>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-orange-100 text-orange-700 border border-orange-200">
@@ -202,13 +202,13 @@ export const HomePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-green-light/60 bg-green-light/40 text-green-dark font-semibold text-sm shadow-inner hover:bg-green-light/70 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#106157]/70 bg-[#106157]/20 text-white font-semibold text-sm shadow-inner hover:bg-[#106157]/40 transition-colors"
                     aria-label="Пополнить баланс"
                   >
                     <span className="text-base sm:text-lg">
                       {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
                     </span>
-                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-white text-green-dark text-base leading-none">
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#106157] text-white text-base leading-none">
                       +
                     </span>
                   </button>
@@ -217,9 +217,9 @@ export const HomePage: React.FC = () => {
                       type="button"
                       onClick={handleProfileTabOpen}
                       aria-pressed={profileTabActive}
-                      className={`w-11 h-11 rounded-full border transition-all duration-200 flex items-center justify-center ${profileTabActive ? 'bg-green-dark text-white border-green-dark shadow-sm' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-green-dark/40 bg-white/80'}`}
+                      className={`w-11 h-11 rounded-full border transition-all duration-200 flex items-center justify-center ${profileTabActive ? 'bg-[#106157] text-white border-[#106157] shadow-sm' : 'border-[#455252] text-gray-200 hover:text-white hover:border-[#106157]/60 bg-[#2d2d2c]'}`}
                     >
-                      <span className="w-10 h-10 rounded-full bg-gradient-to-br from-green-light to-green-medium border border-white shadow flex items-center justify-center text-base font-semibold text-green-darker overflow-hidden">
+                      <span className="w-10 h-10 rounded-full bg-gradient-to-br from-[#106157] to-[#0d4a43] border border-white/20 shadow flex items-center justify-center text-base font-semibold text-white overflow-hidden">
                         {avatarUrl ? (
                           <img
                             src={avatarUrl}
@@ -236,10 +236,10 @@ export const HomePage: React.FC = () => {
                     type="button"
                     onClick={handleLogoutClick}
                     aria-label="Выйти из аккаунта"
-                    className="w-11 h-11 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
+                    className="w-11 h-11 flex items-center justify-center rounded-full border border-[#455252] text-gray-200 hover:text-red-400 hover:border-red-400 transition-colors bg-[#2d2d2c]/60"
                   >
                     <svg
-                      className="w-5.5 h-5.5"
+                      className="w-5 h-5"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -274,7 +274,7 @@ export const HomePage: React.FC = () => {
           <div
             className={`lg:hidden mb-6 transition-all duration-300 ${isMobileMenuOpen ? 'block' : 'hidden'}`}
           >
-            <div className="bg-white rounded-2xl shadow-lg p-4">
+            <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-4 text-gray-100">
               <Tabs
                 tabs={visibleTabs}
                 activeTab={activeTab}
@@ -290,13 +290,13 @@ export const HomePage: React.FC = () => {
             <>
               {visibleTabs[activeTab].id === 'menu' && (
                 <div className="h-full">
-                  <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                  <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                     <div className="flex items-center justify-between mb-4 sm:mb-6">
-                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-100">
                           Меню
                         </h2>
                       {/* Индикатор активного таба для мобильных */}
-                      <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      <div className="lg:hidden flex items-center gap-2 text-sm text-gray-200 bg-[#161718] px-3 py-1 rounded-full">
                         <span>{visibleTabs[activeTab].icon}</span>
                         <span>{visibleTabs[activeTab].label}</span>
                       </div>
@@ -309,9 +309,9 @@ export const HomePage: React.FC = () => {
               )}
 
               {visibleTabs[activeTab].id === 'categories' && (
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                   <div className="flex items-center justify-between ">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-200 bg-[#161718] px-3 py-1 rounded-full">
                       <span>{visibleTabs[activeTab].icon}</span>
                       <span>{visibleTabs[activeTab].label}</span>
                     </div>
@@ -323,9 +323,9 @@ export const HomePage: React.FC = () => {
               )}
 
               {visibleTabs[activeTab].id === 'orders' && (
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                   <div className="flex items-center justify-between ">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-200 bg-[#161718] px-3 py-1 rounded-full">
                       <span>{visibleTabs[activeTab].icon}</span>
                       <span>{visibleTabs[activeTab].label}</span>
                     </div>
@@ -337,9 +337,9 @@ export const HomePage: React.FC = () => {
               )}
 
               {visibleTabs[activeTab].id === 'settings' && (
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
+                <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                   <div className="flex items-center justify-between ">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    <div className="lg:hidden flex items-center gap-2 text-sm text-gray-200 bg-[#161718] px-3 py-1 rounded-full">
                       <span>{visibleTabs[activeTab].icon}</span>
                       <span>{visibleTabs[activeTab].label}</span>
                     </div>
@@ -376,11 +376,11 @@ export const HomePage: React.FC = () => {
             onClick={() => setIsCartModalOpen(true)}
             variant="primary"
             size="lg"
-            className="shadow-2xl shadow-green-dark/30 hover:shadow-3xl hover:shadow-green-dark/40 transition-all duration-400 ease-out hover:scale-105"
+            className="shadow-2xl shadow-[#106157]/30 hover:shadow-3xl hover:shadow-[#106157]/40 transition-all duration-400 ease-out hover:scale-105"
           >
             <span className="flex items-center gap-2">
               🛒 Корзина
-              <span className="bg-white text-green-dark text-xs font-bold px-2 py-1 rounded-full min-w-6">
+              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full min-w-6">
                 {cart.reduce((total, item) => total + item.quantity, 0)}
               </span>
             </span>
@@ -400,7 +400,7 @@ export const HomePage: React.FC = () => {
       />
 
       {/* Мобильная навигация */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-30 shadow-lg">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#1f2122] border-t border-[#455252] p-3 z-30 shadow-lg">
         <div className="flex justify-around items-center">
           {visibleTabs.map((tab, index) => (
             <button
@@ -408,8 +408,8 @@ export const HomePage: React.FC = () => {
               onClick={() => setActiveTab(index)}
               className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] ${
                 activeTab === index
-                  ? 'text-green-dark bg-green-light'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? 'text-white bg-[#106157]'
+                  : 'text-gray-300 hover:text-white hover:bg-[#2d2d2c]'
               }`}
             >
               <span className="text-lg mb-1">{tab.icon}</span>
@@ -425,8 +425,8 @@ export const HomePage: React.FC = () => {
               onClick={() => setIsCartModalOpen(true)}
               className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] relative ${
                 isCartModalOpen
-                  ? 'text-green-dark bg-green-light'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? 'text-white bg-[#106157]'
+                  : 'text-gray-300 hover:text-white hover:bg-[#2d2d2c]'
               }`}
             >
               {cart.length > 0 && (

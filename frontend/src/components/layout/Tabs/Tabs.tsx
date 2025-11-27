@@ -44,7 +44,7 @@ export const Tabs: React.FC<TabsProps> = ({
     : 'w-full';
 
   const tabBaseClasses =
-    'flex items-center cursor-pointer transition-colors duration-200 rounded-lg flex-shrink-0';
+    'flex items-center cursor-pointer transition-colors duration-200 rounded-lg flex-shrink-0 border bg-[#161718] border-[#2d2d2c] text-gray-300';
 
   const tabSizeClasses = isHorizontal
     ? 'px-3 py-2 text-sm'
@@ -62,8 +62,8 @@ export const Tabs: React.FC<TabsProps> = ({
               ${tabSizeClasses}
               ${
                 activeTab === index
-                  ? 'bg-green-dark text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? 'text-white border-[#106157] shadow-[0_0_12px_rgba(16,97,87,0.35)]'
+                  : 'hover:text-white hover:border-[#106157]'
               }
             `}
           >

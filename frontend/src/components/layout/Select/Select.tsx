@@ -34,9 +34,9 @@ export const Select: React.FC<SelectProps> = ({
         disabled={disabled}
         required={required}
         className={`
-          w-full px-6 py-4 border border-gray-200 rounded-2xl 
-          focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent 
-          transition-all duration-300 bg-white shadow-sm hover:shadow-md
+          w-full px-6 py-4 rounded-2xl border border-[#2d2d2c]
+          focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-[#106157]
+          transition-all duration-300 bg-[#161718] text-gray-100 shadow-sm hover:shadow-md hover:border-[#106157]
           disabled:opacity-50 disabled:cursor-not-allowed
           appearance-none cursor-pointer
           ${icon ? 'pr-12' : ''}

@@ -1,5 +1,5 @@
 import { useUnit } from 'effector-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   $cart,
   addToCart,
@@ -26,6 +26,7 @@ import Select from '../layout/Select/Select.tsx';
 import ItemFormModal from '../Modal/ItemFormModal.tsx';
 import ItemModal from '../Modal/ItemModal.tsx';
 import { showToast } from '../layout/Toast/stores/toastStore.ts';
+
 export const ItemsList: React.FC = () => {
   console.log('ItemsList: компонент рендерится');
 
@@ -49,8 +50,12 @@ export const ItemsList: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
-  const [sortOption, setSortOption] = useState<'default' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'>('default');
+  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'unavailable'>(
+    'all'
+  );
+  const [sortOption, setSortOption] = useState<'default' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'>(
+    'default'
+  );
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -73,20 +78,16 @@ export const ItemsList: React.FC = () => {
     handleLoadCategories();
     const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
-  }, [handleLoadItems, handleLoadCategories]);
+  }, [handleLoadItems, handleLoadCategories, currentUser]);
 
-  // Логируем загруженные товары
   useEffect(() => {
     console.log('ItemsList: items =', items);
     console.log('ItemsList: items.length =', items?.length);
     console.log('ItemsList: itemsError =', itemsError);
   }, [items, itemsError]);
 
-  // Закрытие меню при клике вне его
   useEffect(() => {
-    const handleClickOutside = () => {
-      setMenuOpen(null);
-    };
+    const handleClickOutside = () => setMenuOpen(null);
     if (menuOpen) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
@@ -96,17 +97,12 @@ export const ItemsList: React.FC = () => {
   const minPriceValue = priceRange.min !== '' ? Number(priceRange.min) : null;
   const maxPriceValue = priceRange.max !== '' ? Number(priceRange.max) : null;
 
-  // Фильтрация и сортировка товаров
   const filteredItems = Array.isArray(items)
     ? items.filter(item => {
         const matchesSearch =
           item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (item.description &&
-            item.description
-              ?.toLowerCase()
-              .includes(searchQuery.toLowerCase()));
-        const matchesCategory =
-          !selectedCategory || item.category_slug === selectedCategory;
+          (item.description && item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesCategory = !selectedCategory || item.category_slug === selectedCategory;
         const matchesPrice =
           (minPriceValue === null || item.price >= minPriceValue) &&
           (maxPriceValue === null || item.price <= maxPriceValue);
@@ -116,12 +112,7 @@ export const ItemsList: React.FC = () => {
           (availabilityFilter === 'available' && isAvailable) ||
           (availabilityFilter === 'unavailable' && !isAvailable);
 
-        return (
-          matchesSearch &&
-          matchesCategory &&
-          matchesPrice &&
-          matchesAvailability
-        );
+        return matchesSearch && matchesCategory && matchesPrice && matchesAvailability;
       })
     : [];
 
@@ -152,28 +143,67 @@ export const ItemsList: React.FC = () => {
   }
 
   const visibleItems = sortedItems;
-
   console.log('ItemsList: filteredItems.length =', visibleItems.length);
 
-  // Получение количества товара в корзине
+  const categoryLabelMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categoriesForSelect.forEach(category => map.set(category.value, category.label));
+    return map;
+  }, [categoriesForSelect]);
+
+  const groupedItems = useMemo(() => {
+    const groups = new Map<string, { label: string; items: any[] }>();
+
+    visibleItems.forEach(item => {
+      const slug = item.category_slug || 'uncategorized';
+      const label =
+        categoryLabelMap.get(slug) ||
+        item?.category?.name ||
+        item?.category?.title ||
+        'Без категории';
+
+      if (!groups.has(slug)) {
+        groups.set(slug, { label, items: [] });
+      }
+      groups.get(slug)!.items.push(item);
+    });
+
+    const orderedSlugs = selectedCategory
+      ? [selectedCategory]
+      : categoriesForSelect.map(category => category.value);
+
+    const orderedGroups: Array<{ key: string; label: string; items: any[] }> = [];
+
+    orderedSlugs.forEach(slug => {
+      const group = groups.get(slug);
+      if (group) {
+        orderedGroups.push({
+          key: slug,
+          label: group.label || categoryLabelMap.get(slug) || 'Без категории',
+          items: group.items,
+        });
+        groups.delete(slug);
+      }
+    });
+
+    groups.forEach((group, slug) => {
+      orderedGroups.push({ key: slug, label: group.label, items: group.items });
+    });
+
+    return orderedGroups;
+  }, [visibleItems, categoriesForSelect, categoryLabelMap, selectedCategory]);
+
   const getItemQuantity = (itemId: string) => {
     const cartItem = cart.find(cartItem => cartItem.item._id === itemId);
     return cartItem ? cartItem.quantity : 0;
   };
 
-  const onCreateItem = (
-    itemData: CreateItemRequest,
-    imageFile?: File | null
-  ) => {
+  const onCreateItem = (itemData: CreateItemRequest, imageFile?: File | null) => {
     handleCreateItem({ data: itemData, imageFile: imageFile ?? undefined });
     setShowCreateModal(false);
   };
 
-  const onUpdateItem = (
-    id: string,
-    itemData: UpdateItemRequest,
-    imageFile?: File | null
-  ) => {
+  const onUpdateItem = (id: string, itemData: UpdateItemRequest, imageFile?: File | null) => {
     handleUpdateItem({ id, data: itemData, imageFile: imageFile ?? undefined });
     setShowEditModal(false);
     setSelectedItem(null);
@@ -262,19 +292,37 @@ export const ItemsList: React.FC = () => {
     }
   };
 
+  const renderAddCard = () => {
+    if (!isAdminOrCanteenManager) {
+      return null;
+    }
+
+    return (
+      <div
+        onClick={() => setShowCreateModal(true)}
+        className="bg-[#2d2d2c] rounded-2xl p-3 border-2 border-dashed border-[#455252] hover:border-[#106157] hover:shadow-lg hover:shadow-[#106157]/30 transition-all duration-300 ease-out cursor-pointer flex items-center justify-center min-h-[180px] group"
+      >
+        <div className="text-center">
+          <div className="text-3xl text-gray-500 mb-2 group-hover:text-[#69e7b6] transition-colors duration-300">
+            +
+          </div>
+          <h3 className="text-xs font-semibold text-gray-200 group-hover:text-white">
+            Добавить блюдо
+          </h3>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="fade-in">
-      {/* Сообщение об ошибке */}
+    <div className="fade-in text-gray-100">
       {itemsError && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl mb-6 transition-all duration-300">
+        <div className="bg-red-900/30 border border-red-500/60 text-red-200 px-4 py-3 rounded-2xl mb-6 transition-all duration-300">
           {itemsError}
         </div>
       )}
 
-      {/* Поиск и фильтрация */}
       <div className="mb-8 space-y-4">
-        {/* Поле поиска */}
-        {/* Поле поиска */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -287,30 +335,27 @@ export const ItemsList: React.FC = () => {
           </div>
         </div>
 
-        {/* Табы категорий */}
         <div className="w-full">
           <div className="flex flex-wrap gap-2 hide-scrollbar overflow-x-auto pb-2">
-            {/* Кнопка "Все категории" */}
             <button
               onClick={() => setSelectedCategory('')}
-              className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
+              className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium transition-all duration-300 border-2 ${
                 selectedCategory === ''
-                  ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                  ? 'bg-[#106157] text-white shadow-lg shadow-[#106157]/30 border-[#106157]'
+                  : 'bg-[#2d2d2c] text-gray-300 border-[#455252] hover:text-white hover:border-[#106157]/40'
               }`}
             >
               Все категории
             </button>
 
-            {/* Категории */}
             {categoriesForSelect.map(category => (
               <button
                 key={category.value}
                 onClick={() => setSelectedCategory(category.value)}
-                className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
+                className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium transition-all duration-300 border-2 ${
                   selectedCategory === category.value
-                    ? 'bg-green-dark text-white shadow-lg shadow-green-dark/25'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                    ? 'bg-[#106157] text-white shadow-lg shadow-[#106157]/30 border-[#106157]'
+                    : 'bg-[#2d2d2c] text-gray-300 border-[#455252] hover:text-white hover:border-[#106157]/40'
                 }`}
               >
                 {category.label}
@@ -319,10 +364,9 @@ export const ItemsList: React.FC = () => {
           </div>
         </div>
 
-        {/* Дополнительные фильтры */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Ценовой диапазон (₽)
             </label>
             <div className="flex gap-2">
@@ -348,7 +392,7 @@ export const ItemsList: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Статус наличия
             </label>
             <Select
@@ -365,7 +409,7 @@ export const ItemsList: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Сортировка
             </label>
             <Select
@@ -402,180 +446,161 @@ export const ItemsList: React.FC = () => {
         </div>
       </div>
 
-      {/* Сетка товаров - 2 колонки на мобильных, 5 на десктопе */}
       {isLoading ? (
         <div className="grid grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 gap-3">
           {[...Array(10)].map((_, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm animate-pulse"
+              className="bg-[#2d2d2c] rounded-2xl p-3 border-2 border-[#3a3b3a] shadow-sm animate-pulse"
             >
-              <div className="w-full h-28 bg-gray-200 rounded-xl mb-3"></div>
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-6 bg-gray-200 rounded mb-3 w-3/4"></div>
-              <div className="h-8 bg-gray-200 rounded"></div>
+              <div className="w-full h-28 bg-[#3a3b3a] rounded-xl mb-3"></div>
+              <div className="h-4 bg-[#3a3b3a] rounded mb-2"></div>
+              <div className="h-6 bg-[#3a3b3a] rounded mb-3 w-3/4"></div>
+              <div className="h-8 bg-[#3a3b3a] rounded"></div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 gap-3">
-          {/* Карточка для создания нового товара */}
-          {isAdminOrCanteenManager && (
-            <div
-              onClick={() => setShowCreateModal(true)}
-              className="bg-white rounded-2xl p-3 border-2 border-dashed border-gray-300 hover:border-green-medium hover:shadow-lg transition-all duration-300 ease-out cursor-pointer flex items-center justify-center min-h-[180px] group"
-            >
-              <div className="text-center">
-                <div className="text-3xl text-gray-400 mb-2 group-hover:text-green-medium transition-colors duration-300">
-                  +
-                </div>
-                <h3 className="text-xs font-semibold text-gray-700 group-hover:text-green-dark">
-                  Добавить блюдо
-                </h3>
-              </div>
+        <div className="space-y-10">
+          {groupedItems.length === 0 && isAdminOrCanteenManager && (
+            <div className="grid grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 gap-3">
+              {renderAddCard()}
             </div>
           )}
 
-          {visibleItems.map(item => {
-            const quantity = getItemQuantity(item._id);
-            const isInCart = quantity > 0;
-            const isAvailable = item.is_available !== false;
-            const availabilityBadgeClasses = isAvailable
-              ? 'bg-green-light text-green-darker border-green-lighter'
-              : 'bg-gray-100 text-gray-500 border-gray-200';
+          {groupedItems.map((group, groupIndex) => (
+            <div key={group.key || group.label} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-100">{group.label}</h3>
+                <span className="text-sm text-gray-400">{group.items.length} шт.</span>
+              </div>
 
-            return (
-              <div
-                key={item._id}
-                onClick={() => handleItemClick(item)}
-                className="relative bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 ease-out cursor-pointer group"
-              >
-                {/* Троеточие для админов */}
-                {isAdminOrCanteenManager && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <button
-                      onClick={e => handleMenuClick(e, item._id)}
-                      className="w-5 h-5 rounded-full bg-white/80 hover:bg-white shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-700 backdrop-blur-sm transition-all duration-300 text-xs"
+              <div className="grid grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 gap-3">
+                {groupIndex === 0 && renderAddCard()}
+                {group.items.map(item => {
+                  const quantity = getItemQuantity(item._id);
+                  const isInCart = quantity > 0;
+                  const isAvailable = item.is_available !== false;
+                  const availabilityBadgeClasses = isAvailable
+                    ? 'bg-[#106157]/20 text-[#69e7b6] border-[#106157]/40'
+                    : 'bg-[#1f2122] text-gray-400 border-[#3a3b3a]';
+
+                  return (
+                    <div
+                      key={item._id}
+                      onClick={() => handleItemClick(item)}
+                      className="relative bg-[#2d2d2c] rounded-2xl p-3 border-2 border-[#3a3b3a] shadow-sm hover:shadow-lg hover:shadow-[#106157]/30 transition-all duration-300 ease-out cursor-pointer group"
                     >
-                      <svg
-                        className="w-3 h-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
-                    {menuOpen === item._id && (
-                      <div className="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-xl z-20 border border-gray-200 backdrop-blur-sm">
-                        <button
-                          onClick={e => handleEditClick(e, item)}
-                          className="block w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-green-light hover:text-green-darker transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
-                        >
-                          ✏️ Редактировать
-                        </button>
-                        <button
-                          onClick={e => handleDeleteClick(e, item)}
-                          className="block w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
-                        >
-                          🗑️ Удалить
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Изображение товара */}
-                <div className="relative mb-3">
-                  {item.image_url || item.image?.url ? (
-                    <img
-                      src={item.image_url || item.image?.url}
-                      alt={item.name}
-                      className="w-full h-28 object-cover rounded-xl shadow-sm group-hover:shadow-md transition-shadow duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-28 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
-                      <span className="text-2xl text-gray-300">🍽️</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Информация о товаре */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-tight min-h-[2.5rem]">
-                    {item.name}
-                  </h3>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-green-dark">
-                      {item.price} ₽
-                    </span>
-                    <span
-                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${availabilityBadgeClasses}`}
-                    >
-                      {isAvailable ? 'Доступно' : 'Недоступно'}
-                    </span>
-                  </div>
-
-                  {/* Кнопка добавления в корзину */}
-                  {currentUser &&
-                    (currentUser.role === 'admin' ||
-                      currentUser.role === 'user') && (
-                      <div className="mt-2">
-                        {!isInCart ? (
-                          <Button
-                            onClick={
-                              isAvailable
-                                ? e => handleAddToCartClick(e, item)
-                                : undefined
-                            }
-                            disabled={!isAvailable}
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs py-1.5 px-2 truncate"
+                      {isAdminOrCanteenManager && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <button
+                            onClick={e => handleMenuClick(e, item._id)}
+                            className="w-5 h-5 rounded-full bg-[#1f2122]/80 hover:bg-[#2d2d2c] border border-[#455252] shadow-sm flex items-center justify-center text-gray-300 hover:text-white backdrop-blur-sm transition-all duration-300 text-xs"
                           >
-                            {isAvailable ? '🛒 В корзину' : 'Недоступно'}
-                          </Button>
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                            </svg>
+                          </button>
+                          {menuOpen === item._id && (
+                            <div className="absolute right-0 mt-1 w-36 bg-[#1f2122] rounded-lg shadow-xl z-20 border border-[#455252] backdrop-blur-sm">
+                              <button
+                                onClick={e => handleEditClick(e, item)}
+                                className="block w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-[#106157]/20 hover:text-white transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
+                              >
+                                ✏️ Редактировать
+                              </button>
+                              <button
+                                onClick={e => handleDeleteClick(e, item)}
+                                className="block w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
+                              >
+                                🗑️ Удалить
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="relative mb-3">
+                        {item.image_url || item.image?.url ? (
+                          <img
+                            src={item.image_url || item.image?.url}
+                            alt={item.name}
+                            className="w-full h-28 object-cover rounded-xl shadow-sm group-hover:shadow-md transition-shadow duration-300"
+                          />
                         ) : (
-                          <div className="flex items-center justify-between bg-green-light rounded-lg p-1">
-                            <button
-                              onClick={e => handleDecreaseQuantity(e, item._id)}
-                              className="w-6 h-6 rounded-full bg-white text-green-dark flex items-center justify-center text-sm font-bold hover:bg-green-medium hover:text-white transition-all duration-200"
-                            >
-                              -
-                            </button>
-                            <span className="text-sm font-bold text-green-darker mx-1 min-w-[20px] text-center">
-                              {quantity}
-                            </span>
-                            <button
-                              onClick={e => handleIncreaseQuantity(e, item)}
-                              disabled={!isAvailable}
-                              className="w-6 h-6 rounded-full bg-white text-green-dark flex items-center justify-center text-sm font-bold hover:bg-green-medium hover:text-white transition-all duration-200"
-                            >
-                              +
-                            </button>
+                          <div className="w-full h-28 bg-gradient-to-br from-[#1f2122] to-[#2d2d2c] rounded-xl flex items-center justify-center border-2 border-[#3a3b3a]">
+                            <span className="text-2xl text-gray-500">🍽️</span>
                           </div>
                         )}
-                        {!isAvailable && isInCart && (
-                          <p className="text-[11px] text-red-500 mt-1 text-center">
-                            Товар недоступен, удалите его из корзины
-                          </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-bold text-gray-100 line-clamp-2 leading-tight min-h-[2.5rem]">
+                          {item.name}
+                        </h3>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-bold text-[#69e7b6]">{item.price} ₽</span>
+                          <span
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${availabilityBadgeClasses}`}
+                          >
+                            {isAvailable ? 'Доступно' : 'Недоступно'}
+                          </span>
+                        </div>
+
+                        {currentUser && (currentUser.role === 'admin' || currentUser.role === 'user') && (
+                          <div className="mt-2">
+                            {!isInCart ? (
+                              <Button
+                                onClick={isAvailable ? e => handleAddToCartClick(e, item) : undefined}
+                                disabled={!isAvailable}
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs py-1.5 px-2 truncate"
+                              >
+                                {isAvailable ? '🛒 В корзину' : 'Недоступно'}
+                              </Button>
+                            ) : (
+                              <div className="flex items-center justify-between bg-[#106157]/10 border border-[#106157]/30 rounded-lg p-1">
+                                <button
+                                  onClick={e => handleDecreaseQuantity(e, item._id)}
+                                  className="w-6 h-6 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-sm font-bold hover:bg-[#106157] hover:text-white transition-all duration-200"
+                                >
+                                  -
+                                </button>
+                                <span className="text-sm font-bold text-gray-100 mx-1 min-w-[20px] text-center">
+                                  {quantity}
+                                </span>
+                                <button
+                                  onClick={e => handleIncreaseQuantity(e, item)}
+                                  disabled={!isAvailable}
+                                  className="w-6 h-6 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-sm font-bold hover:bg-[#106157] hover:text-white transition-all duration-200"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+                            {!isAvailable && isInCart && (
+                              <p className="text-[11px] text-red-500 mt-1 text-center">
+                                Товар недоступен, удалите его из корзины
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Сообщение о пустом результате */}
       {!isLoading && visibleItems.length === 0 && (
         <div className="text-center py-16 fade-in">
           <div className="text-6xl text-gray-300 mb-4">🍽️</div>
-          <p className="text-gray-500 text-xl font-medium mb-3">
-            Товары не найдены
-          </p>
+          <p className="text-gray-500 text-xl font-medium mb-3">Товары не найдены</p>
           <p className="text-gray-400 text-sm mb-6">
             {searchQuery ||
             selectedCategory ||
@@ -602,20 +627,13 @@ export const ItemsList: React.FC = () => {
         </div>
       )}
 
-      {/* Модальное окно товара */}
-      <ItemModal
-        item={selectedItemForModal}
-        isOpen={itemModalOpen}
-        onClose={() => setItemModalOpen(false)}
-      />
+      <ItemModal item={selectedItemForModal} isOpen={itemModalOpen} onClose={() => setItemModalOpen(false)} />
 
       {showCreateModal && (
         <ItemFormModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          onSave={(data, imageFile) =>
-            onCreateItem(data as CreateItemRequest, imageFile)
-          }
+          onSave={(data, imageFile) => onCreateItem(data as CreateItemRequest, imageFile)}
           categories={categoriesForSelect}
         />
       )}
@@ -634,6 +652,7 @@ export const ItemsList: React.FC = () => {
           categories={categoriesForSelect}
         />
       )}
+
       {showDeleteModal && selectedItem && (
         <DeleteConfirmModal
           itemName={selectedItem.name}
@@ -660,12 +679,9 @@ const DeleteConfirmModal: React.FC<{
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl text-red-600">⚠️</span>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Подтверждение удаления
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Подтверждение удаления</h2>
           <p className="text-gray-600 mb-6">
-            Вы уверены, что хотите удалить блюдо{' '}
-            <strong>"{itemName}"</strong>? Это действие нельзя отменить.
+            Вы уверены, что хотите удалить блюдо <strong>"{itemName}"</strong>? Это действие нельзя отменить.
           </p>
         </div>
         <div className="flex justify-center gap-3">

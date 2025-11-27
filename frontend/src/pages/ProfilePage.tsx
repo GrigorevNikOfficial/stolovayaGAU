@@ -26,7 +26,7 @@ export const ProfilePage: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#161718] px-4 text-gray-100">
         <div className="text-center">
           <h2 className="text-xl sm:text-2xl font-bold mb-4">
             Пользователь не авторизован
@@ -44,7 +44,7 @@ export const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#161718] text-gray-100 flex flex-col">
       {/* Основной контент */}
       <div className="flex-1 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto px-3 sm:px-4">

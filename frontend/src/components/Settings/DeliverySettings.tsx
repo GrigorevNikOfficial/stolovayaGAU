@@ -88,18 +88,18 @@ export const DeliverySettings: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-gray-100">
       {/* Статус доставки */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <h2 className="text-2xl font-bold text-gray-100 mb-4">
           Управление заказами
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Настройка времени работы для разных способов получения заказов
         </p>
 
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-gray-100 mb-4">
             Статус доставки
           </h3>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -127,13 +127,13 @@ export const DeliverySettings: React.FC = () => {
           <div
             className={`p-4 rounded-xl border ${
               settings.deliveryEnabled
-                ? 'bg-green-50 border-green-200'
-                : 'bg-red-50 border-red-200'
+                ? 'bg-emerald-500/10 border-emerald-500/40'
+                : 'bg-red-500/10 border-red-500/40'
             }`}
           >
             <p
               className={`font-medium ${
-                settings.deliveryEnabled ? 'text-green-800' : 'text-red-800'
+                settings.deliveryEnabled ? 'text-emerald-200' : 'text-red-200'
               }`}
             >
               {settings.deliveryEnabled
@@ -146,16 +146,16 @@ export const DeliverySettings: React.FC = () => {
 
       {/* Время работы доставки */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-gray-100 mb-4">
           ⏰ Время работы
         </h3>
         
         {/* Доставка */}
-        <div className="mb-6 p-4 bg-blue-50 rounded-xl">
-          <h4 className="font-semibold text-gray-900 mb-3">🚚 Доставка</h4>
+        <div className="mb-6 p-4 rounded-xl border border-blue-500/30 bg-blue-500/10">
+          <h4 className="font-semibold text-gray-100 mb-3">🚚 Доставка</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Начало
               </label>
               <Input
@@ -170,7 +170,7 @@ export const DeliverySettings: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Конец
               </label>
               <Input
@@ -188,11 +188,11 @@ export const DeliverySettings: React.FC = () => {
         </div>
 
         {/* Самовывоз */}
-        <div className="mb-6 p-4 bg-green-50 rounded-xl">
-          <h4 className="font-semibold text-gray-900 mb-3">📦 Самовывоз</h4>
+        <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+          <h4 className="font-semibold text-gray-100 mb-3">📦 Самовывоз</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Начало
               </label>
               <Input
@@ -207,7 +207,7 @@ export const DeliverySettings: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Конец
               </label>
               <Input
@@ -225,11 +225,11 @@ export const DeliverySettings: React.FC = () => {
         </div>
 
         {/* В зале */}
-        <div className="mb-6 p-4 bg-purple-50 rounded-xl">
-          <h4 className="font-semibold text-gray-900 mb-3">🍽️ В зале</h4>
+        <div className="mb-6 p-4 rounded-xl border border-purple-500/30 bg-purple-500/10">
+          <h4 className="font-semibold text-gray-100 mb-3">🍽️ В зале</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Начало
               </label>
               <Input
@@ -244,7 +244,7 @@ export const DeliverySettings: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Конец
               </label>
               <Input
@@ -276,29 +276,29 @@ export const DeliverySettings: React.FC = () => {
       {isLoading && (
         <div className="flex items-center justify-center py-4">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-dark mr-3"></div>
-          <p className="text-sm text-gray-600">Обновление настроек...</p>
+          <p className="text-sm text-gray-400">Обновление настроек...</p>
         </div>
       )}
 
       {/* Текущие данные из БД */}
-      <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="p-6 bg-[#1f2022] rounded-2xl border border-[#2f3032]">
+        <h4 className="text-lg font-semibold text-gray-100 mb-4">
           Текущие настройки из базы данных
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-medium text-gray-700">Статус доставки:</span>
+            <span className="font-medium text-gray-300">Статус доставки:</span>
             <span
               className={`ml-2 font-medium ${
-                settings.deliveryEnabled ? 'text-green-600' : 'text-red-600'
+                settings.deliveryEnabled ? 'text-emerald-300' : 'text-red-300'
               }`}
             >
               {settings.deliveryEnabled ? '✅ Включена' : '❌ Выключена'}
             </span>
           </div>
           <div>
-            <span className="font-medium text-gray-700">Время работы:</span>
-            <span className="ml-2 text-gray-600">
+            <span className="font-medium text-gray-300">Время работы:</span>
+            <span className="ml-2 text-gray-400">
               {settings.deliveryTimeStart || 'Не установлено'} -{' '}
               {settings.deliveryTimeEnd || 'Не установлено'}
             </span>

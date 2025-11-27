@@ -114,9 +114,9 @@ export const CategoriesList: React.FC = () => {
   }
 
   return (
-    <div className="fade-in">
+    <div className="fade-in text-gray-100">
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl mb-6 transition-all duration-300">
+        <div className="bg-red-900/30 border border-red-500/60 text-red-200 px-4 py-3 rounded-2xl mb-6 transition-all duration-300">
           {error}
         </div>
       )}
@@ -124,7 +124,7 @@ export const CategoriesList: React.FC = () => {
       {/* Заголовок и кнопка создания */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-100">
             Управление категориями
           </h2>
         </div>
@@ -145,13 +145,13 @@ export const CategoriesList: React.FC = () => {
           {[...Array(6)].map((_, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm animate-pulse"
+              className="bg-[#2d2d2c] rounded-2xl p-6 border border-[#455252] shadow-sm animate-pulse"
             >
-              <div className="h-6 bg-gray-200 rounded mb-3 w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded mb-4 w-full"></div>
+              <div className="h-6 bg-[#3a3b3a] rounded mb-3 w-3/4"></div>
+              <div className="h-4 bg-[#3a3b3a] rounded mb-4 w-full"></div>
               <div className="flex justify-between items-center">
-                <div className="h-4 bg-gray-200 rounded w-20"></div>
-                <div className="h-6 bg-gray-200 rounded w-16"></div>
+                <div className="h-4 bg-[#3a3b3a] rounded w-20"></div>
+                <div className="h-6 bg-[#3a3b3a] rounded w-16"></div>
               </div>
             </div>
           ))}
@@ -161,7 +161,7 @@ export const CategoriesList: React.FC = () => {
           {categories.map((category, index) => (
             <div
               key={category._id}
-              className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-400 ease-out hover:translate-y-[-4px] fade-in"
+              className="relative bg-[#2d2d2c] rounded-2xl p-6 border border-[#455252] shadow-sm hover:shadow-2xl hover:shadow-[#106157]/30 transition-all duration-400 ease-out hover:translate-y-[-4px] fade-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Верхняя градиентная полоска */}
@@ -171,7 +171,7 @@ export const CategoriesList: React.FC = () => {
               <div className="absolute top-4 right-4 z-10">
                 <button
                   onClick={e => handleMenuClick(e, category._id)}
-                  className="w-8 h-8 rounded-full bg-white/80 hover:bg-white shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-700 backdrop-blur-sm transition-all duration-300 hover:scale-110"
+                  className="w-8 h-8 rounded-full bg-[#1f2122]/80 hover:bg-[#2d2d2c] border border-[#455252] shadow-sm flex items-center justify-center text-gray-300 hover:text-white backdrop-blur-sm transition-all duration-300 hover:scale-110"
                 >
                   <svg
                     className="w-4 h-4"
@@ -182,16 +182,16 @@ export const CategoriesList: React.FC = () => {
                   </svg>
                 </button>
                 {menuOpen === category._id && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl z-20 border border-gray-200 backdrop-blur-sm">
+                  <div className="absolute right-0 mt-2 w-48 bg-[#1f2122] rounded-xl shadow-2xl z-20 border border-[#455252] backdrop-blur-sm">
                     <button
                       onClick={() => handleEditClick(category)}
-                      className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-light hover:text-green-darker transition-colors duration-300 first:rounded-t-xl last:rounded-b-xl"
+                      className="block w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-[#106157]/20 hover:text-white transition-colors duration-300 first:rounded-t-xl last:rounded-b-xl"
                     >
                       ✏️ Редактировать
                     </button>
                     <button
                       onClick={() => handleDeleteClick(category)}
-                      className="block w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-300 first:rounded-t-xl last:rounded-b-xl"
+                      className="block w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors duration-300 first:rounded-t-xl last:rounded-b-xl"
                     >
                       🗑️ Удалить
                     </button>
@@ -201,30 +201,30 @@ export const CategoriesList: React.FC = () => {
 
               {/* Контент категории */}
               <div className="pr-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                <h3 className="text-xl font-bold text-gray-100 mb-3">
                   {category.name}
                 </h3>
                 {category.description && (
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-2">
+                  <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
                     {category.description}
                   </p>
                 )}
                 <div className="flex items-center justify-between mt-4">
-                  <span className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded">
+                  <span className="text-xs text-gray-300 font-mono bg-[#1f2122] px-2 py-1 rounded border border-[#455252]">
                     {category.slug}
                   </span>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                       category.is_active
-                        ? 'bg-green-100 text-green-800 border border-green-200'
-                        : 'bg-gray-100 text-gray-800 border border-gray-200'
+                        ? 'bg-[#106157]/20 text-[#69e7b6] border border-[#106157]/40'
+                        : 'bg-[#1f2122] text-gray-300 border border-[#3a3b3a]'
                     }`}
                   >
                     {category.is_active ? '✅ Активна' : '❌ Неактивна'}
                   </span>
                 </div>
                 {category.sort_order !== undefined && (
-                  <div className="mt-3 text-xs text-gray-500">
+                  <div className="mt-3 text-xs text-gray-400">
                     Порядок: {category.sort_order}
                   </div>
                 )}
@@ -236,8 +236,8 @@ export const CategoriesList: React.FC = () => {
 
       {categories.length === 0 && !isLoading && !isLoadingState && (
         <div className="text-center py-16 fade-in">
-          <div className="text-6xl text-gray-300 mb-4">📂</div>
-          <p className="text-gray-500 text-xl font-medium mb-3">
+          <div className="text-6xl text-gray-500 mb-4">📂</div>
+          <p className="text-gray-200 text-xl font-medium mb-3">
             Категории не найдены
           </p>
           <p className="text-gray-400 text-sm mb-6">
@@ -315,14 +315,14 @@ const CategoryModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl my-8">
+      <div className="bg-[#1f2122] border border-[#455252] rounded-2xl p-8 max-w-md w-full shadow-2xl my-8 text-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-100">
             {category ? 'Редактировать категорию' : 'Создать новую категорию'}
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-300"
+            className="w-8 h-8 rounded-full bg-[#2d2d2c] hover:bg-[#343434] border border-[#455252] flex items-center justify-center transition-all duration-300"
           >
             ×
           </button>
@@ -330,7 +330,7 @@ const CategoryModal: React.FC<{
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Название *
             </label>
             <input
@@ -338,12 +338,12 @@ const CategoryModal: React.FC<{
               required
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border border-[#455252] bg-[#2d2d2c] text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-transparent transition-all duration-300"
               placeholder="Например: Напитки"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Slug (уникальный идентификатор) *
             </label>
             <input
@@ -351,12 +351,12 @@ const CategoryModal: React.FC<{
               required
               value={formData.slug}
               onChange={e => setFormData({ ...formData, slug: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border border-[#455252] bg-[#2d2d2c] text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-transparent transition-all duration-300"
               placeholder="napiti"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Описание
             </label>
             <textarea
@@ -364,13 +364,13 @@ const CategoryModal: React.FC<{
               onChange={e =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border border-[#455252] bg-[#2d2d2c] text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-transparent transition-all duration-300"
               rows={3}
               placeholder="Описание категории..."
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Порядок сортировки
             </label>
             <input
@@ -383,20 +383,20 @@ const CategoryModal: React.FC<{
                   sort_order: Number(e.target.value),
                 })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border border-[#455252] bg-[#2d2d2c] text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-transparent transition-all duration-300"
             />
           </div>
           <div>
-            <label className="flex items-center">
+            <label className="flex items-center text-gray-300">
               <input
                 type="checkbox"
                 checked={formData.is_active}
                 onChange={e =>
                   setFormData({ ...formData, is_active: e.target.checked })
                 }
-                className="mr-3 w-5 h-5 text-green-dark rounded focus:ring-green-medium"
+                className="mr-3 w-5 h-5 text-[#106157] rounded focus:ring-[#106157] bg-[#2d2d2c] border-[#455252]"
               />
-              <span className="text-sm font-medium text-gray-700">Активна</span>
+              <span className="text-sm font-medium">Активна</span>
             </label>
           </div>
           <div className="flex justify-end gap-3 pt-4">
@@ -421,15 +421,15 @@ const DeleteConfirmModal: React.FC<{
 }> = ({ categoryName, onClose, onConfirm }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl my-8">
+      <div className="bg-[#1f2122] border border-[#455252] rounded-2xl p-8 max-w-md w-full shadow-2xl my-8 text-gray-100">
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl text-red-600">⚠️</span>
+          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl text-red-300">⚠️</span>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl font-bold text-gray-100 mb-2">
             Подтверждение удаления
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-300 mb-6">
             Вы уверены, что хотите удалить категорию{' '}
             <strong>"{categoryName}"</strong>? Это действие нельзя отменить.
           </p>

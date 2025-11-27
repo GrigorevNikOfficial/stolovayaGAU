@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --color-bg: #161718;
+    --color-surface: #2d2d2c;
+    --color-accent: #106157;
+    --color-border: #455252;
+    --color-text: #f3f6f4;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -18,7 +31,7 @@
 }
 
 .gradient-top {
-    background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+    background: linear-gradient(135deg, #106157 0%, #0d4a43 100%);
 }
 
 .line-clamp-2 {

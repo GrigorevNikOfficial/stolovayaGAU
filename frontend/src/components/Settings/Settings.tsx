@@ -79,13 +79,13 @@ export const Settings: React.FC = () => {
   }
 
   return (
-    <div className="fade-in">
+    <div className="fade-in text-gray-100">
       {/* Заголовок */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-gray-100 mb-2">
           Настройки системы
         </h1>
-        <p className="text-gray-600">Управление параметрами работы столовой</p>
+        <p className="text-gray-400">Управление параметрами работы столовой</p>
       </div>
 
       {/* Табы настроек */}
@@ -101,7 +101,7 @@ export const Settings: React.FC = () => {
 
       {/* Контент активного таба */}
       {activeTab < visibleTabs.length && (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-6 text-gray-100">
           {visibleTabs[activeTab].id === 'delivery' && <DeliverySettings />}
 
           {visibleTabs[activeTab].id === 'orders' && <OrderSettings />}

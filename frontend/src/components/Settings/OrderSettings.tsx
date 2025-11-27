@@ -68,25 +68,25 @@ export const OrderSettings: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-100">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-2xl font-bold text-gray-100 mb-2">
           Сервисный сбор
         </h2>
-        <p className="text-gray-600">
+        <p className="text-gray-400">
           Настройка дополнительного сбора, который будет добавляться к каждому заказу
         </p>
       </div>
 
-      <div className="bg-gray-50 rounded-xl p-6 space-y-6">
+      <div className="bg-[#1f2022] border border-[#2f3032] rounded-xl p-6 space-y-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-gray-100 mb-4">
             Сервисный сбор
           </h3>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Тип сбора
               </label>
               <Select
@@ -100,7 +100,7 @@ export const OrderSettings: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Значение {settings.serviceFeeType === 'percent' ? '(%)' : '(₽)'}
               </label>
               <Input
@@ -109,7 +109,7 @@ export const OrderSettings: React.FC = () => {
                 onChange={value => setSettings({ ...settings, serviceFeeValue: parseFloat(value) || 0 })}
                 placeholder={settings.serviceFeeType === 'percent' ? 'Например: 5' : 'Например: 50'}
               />
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-400 mt-2">
                 {settings.serviceFeeType === 'percent' 
                   ? 'Процент будет добавлен к итоговой сумме заказа'
                   : 'Фиксированная сумма будет добавлена к каждому заказу'}
@@ -117,8 +117,8 @@ export const OrderSettings: React.FC = () => {
             </div>
 
             {settings.serviceFeeValue > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-sm text-blue-200">
                   <strong>Пример:</strong> При заказе на 1000₽ итоговая сумма составит:{' '}
                   <strong>
                     {settings.serviceFeeType === 'percent'
