@@ -10,8 +10,15 @@ import { OrdersList } from '../components/Orders/OrdersList.tsx';
 import { Settings } from '../components/Settings/Settings.tsx';
 import LogoSAU from '../images/LogoSAU.svg';
 import { $cart } from '../models/cart';
-import { $currentUser } from '../models/users';
+import {
+  $currentUser,
+  logout,
+  uploadAvatar,
+  uploadAvatarFx,
+} from '../models/users';
+import { loadOrders } from '../models/orders';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal.tsx';
+import ProfileContent from '../components/Profile/ProfileContent.tsx';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -25,8 +32,21 @@ const hasRole = (user: any, roles: string | string[]): boolean => {
 };
 
 export const HomePage: React.FC = () => {
-  const [currentUser] = useUnit([$currentUser]);
-  const [cart] = useUnit([$cart]);
+  const {
+    currentUser,
+    cart,
+    handleLogout,
+    handleUploadAvatar,
+    handleLoadOrders,
+    isAvatarUploading,
+  } = useUnit({
+    currentUser: $currentUser,
+    cart: $cart,
+    handleLogout: logout,
+    handleUploadAvatar: uploadAvatar,
+    handleLoadOrders: loadOrders,
+    isAvatarUploading: uploadAvatarFx.pending,
+  });
   const [activeTab, setActiveTab] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
@@ -41,10 +61,6 @@ export const HomePage: React.FC = () => {
   const handleNavigation = (path: string) => {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
-  };
-
-  const handleProfileClick = () => {
-    handleNavigation('/profile');
   };
 
   // Определяем видимые табы для текущего пользователя
@@ -77,10 +93,61 @@ export const HomePage: React.FC = () => {
       { id: 'settings', label: 'Настройки', icon: '⚙️', roles: ['admin'] },
     ];
 
+    if (currentUser) {
+      allTabs.push({
+        id: 'profile',
+        label: 'Профиль',
+        icon: '👤',
+        roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
+      });
+    }
+
     return allTabs.filter(tab => hasRole(currentUser, tab.roles));
   };
 
   const visibleTabs = getVisibleTabs();
+  const profileTabIndex = visibleTabs.findIndex(tab => tab.id === 'profile');
+  const profileTabActive = profileTabIndex !== -1 && activeTab === profileTabIndex;
+  const mainTabs = profileTabIndex === -1 ? visibleTabs : visibleTabs.filter(tab => tab.id !== 'profile');
+  const activeMainTabIndex = mainTabs.findIndex(
+    tab => tab.id === visibleTabs[activeTab]?.id
+  );
+
+  const handleMainTabChange = (index: number) => {
+    const tabId = mainTabs[index]?.id;
+    if (!tabId) {
+      return;
+    }
+    const nextIndex = visibleTabs.findIndex(tab => tab.id === tabId);
+    if (nextIndex !== -1) {
+      setActiveTab(nextIndex);
+    }
+  };
+
+  useEffect(() => {
+    if (visibleTabs.length === 0) {
+      return;
+    }
+    if (activeTab >= visibleTabs.length) {
+      setActiveTab(Math.max(0, visibleTabs.length - 1));
+    }
+  }, [activeTab, visibleTabs.length]);
+
+  const handleProfileTabOpen = () => {
+    if (profileTabIndex !== -1) {
+      setActiveTab(profileTabIndex);
+      setIsMobileMenuOpen(false);
+    } else {
+      handleNavigation('/profile');
+    }
+  };
+
+  const handleLogoutClick = () => {
+    handleLogout();
+    setTimeout(() => {
+      handleNavigation('/');
+    }, 100);
+  };
 
   // Определяем, нужно ли показывать корзину
   const showCart =
@@ -119,9 +186,9 @@ export const HomePage: React.FC = () => {
             {/* Центральная часть: табы */}
             <div className="hidden lg:block flex-1 min-w-0">
               <Tabs
-                tabs={visibleTabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
+                tabs={mainTabs}
+                activeTab={activeMainTabIndex >= 0 ? activeMainTabIndex : -1}
+                onTabChange={handleMainTabChange}
                 orientation="horizontal"
                 className="flex-1"
               />
@@ -129,7 +196,7 @@ export const HomePage: React.FC = () => {
 
             {/* Правая часть: кнопки пользователя */}
             <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 shrink-0">
-              {currentUser && (
+              {currentUser ? (
                 <>
                   <div className="sm:hidden mr-1 text-xs font-semibold text-green-dark bg-green-light/60 px-2 py-1 rounded-full">
                     {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
@@ -158,16 +225,50 @@ export const HomePage: React.FC = () => {
                   >
                     Пополнить
                   </Button>
+                  {profileTabIndex !== -1 && (
+                    <button
+                      type="button"
+                      onClick={handleProfileTabOpen}
+                      aria-pressed={profileTabActive}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-200 ${profileTabActive ? 'bg-green-dark text-white border-green-dark shadow-sm' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-green-dark/40'}`}
+                    >
+                      <span className="w-8 h-8 rounded-full bg-gradient-to-br from-green-light to-green-medium border border-white shadow flex items-center justify-center text-xs font-semibold text-green-darker overflow-hidden">
+                        {avatarUrl ? (
+                          <img
+                            src={avatarUrl}
+                            alt="Аватар"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          userInitials
+                        )}
+                      </span>
+                      <span className="text-sm font-semibold hidden xs:inline">
+                        Профиль
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleLogoutClick}
+                    aria-label="Выйти из аккаунта"
+                    className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                      <polyline points="10 17 15 12 10 7" />
+                      <line x1="15" y1="12" x2="3" y2="12" />
+                    </svg>
+                  </button>
                 </>
-              )}
-              {currentUser ? (
-                <Button
-                  onClick={handleProfileClick}
-                  variant="icon"
-                  avatarUrl={avatarUrl}
-                  initials={userInitials}
-                  size="md"
-                />
               ) : (
                 <Button
                   onClick={() => handleNavigation('/login')}
@@ -207,15 +308,9 @@ export const HomePage: React.FC = () => {
                 <div className="h-full">
                   <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                     <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <div>
                         <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                           Меню
                         </h2>
-                        <h3 className="text-[14px] font-bold text-red-500">
-                          Все ценны приблизительны. Это тестовая версия,
-                          относитесь с пониманием
-                        </h3>
-                      </div>
                       {/* Индикатор активного таба для мобильных */}
                       <div className="lg:hidden flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                         <span>{visibleTabs[activeTab].icon}</span>
@@ -268,6 +363,18 @@ export const HomePage: React.FC = () => {
                   <div className="flex-1 overflow-y-auto">
                     <Settings />
                   </div>
+                </div>
+              )}
+
+              {visibleTabs[activeTab].id === 'profile' && currentUser && (
+                <div className="h-full">
+                  <ProfileContent
+                    currentUser={currentUser}
+                    onUploadAvatar={handleUploadAvatar}
+                    onLoadOrders={handleLoadOrders}
+                    isAvatarUploading={isAvatarUploading}
+                    layout="embedded"
+                  />
                 </div>
               )}
             </>
