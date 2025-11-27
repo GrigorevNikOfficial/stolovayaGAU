@@ -112,6 +112,21 @@ export const usersApi = {
     return response;
   },
 
+  // Установить точный баланс пользователя (админ)
+  setUserBalance: async (
+    id: string,
+    amount: number
+  ): Promise<{
+    message: string;
+    user: User;
+  }> => {
+    const response = await httpClient.post<{
+      message: string;
+      user: User;
+    }>(`/users/${id}/balance/set`, { amount });
+    return response;
+  },
+
   // Создать сотрудника (админ)
   createEmployee: async (
     employeeData: RegisterRequest & { role: string }

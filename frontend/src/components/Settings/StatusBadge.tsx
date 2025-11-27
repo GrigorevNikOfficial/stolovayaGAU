@@ -35,6 +35,14 @@ const statusConfig: { [key: string]: { label: string; className: string } } = {
     label: 'Отменен',
     className: 'bg-red-100 text-red-800 border-red-200',
   },
+  approved: {
+    label: 'Одобрено',
+    className: 'bg-green-100 text-green-800 border-green-200',
+  },
+  rejected: {
+    label: 'Отклонено',
+    className: 'bg-red-100 text-red-800 border-red-200',
+  },
   // Старые статусы для обратной совместимости
   pending: {
     label: 'Создан',
