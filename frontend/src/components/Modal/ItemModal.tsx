@@ -95,6 +95,54 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     });
   };
 
+  const restoreItemToCart = (qty: number) => {
+    if (!itemId || !item || qty <= 0) {
+      return;
+    }
+    handleAddToCart({
+      _id: item._id,
+      uniq_nom: item.uniq_nom || itemId,
+      name: item.name,
+      price: item.price,
+      description: item.description,
+      category_slug: item.category_slug,
+      calories: item.calories,
+      number_pribors: item.number_pribors,
+      image_url: item.image_url,
+      preparation_time: item.preparation_time,
+    });
+    handleUpdateQuantity({ id: itemId, quantity: qty });
+    setDesiredQuantity(String(qty));
+
+    showToast({
+      message: 'Товар возвращен в корзину',
+      type: 'success',
+    });
+  };
+
+  const showRemovalToast = (removedQty: number) => {
+    if (removedQty <= 0) {
+      return;
+    }
+
+    showToast({
+      message: `Товар "${item?.name ?? ''}" удален из корзины`,
+      type: 'success',
+      persistent: true,
+      actionLabel: 'Вернуть',
+      onAction: () => restoreItemToCart(removedQty),
+    });
+  };
+
+  const removeItemCompletely = (removedQty: number) => {
+    if (!itemId || removedQty <= 0) {
+      return;
+    }
+    handleRemoveFromCart(itemId);
+    setDesiredQuantity('1');
+    showRemovalToast(removedQty);
+  };
+
   const handleAdjustQuantity = (delta: number) => {
     if (!itemId) {
       return;
@@ -113,8 +161,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
     const nextQuantity = quantity + delta;
     if (nextQuantity <= 0) {
-      handleRemoveFromCart(itemId);
-      setDesiredQuantity('1');
+      removeItemCompletely(quantity);
       return;
     }
 
@@ -154,19 +201,17 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Затемнение фона */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Модальное окно */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-          {/* Кнопка закрытия */}
+        <div className="relative w-full max-w-4xl bg-[#121314] border border-[#343536] rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55)] overflow-hidden text-gray-100">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/80 hover:bg-white shadow-lg flex items-center justify-center text-gray-600 hover:text-gray-900 backdrop-blur-sm transition-all duration-300 hover:scale-110"
+            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-2xl bg-[#1e1f20]/80 hover:bg-[#2a2b2c] border border-[#3f4042] flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200"
+            aria-label="Закрыть"
           >
             <svg
               className="w-4 h-4"
@@ -183,114 +228,111 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             </svg>
           </button>
 
-          {/* Контент */}
-          <div className="flex flex-col lg:flex-row">
-            {/* Изображение */}
+          <div className="flex flex-col lg:flex-row gap-6 p-6 lg:p-8">
             <div className="lg:w-1/2">
-              {item.image_url || item.image?.url ? (
-                <img
-                  src={item.image_url || item.image?.url}
-                  alt={item.name}
-                  className="w-full h-64 lg:h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-64 lg:h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                  <span className="text-6xl text-gray-300">🍽️</span>
-                </div>
-              )}
+              <div className="relative w-full rounded-2xl overflow-hidden border border-[#3a3b3a] bg-[#1a1b1c] min-h-[280px]">
+                {item.image_url || item.image?.url ? (
+                  <img
+                    src={item.image_url || item.image?.url}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-6xl text-gray-600">
+                    🍽️
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Информация */}
-            <div className="lg:w-1/2 p-6 lg:p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                {item.name}
-              </h2>
-
-              {item.description && (
-                <p className="text-gray-600 text-base leading-relaxed mb-6">
-                  {item.description}
+            <div className="lg:w-1/2 space-y-6">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
+                  Информация о блюде
                 </p>
-              )}
+                <h2 className="text-3xl font-bold text-white mb-3 leading-tight">
+                  {item.name}
+                </h2>
+                {item.description && (
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    {item.description}
+                  </p>
+                )}
+              </div>
 
-              {/* Детали */}
-              <div className="space-y-4 mb-6">
+              <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-3xl font-bold text-green-dark">
+                  <span className="text-3xl font-bold text-[#69e7b6]">
                     {item.price} ₽
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center flex-wrap gap-2">
                     <span
-                      className={`text-xs font-semibold px-3 py-1 rounded-full border ${isAvailable ? 'bg-green-light text-green-darker border-green-lighter' : 'bg-gray-100 text-gray-500 border-gray-200'}`}
+                      className={`text-[11px] font-semibold px-3 py-1 rounded-full border ${isAvailable ? 'bg-[#106157]/20 text-[#69e7b6] border-[#106157]/40' : 'bg-[#1f2122] text-gray-400 border-[#3a3b3a]'}`}
                     >
                       {isAvailable ? 'Доступно' : 'Недоступно'}
                     </span>
                     {item.category_slug && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-light text-green-darker border border-green-lighter">
+                      <span className="text-[11px] font-semibold px-3 py-1 rounded-full border border-[#3a3b3a] text-gray-300">
                         {item.category_slug}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Характеристики */}
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
                   {item.calories && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">🔥</span>
+                    <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
+                      <span className="text-gray-500">🔥</span>
                       <span>{item.calories} ккал</span>
                     </div>
                   )}
                   {item.preparation_time && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">⏱️</span>
+                    <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
+                      <span className="text-gray-500">⏱️</span>
                       <span>{item.preparation_time} мин</span>
                     </div>
                   )}
                   {item.number_pribors && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">🍴</span>
+                    <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
+                      <span className="text-gray-500">🍴</span>
                       <span>{item.number_pribors} приборов</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Кнопки действий */}
               {canAddToCart && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
                       Количество
                     </label>
-                    <div className="flex items-center justify-center gap-3">
-                      {quantity > 0 && (
-                        <Button
-                          onClick={() => handleAdjustQuantity(-1)}
-                          variant="outline"
-                          size="lg"
-                          className="w-12 h-12 !p-0"
-                        >
-                          -
-                        </Button>
-                      )}
+                    <div className="flex items-center justify-center gap-4">
+                      <button
+                        onClick={() => handleAdjustQuantity(-1)}
+                        disabled={!isAvailable}
+                        className="w-10 h-10 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-lg font-bold hover:bg-[#106157] hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        type="button"
+                      >
+                        -
+                      </button>
                       <input
                         type="number"
                         min={1}
                         max={999}
                         value={desiredQuantity}
                         onChange={e => handleQuantityInputChange(e.target.value)}
-                        className="w-24 text-center text-2xl font-bold text-green-dark border border-gray-200 rounded-2xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent"
+                        className="w-28 text-center text-2xl font-bold text-white border border-[#343536] rounded-2xl py-2 px-3 bg-[#1b1c1d] focus:outline-none focus:ring-2 focus:ring-[#106157]"
                         disabled={!isAvailable}
                       />
-                      <Button
+                      <button
                         onClick={() => handleAdjustQuantity(1)}
-                        variant="outline"
-                        size="lg"
-                        className="w-12 h-12 !p-0"
                         disabled={!isAvailable}
+                        className="w-10 h-10 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-lg font-bold hover:bg-[#106157] hover:text-white transition-all disabled:opacity-50"
+                        type="button"
                       >
                         +
-                      </Button>
+                      </button>
                     </div>
                     {quantity === 0 && (
                       <p className="text-xs text-gray-500 mt-2 text-center">
@@ -307,12 +349,12 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                       className="w-full"
                       disabled={!isAvailable}
                     >
-                      {isAvailable ? '🛒 Добавить в корзину' : 'Недоступно'}
+                      {isAvailable ? 'Добавить в корзину' : 'Недоступно'}
                     </Button>
                   ) : (
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <Button
-                        onClick={() => handleRemoveFromCart(item._id)}
+                        onClick={() => removeItemCompletely(quantity)}
                         variant="outline"
                         size="lg"
                         className="flex-1"
@@ -332,7 +374,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 </div>
               )}
               {!isAvailable && (
-                <p className="text-sm text-red-500 text-center mt-4">
+                <p className="text-sm text-red-400 text-center">
                   Товар временно недоступен для заказа
                 </p>
               )}

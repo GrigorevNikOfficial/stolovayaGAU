@@ -1,5 +1,5 @@
 // components/ItemFormModal/ItemFormModal.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
 import Select from '../layout/Select/Select.tsx';
@@ -20,7 +20,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   categories = [],
 }) => {
   const [formData, setFormData] = useState({
-    uniq_nom: '', // Добавляем поле uniq_nom
+    uniq_nom: '',
     name: '',
     price: '',
     category_slug: '',
@@ -32,12 +32,12 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Заполняем форму данными при редактировании
   useEffect(() => {
     if (item) {
       setFormData({
-        uniq_nom: item.uniq_nom || '', // Заполняем uniq_nom
+        uniq_nom: item.uniq_nom || '',
         name: item.name || '',
         price: item.price?.toString() || '',
         category_slug: item.category_slug || '',
@@ -45,14 +45,13 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
         calories: item.calories?.toString() || '',
         number_pribors: item.number_pribors?.toString() || '',
         preparation_time: item.preparation_time?.toString() || '',
-        is_available:
-          item.is_available !== undefined ? item.is_available : true,
+        is_available: item.is_available !== undefined ? item.is_available : true,
       });
+      setSelectedImage(null);
       setImagePreview(item.image_url || item.image?.url || '');
     } else {
-      // Сброс формы для создания
       setFormData({
-        uniq_nom: '', // Сбрасываем uniq_nom
+        uniq_nom: '',
         name: '',
         price: '',
         category_slug: '',
@@ -75,115 +74,98 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setSelectedImage(file);
-      // Создаем превью
       const reader = new FileReader();
-      reader.onload = e => {
-        setImagePreview(e.target?.result as string);
+      reader.onload = event => {
+        setImagePreview(event.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const handleImageAreaClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Валидация - добавляем uniq_nom в обязательные поля
-    if (
-      !formData.uniq_nom ||
-      !formData.name ||
-      !formData.price ||
-      !formData.category_slug
-    ) {
-      alert(
-        'Заполните обязательные поля: уникальный номер, название, цена, категория'
-      );
+    if (!formData.uniq_nom || !formData.name || !formData.price || !formData.category_slug) {
+      alert('Заполните обязательные поля: уникальный номер, название, цена, категория');
       return;
     }
 
-    // Подготовка данных
     const submitData = {
-      uniq_nom: formData.uniq_nom, // Добавляем uniq_nom
+      uniq_nom: formData.uniq_nom,
       name: formData.name,
       price: Number(formData.price),
       category_slug: formData.category_slug,
       description: formData.description,
       calories: formData.calories ? Number(formData.calories) : undefined,
-      number_pribors: formData.number_pribors
-        ? Number(formData.number_pribors)
-        : undefined,
-      preparation_time: formData.preparation_time
-        ? Number(formData.preparation_time)
-        : undefined,
+      number_pribors: formData.number_pribors ? Number(formData.number_pribors) : undefined,
+      preparation_time: formData.preparation_time ? Number(formData.preparation_time) : undefined,
       is_available: formData.is_available,
     };
-
-    console.log('Submitting item data:', submitData);
-    console.log('Image file:', selectedImage);
 
     onSave(submitData, selectedImage);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300" />
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" />
 
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Заголовок */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {item ? 'Редактировать товар' : 'Создать новый товар'}
-            </h2>
+        <div className="relative bg-[#111213] border border-[#2b2c2d] rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55)] max-w-2xl w-full max-h-[92vh] overflow-y-auto text-gray-100">
+          <div className="flex items-center justify-between p-6 border-b border-[#2f3031]">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1">
+                {item ? 'Редактирование' : 'Новый товар'}
+              </p>
+              <h2 className="text-2xl font-bold text-white">{item ? 'Редактировать товар' : 'Создать товар'}</h2>
+            </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-300"
+              type="button"
+              className="w-10 h-10 rounded-2xl bg-[#1c1d1e] border border-[#343536] text-gray-400 hover:text-white hover:border-[#69e7b6] transition-all"
+              aria-label="Закрыть"
             >
               ×
             </button>
           </div>
 
-          {/* Форма */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Изображение */}
+          <form onSubmit={handleSubmit} className="p-5 space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Изображение товара
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-gray-400 text-2xl">🍽️</span>
-                  )}
+              <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">Изображение товара</label>
+              <div
+                className="relative w-full rounded-2xl border border-dashed border-[#3a3b3a] bg-[#1a1b1c] p-4 cursor-pointer group overflow-hidden"
+                onClick={handleImageAreaClick}
+              >
+                <div className="relative w-full max-w-[160px] mx-auto">
+                  <div className="relative w-full pb-[90%] rounded-2xl overflow-hidden border border-[#3a3b3a]">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-4xl text-gray-500">
+                        <span>🍽️</span>
+                        <p className="text-xs text-gray-400">Нажмите чтобы загрузить</p>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs text-white">
+                      Изменить изображение
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    PNG, JPG, JPEG до 5MB
-                  </p>
-                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                <p className="text-xs text-gray-500 mt-4 text-center">PNG, JPG, JPEG до 5MB</p>
               </div>
             </div>
 
-            {/* Основные поля */}
             <div className="grid grid-cols-1 gap-4">
-              {/* Добавляем поле uniq_nom */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Уникальный номер (uniq_nom) *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Уникальный номер (uniq_nom) *</label>
                 <Input
                   type="text"
                   value={formData.uniq_nom}
@@ -194,9 +176,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Название товара *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Название товара *</label>
                 <Input
                   type="text"
                   value={formData.name}
@@ -208,9 +188,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Цена *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Цена *</label>
                   <Input
                     type="number"
                     value={formData.price}
@@ -221,17 +199,12 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                     required
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Категория *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Категория *</label>
                   <Select
                     options={categories}
                     value={formData.category_slug}
-                    onChange={value =>
-                      handleInputChange('category_slug', value)
-                    }
+                    onChange={value => handleInputChange('category_slug', value)}
                     placeholder="Выберите категорию"
                     required
                   />
@@ -239,27 +212,20 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Описание *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Описание *</label>
                 <textarea
                   value={formData.description}
-                  onChange={e =>
-                    handleInputChange('description', e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-medium focus:border-transparent transition-all duration-300"
+                  onChange={e => handleInputChange('description', e.target.value)}
+                  className="w-full px-4 py-3 border border-[#2f3031] rounded-xl bg-[#1b1c1d] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-transparent transition-all duration-300"
                   rows={3}
                   placeholder="Описание товара..."
                   required
                 />
               </div>
 
-              {/* Дополнительные поля */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Калории
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Калории</label>
                   <Input
                     type="number"
                     value={formData.calories}
@@ -268,32 +234,22 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                     min="0"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Время приготовления (мин)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Время приготовления (мин)</label>
                   <Input
                     type="number"
                     value={formData.preparation_time}
-                    onChange={value =>
-                      handleInputChange('preparation_time', value)
-                    }
+                    onChange={value => handleInputChange('preparation_time', value)}
                     placeholder="0"
                     min="0"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Количество приборов
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Количество приборов</label>
                   <Input
                     type="number"
                     value={formData.number_pribors}
-                    onChange={value =>
-                      handleInputChange('number_pribors', value)
-                    }
+                    onChange={value => handleInputChange('number_pribors', value)}
                     placeholder="0"
                     min="0"
                   />
@@ -301,30 +257,28 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_available}
-                    onChange={e =>
-                      handleInputChange('is_available', e.target.checked)
-                    }
-                    className="mr-3 w-5 h-5 text-green-dark rounded focus:ring-green-medium"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    Товар доступен
-                  </span>
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Статус товара</label>
+                <div className="flex rounded-2xl border border-[#2f3031] bg-[#18191a] p-1 text-sm font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('is_available', true)}
+                    className={`flex-1 py-2 rounded-xl transition-all ${formData.is_available ? 'bg-[#106157] text-white' : 'text-gray-400'}`}
+                  >
+                    Доступен
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('is_available', false)}
+                    className={`flex-1 py-2 rounded-xl transition-all ${!formData.is_available ? 'bg-[#3a3b3a] text-white' : 'text-gray-400'}`}
+                  >
+                    Недоступен
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Кнопки */}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                type="button"
-                onClick={onClose}
-                variant="outline"
-                size="md"
-              >
+            <div className="flex justify-end gap-3 pt-6 border-t border-[#2f3031]">
+              <Button type="button" onClick={onClose} variant="outline" size="md">
                 Отмена
               </Button>
               <Button type="submit" variant="primary" size="md">

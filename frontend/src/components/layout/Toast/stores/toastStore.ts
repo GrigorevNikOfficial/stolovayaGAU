@@ -7,6 +7,8 @@ export const showToast = createEvent<{
   type: 'success' | 'error';
   persistent?: boolean;
   durationMs?: number;
+  actionLabel?: string;
+  onAction?: () => void;
 }>();
 export const hideToast = createEvent();
 
@@ -22,6 +24,8 @@ export const $toast = createStore<{
   type: 'success',
   isVisible: false,
   persistent: false,
+  actionLabel: undefined,
+  onAction: undefined,
   _timer: null,
 })
   .on(showToast, (state, toast) => {
