@@ -167,7 +167,7 @@ export const HomePage: React.FC = () => {
           {/* Вся навигация в одной строке */}
           <div className="flex items-center justify-between py-3 sm:py-4 gap-4">
             {/* Левая часть: логотип и название */}
-            <div className="flex items-center gap-3 shrink-0 mr-12">
+            <div className="flex items-center gap-3 shrink-0 mr-6">
               <img
                 src={LogoSAU}
                 alt="Логотип столовой ГАУ"
@@ -184,13 +184,14 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Центральная часть: табы */}
-            <div className="hidden lg:block flex-1 min-w-0">
+            <div className="hidden lg:flex flex-1 justify-center">
               <Tabs
                 tabs={mainTabs}
                 activeTab={activeMainTabIndex >= 0 ? activeMainTabIndex : -1}
                 onTabChange={handleMainTabChange}
                 orientation="horizontal"
-                className="flex-1"
+                justify="center"
+                className="max-w-3xl w-full"
               />
             </div>
 
@@ -198,41 +199,27 @@ export const HomePage: React.FC = () => {
             <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 shrink-0">
               {currentUser ? (
                 <>
-                  <div className="sm:hidden mr-1 text-xs font-semibold text-green-dark bg-green-light/60 px-2 py-1 rounded-full">
-                    {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="sm:hidden"
+                  <button
+                    type="button"
                     onClick={() => setIsTopUpModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-green-light/60 bg-green-light/40 text-green-dark font-semibold text-sm shadow-inner hover:bg-green-light/70 transition-colors"
+                    aria-label="Пополнить баланс"
                   >
-                    Пополнить
-                  </Button>
-                  <div className="hidden sm:flex flex-col items-end text-right mr-1">
-                    <span className="text-[11px] uppercase tracking-wide text-gray-400">
-                      Баланс
-                    </span>
-                    <span className="text-base font-bold text-green-dark">
+                    <span className="text-base sm:text-lg">
                       {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
                     </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="hidden sm:inline-flex"
-                    onClick={() => setIsTopUpModalOpen(true)}
-                  >
-                    Пополнить
-                  </Button>
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-white text-green-dark text-base leading-none">
+                      +
+                    </span>
+                  </button>
                   {profileTabIndex !== -1 && (
                     <button
                       type="button"
                       onClick={handleProfileTabOpen}
                       aria-pressed={profileTabActive}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-200 ${profileTabActive ? 'bg-green-dark text-white border-green-dark shadow-sm' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-green-dark/40'}`}
+                      className={`w-11 h-11 rounded-full border transition-all duration-200 flex items-center justify-center ${profileTabActive ? 'bg-green-dark text-white border-green-dark shadow-sm' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-green-dark/40 bg-white/80'}`}
                     >
-                      <span className="w-8 h-8 rounded-full bg-gradient-to-br from-green-light to-green-medium border border-white shadow flex items-center justify-center text-xs font-semibold text-green-darker overflow-hidden">
+                      <span className="w-10 h-10 rounded-full bg-gradient-to-br from-green-light to-green-medium border border-white shadow flex items-center justify-center text-base font-semibold text-green-darker overflow-hidden">
                         {avatarUrl ? (
                           <img
                             src={avatarUrl}
@@ -243,19 +230,16 @@ export const HomePage: React.FC = () => {
                           userInitials
                         )}
                       </span>
-                      <span className="text-sm font-semibold hidden xs:inline">
-                        Профиль
-                      </span>
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={handleLogoutClick}
                     aria-label="Выйти из аккаунта"
-                    className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
+                    className="w-11 h-11 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
                   >
                     <svg
-                      className="w-5 h-5"
+                      className="w-5.5 h-5.5"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"

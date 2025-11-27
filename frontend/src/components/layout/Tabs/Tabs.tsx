@@ -14,6 +14,7 @@ interface TabsProps {
   onTabChange: (index: number) => void;
   className?: string;
   orientation?: 'horizontal' | 'vertical';
+  justify?: 'start' | 'center' | 'between' | 'end';
 }
 
 export const Tabs: React.FC<TabsProps> = ({
@@ -22,11 +23,20 @@ export const Tabs: React.FC<TabsProps> = ({
   onTabChange,
   className = '',
   orientation = 'horizontal',
+  justify = 'start',
 }) => {
   const isHorizontal = orientation === 'horizontal';
 
   const containerClasses = isHorizontal
-    ? 'flex flex-wrap gap-2 sm:flex-nowrap sm:gap-3'
+    ? `flex flex-wrap gap-2 sm:flex-nowrap sm:gap-3 ${
+        justify === 'center'
+          ? 'justify-center'
+          : justify === 'between'
+            ? 'justify-between'
+            : justify === 'end'
+              ? 'justify-end'
+              : 'justify-start'
+      }`
     : 'flex flex-col space-y-1';
 
   const wrapperClasses = isHorizontal
