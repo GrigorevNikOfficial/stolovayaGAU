@@ -23,35 +23,45 @@ export const Tabs: React.FC<TabsProps> = ({
   className = '',
   orientation = 'horizontal',
 }) => {
-  const baseClasses =
-    orientation === 'horizontal' ? 'flex space-x-1' : 'flex flex-col space-y-1';
+  const isHorizontal = orientation === 'horizontal';
+
+  const containerClasses = isHorizontal
+    ? 'flex flex-wrap gap-2 sm:flex-nowrap sm:gap-3'
+    : 'flex flex-col space-y-1';
+
+  const wrapperClasses = isHorizontal
+    ? 'w-full overflow-x-auto pb-1'
+    : 'w-full';
 
   const tabBaseClasses =
-    'flex items-center cursor-pointer transition-colors duration-200 rounded-lg';
+    'flex items-center cursor-pointer transition-colors duration-200 rounded-lg flex-shrink-0';
 
-  const tabSizeClasses =
-    orientation === 'horizontal' ? 'px-3 py-2 text-sm' : 'px-4 py-3 text-base';
+  const tabSizeClasses = isHorizontal
+    ? 'px-3 py-2 text-sm'
+    : 'px-4 py-3 text-base w-full';
 
   return (
-    <div className={`${baseClasses} ${className}`}>
-      {tabs.map((tab, index) => (
-        <button
-          key={tab.id}
-          onClick={() => onTabChange(index)}
-          className={`
-            ${tabBaseClasses}
-            ${tabSizeClasses}
-            ${
-              activeTab === index
-                ? 'bg-green-dark text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }
-          `}
-        >
-          <span className="text-base mr-2">{tab.icon}</span>
-          <span className="font-medium">{tab.label}</span>
-        </button>
-      ))}
+    <div className={`${wrapperClasses} ${className}`}>
+      <div className={`${containerClasses}`}>
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(index)}
+            className={`
+              ${tabBaseClasses}
+              ${tabSizeClasses}
+              ${
+                activeTab === index
+                  ? 'bg-green-dark text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }
+            `}
+          >
+            <span className="text-base mr-2">{tab.icon}</span>
+            <span className="font-medium whitespace-nowrap">{tab.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

@@ -1,5 +1,9 @@
 import { TopUpRequest } from "../models/TopUpRequest.js";
 import { User } from "../models/User.js";
+import {
+  emitTopUpRequestCreated,
+  emitTopUpRequestUpdated,
+} from "../services/socketService.js";
 
 const normalizeId = (value) => {
   if (!value) return undefined;
@@ -89,9 +93,12 @@ export const createTopUpRequest = async (req, res) => {
     await request.save();
     await populateRequestDoc(request);
 
+    const responsePayload = mapTopUpRequestToResponse(request);
+    emitTopUpRequestCreated(responsePayload);
+
     res.status(201).json({
       message: "Заявка на пополнение создана",
-      request: mapTopUpRequestToResponse(request),
+      request: responsePayload,
     });
   } catch (error) {
     console.error("createTopUpRequest error:", error);
@@ -193,9 +200,12 @@ export const processTopUpRequest = async (req, res) => {
     await request.save();
     await populateRequestDoc(request);
 
+    const responsePayload = mapTopUpRequestToResponse(request);
+    emitTopUpRequestUpdated(responsePayload);
+
     res.json({
       message: status === "approved" ? "Заявка одобрена" : "Заявка отклонена",
-      request: mapTopUpRequestToResponse(request),
+      request: responsePayload,
       user_balance: updatedBalance,
     });
   } catch (error) {

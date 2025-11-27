@@ -49,6 +49,7 @@ const attachRooms = (socket: Socket, user: SocketUser) => {
 
   if (STAFF_ROLES.includes(user.role)) {
     socket.join('orders:staff');
+    socket.join('topups:staff');
     socket.join(`role:${user.role}`);
   }
 };
@@ -122,12 +123,17 @@ export const initSocketServer = (server: HTTPServer) => {
   return io;
 };
 
-const emitToAudiences = (event: string, payload: unknown & { user_id?: string }) => {
+const emitToAudiences = (
+  event: string,
+  payload: unknown & { user_id?: string },
+  options?: { staffRoom?: string }
+) => {
   if (!io) {
     return;
   }
 
-  io.to('orders:staff').emit(event, payload);
+  const staffRoom = options?.staffRoom || 'orders:staff';
+  io.to(staffRoom).emit(event, payload);
 
   if (payload?.user_id) {
     io.to(`user:${payload.user_id}`).emit(event, payload);
@@ -135,11 +141,19 @@ const emitToAudiences = (event: string, payload: unknown & { user_id?: string })
 };
 
 export const emitOrderCreated = (order: unknown & { user_id?: string }) => {
-  emitToAudiences('orders:created', order);
+  emitToAudiences('orders:created', order, { staffRoom: 'orders:staff' });
 };
 
 export const emitOrderUpdated = (order: unknown & { user_id?: string }) => {
-  emitToAudiences('orders:updated', order);
+  emitToAudiences('orders:updated', order, { staffRoom: 'orders:staff' });
+};
+
+export const emitTopUpRequestCreated = (request: unknown & { user_id?: string }) => {
+  emitToAudiences('topups:created', request, { staffRoom: 'topups:staff' });
+};
+
+export const emitTopUpRequestUpdated = (request: unknown & { user_id?: string }) => {
+  emitToAudiences('topups:updated', request, { staffRoom: 'topups:staff' });
 };
 
 export const getIO = () => {
