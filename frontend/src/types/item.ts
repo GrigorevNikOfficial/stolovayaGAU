@@ -24,6 +24,11 @@ export interface Item {
     key: string;
     url: string;
   };
+  category?: {
+    name?: string;
+    title?: string;
+    slug?: string;
+  };
 }
 
 // Остальные интерфейсы остаются без Category

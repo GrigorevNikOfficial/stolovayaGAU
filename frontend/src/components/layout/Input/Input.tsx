@@ -9,7 +9,9 @@ interface InputProps {
   onFocus?: () => void;
   className?: string;
   disabled?: boolean;
-  icon?: string;
+  icon?: React.ReactNode;
+  onIconClick?: () => void;
+  iconAriaLabel?: string;
   min?: number | string;
   max?: number | string;
   step?: number | string;
@@ -25,6 +27,8 @@ export const Input: React.FC<InputProps> = ({
   className = '',
   disabled = false,
   icon,
+  onIconClick,
+  iconAriaLabel,
   min,
   max,
   step,
@@ -53,9 +57,20 @@ export const Input: React.FC<InputProps> = ({
         `}
       />
       {icon && (
-        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
-          {icon}
-        </div>
+        onIconClick ? (
+          <button
+            type="button"
+            onClick={onIconClick}
+            aria-label={iconAriaLabel}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            {icon}
+          </button>
+        ) : (
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
+            {icon}
+          </div>
+        )
       )}
     </div>
   );

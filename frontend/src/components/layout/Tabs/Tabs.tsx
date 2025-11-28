@@ -6,6 +6,7 @@ interface Tab {
   label: string;
   icon: string;
   roles: string[];
+  badge?: string | number;
 }
 
 interface TabsProps {
@@ -27,27 +28,26 @@ export const Tabs: React.FC<TabsProps> = ({
 }) => {
   const isHorizontal = orientation === 'horizontal';
 
+  const justifyClassMap: Record<'start' | 'center' | 'between' | 'end', string> = {
+    start: 'md:justify-start',
+    center: 'md:justify-center',
+    between: 'md:justify-between',
+    end: 'md:justify-end',
+  };
+
   const containerClasses = isHorizontal
-    ? `flex flex-wrap gap-2 sm:flex-nowrap sm:gap-3 ${
-        justify === 'center'
-          ? 'justify-center'
-          : justify === 'between'
-            ? 'justify-between'
-            : justify === 'end'
-              ? 'justify-end'
-              : 'justify-start'
-      }`
+    ? `flex gap-2 sm:gap-3 flex-nowrap md:flex-wrap overflow-x-auto hide-scrollbar justify-start ${justifyClassMap[justify]}`
     : 'flex flex-col space-y-1';
 
   const wrapperClasses = isHorizontal
-    ? 'w-full overflow-x-auto pb-1'
+    ? 'w-full pb-1'
     : 'w-full';
 
   const tabBaseClasses =
     'flex items-center cursor-pointer transition-colors duration-200 rounded-lg flex-shrink-0 border bg-[#161718] border-[#2d2d2c] text-gray-300';
 
   const tabSizeClasses = isHorizontal
-    ? 'px-3 py-2 text-sm'
+    ? 'px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm'
     : 'px-4 py-3 text-base w-full';
 
   return (
@@ -67,8 +67,15 @@ export const Tabs: React.FC<TabsProps> = ({
               }
             `}
           >
-            <span className="text-base mr-2">{tab.icon}</span>
-            <span className="font-medium whitespace-nowrap">{tab.label}</span>
+            <span className="text-sm sm:text-base mr-2">{tab.icon}</span>
+            <span className="font-medium whitespace-nowrap flex items-center gap-2">
+              {tab.label}
+              {tab.badge && (
+                <span className="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-semibold rounded-full bg-[#69e7b6]/20 text-[#69e7b6] border border-[#69e7b6]/40 min-w-[1.75rem]">
+                  {tab.badge}
+                </span>
+              )}
+            </span>
           </button>
         ))}
       </div>

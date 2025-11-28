@@ -1,5 +1,5 @@
 // components/Settings/EmployeeManagement.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usersApi } from '../../api/users';
 import type { User } from '../../types/user';
 import Button from '../layout/Button/Button';
@@ -19,6 +19,12 @@ export const EmployeeManagement: React.FC = () => {
     password: '',
     role: 'user',
   });
+  const [activeRoleFilter, setActiveRoleFilter] = useState<
+    'all' | 'admin' | 'user' | 'storeManager' | 'canteenManager'
+  >('all');
+  const [sortOption, setSortOption] = useState<
+    'name-asc' | 'name-desc' | 'balance-desc' | 'balance-asc'
+  >('name-asc');
 
   useEffect(() => {
     loadUsers();
@@ -72,6 +78,50 @@ export const EmployeeManagement: React.FC = () => {
     return roles[role] || role;
   };
 
+  const roleTabs = [
+    { id: 'all', label: 'Все' },
+    { id: 'admin', label: 'Администратор' },
+    { id: 'user', label: 'Пользователь' },
+    { id: 'storeManager', label: 'Админ буфета' },
+    { id: 'canteenManager', label: 'Админ столовой' },
+  ] as const;
+
+  const filteredUsers = useMemo(() => {
+    const roleMap: Record<string, string[]> = {
+      all: [],
+      admin: ['admin'],
+      user: ['user'],
+      storeManager: ['storeManager'],
+      canteenManager: ['canteenManager', 'cateenManager'],
+    };
+
+    const base =
+      activeRoleFilter === 'all'
+        ? users
+        : users.filter(user => roleMap[activeRoleFilter].includes(user.role));
+
+    const sorted = [...base].sort((a, b) => {
+      const fullNameA = `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim();
+      const fullNameB = `${b.first_name ?? ''} ${b.last_name ?? ''}`.trim();
+      const balanceA = a.balance ?? 0;
+      const balanceB = b.balance ?? 0;
+
+      switch (sortOption) {
+        case 'name-desc':
+          return fullNameB.localeCompare(fullNameA, 'ru');
+        case 'balance-desc':
+          return balanceB - balanceA;
+        case 'balance-asc':
+          return balanceA - balanceB;
+        case 'name-asc':
+        default:
+          return fullNameA.localeCompare(fullNameB, 'ru');
+      }
+    });
+
+    return sorted;
+  }, [users, activeRoleFilter, sortOption]);
+
   return (
     <div className="space-y-6 text-gray-100">
       <div className="flex justify-between items-center">
@@ -93,7 +143,42 @@ export const EmployeeManagement: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-dark"></div>
         </div>
       ) : (
-        <div className="bg-[#1f2022] rounded-xl border border-[#2f3032] shadow overflow-hidden">
+        <div className="space-y-4">
+          <div className="bg-[#18191b] border border-[#2f3032] rounded-2xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {roleTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveRoleFilter(tab.id)}
+                  className={`px-4 py-2 rounded-2xl text-sm font-medium border transition-all ${
+                    activeRoleFilter === tab.id
+                      ? 'bg-[#106157] text-white border-[#106157] shadow-[0_0_12px_rgba(16,97,87,0.35)]'
+                      : 'border-[#2f3032] text-gray-300 hover:text-white hover:border-[#106157]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-full lg:w-64">
+              <Select
+                value={sortOption}
+                onChange={value =>
+                  setSortOption(value as typeof sortOption)
+                }
+                placeholder="Сортировка"
+                options={[
+                  { value: 'name-asc', label: 'Имя (А → Я)' },
+                  { value: 'name-desc', label: 'Имя (Я → А)' },
+                  { value: 'balance-desc', label: 'Баланс (по убыв.)' },
+                  { value: 'balance-asc', label: 'Баланс (по возр.)' },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div className="bg-[#1f2022] rounded-xl border border-[#2f3032] shadow overflow-hidden">
           <table className="min-w-full divide-y divide-[#2f3032]">
             <thead className="bg-[#161718]">
               <tr>
@@ -106,7 +191,7 @@ export const EmployeeManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-[#1f2022] divide-y divide-[#2f3032]">
-              {users.map(user => (
+              {filteredUsers.map(user => (
                 <tr key={user._id} className="hover:bg-[#242527] transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-100">
@@ -138,6 +223,7 @@ export const EmployeeManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       )}
 

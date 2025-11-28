@@ -1,5 +1,5 @@
 import { useUnit } from 'effector-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CategoriesList } from '../components/Categories/CategoriesList.tsx';
 import { ItemsList } from '../components/Items/ItemsList.tsx';
 import Button from '../components/layout/Button/Button.tsx';
@@ -16,7 +16,7 @@ import {
   uploadAvatar,
   uploadAvatarFx,
 } from '../models/users';
-import { loadOrders } from '../models/orders';
+import { $orders, loadOrders } from '../models/orders';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal.tsx';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
 
@@ -31,6 +31,22 @@ const hasRole = (user: any, roles: string | string[]): boolean => {
   return rolesArray.includes(user.role);
 };
 
+const orderStatusMeta: Record<string, { label: string; color: string }> = {
+  created: { label: 'Принят', color: 'text-[#fcd34d]' },
+  cooking: { label: 'Готовим', color: 'text-[#69e7b6]' },
+  waiting_delivery: { label: 'Ждёт отправки', color: 'text-[#93c5fd]' },
+  in_transit: { label: 'В пути', color: 'text-[#f472b6]' },
+  ready_for_pickup: { label: 'Можно забрать', color: 'text-[#34d399]' },
+  completed: { label: 'Завершён', color: 'text-gray-400' },
+  cancelled: { label: 'Отменён', color: 'text-red-400' },
+};
+
+const deliveryMethodLabels: Record<string, string> = {
+  dine_in: 'В столовой',
+  pickup: 'Самовывоз',
+  delivery: 'Доставка',
+};
+
 export const HomePage: React.FC = () => {
   const {
     currentUser,
@@ -39,6 +55,7 @@ export const HomePage: React.FC = () => {
     handleUploadAvatar,
     handleLoadOrders,
     isAvatarUploading,
+    orders,
   } = useUnit({
     currentUser: $currentUser,
     cart: $cart,
@@ -46,6 +63,7 @@ export const HomePage: React.FC = () => {
     handleUploadAvatar: uploadAvatar,
     handleLoadOrders: loadOrders,
     isAvatarUploading: uploadAvatarFx.pending,
+    orders: $orders,
   });
   const [activeTab, setActiveTab] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -64,7 +82,7 @@ export const HomePage: React.FC = () => {
   };
 
   // Определяем видимые табы для текущего пользователя
-  const getVisibleTabs = () => {
+  const getVisibleTabs = (user: any) => {
     const allTabs = [
       {
         id: 'menu',
@@ -93,7 +111,7 @@ export const HomePage: React.FC = () => {
       { id: 'settings', label: 'Настройки', icon: '⚙️', roles: ['admin'] },
     ];
 
-    if (currentUser) {
+    if (user) {
       allTabs.push({
         id: 'profile',
         label: 'Профиль',
@@ -102,10 +120,40 @@ export const HomePage: React.FC = () => {
       });
     }
 
-    return allTabs.filter(tab => hasRole(currentUser, tab.roles));
+    return allTabs.filter(tab => hasRole(user, tab.roles));
   };
 
-  const visibleTabs = getVisibleTabs();
+  const activeOrders = useMemo(() => {
+    if (!currentUser || currentUser.role !== 'user') {
+      return [];
+    }
+
+    const activeStatuses = new Set([
+      'created',
+      'cooking',
+      'waiting_delivery',
+      'in_transit',
+      'ready_for_pickup',
+    ]);
+
+    return orders.filter(
+      order =>
+        order.user_id === currentUser._id && activeStatuses.has(order.status)
+    );
+  }, [orders, currentUser]);
+
+  const activeOrdersCount = activeOrders.length;
+  const ordersBadge = activeOrdersCount > 0 ? String(Math.min(activeOrdersCount, 99)) : undefined;
+
+  const visibleTabs = useMemo(() => {
+    const tabs = getVisibleTabs(currentUser);
+    return tabs.map(tab =>
+      tab.id === 'orders' && ordersBadge
+        ? { ...tab, badge: ordersBadge }
+        : tab
+    );
+  }, [currentUser, ordersBadge]);
+
   const profileTabIndex = visibleTabs.findIndex(tab => tab.id === 'profile');
   const profileTabActive = profileTabIndex !== -1 && activeTab === profileTabIndex;
   const mainTabs = profileTabIndex === -1 ? visibleTabs : visibleTabs.filter(tab => tab.id !== 'profile');
@@ -113,14 +161,17 @@ export const HomePage: React.FC = () => {
     tab => tab.id === visibleTabs[activeTab]?.id
   );
 
-  const handleMainTabChange = (index: number) => {
-    const tabId = mainTabs[index]?.id;
-    if (!tabId) {
-      return;
-    }
+  const selectTabById = (tabId: string) => {
     const nextIndex = visibleTabs.findIndex(tab => tab.id === tabId);
     if (nextIndex !== -1) {
       setActiveTab(nextIndex);
+    }
+  };
+
+  const handleMainTabChange = (index: number) => {
+    const tabId = mainTabs[index]?.id;
+    if (tabId) {
+      selectTabById(tabId);
     }
   };
 
@@ -135,7 +186,7 @@ export const HomePage: React.FC = () => {
 
   const handleProfileTabOpen = () => {
     if (profileTabIndex !== -1) {
-      setActiveTab(profileTabIndex);
+      selectTabById('profile');
       setIsMobileMenuOpen(false);
     } else {
       handleNavigation('/profile');
@@ -159,8 +210,31 @@ export const HomePage: React.FC = () => {
     setIsMobileMenuOpen(false);
   }, [activeTab]);
 
+  const mobileTabs = mainTabs;
+  const handleCartOrderCreated = () => {
+    selectTabById('orders');
+    setIsCartModalOpen(false);
+  };
+  const handleActiveOrderClick = () => {
+    selectTabById('orders');
+  };
+
+  const formatTime = (value?: string | null) => {
+    if (!value) {
+      return null;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date.toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[#161718] text-gray-100 flex flex-col">
+    <div className="min-h-screen bg-[#161718] text-gray-100 flex flex-col overflow-x-hidden">
       {/* Шапка */}
       <header className="bg-[#1c1d1f] border-b border-[#455252] shadow-sm sticky top-0 z-40">
         <div className="px-3 sm:px-4 lg:px-6">
@@ -276,9 +350,9 @@ export const HomePage: React.FC = () => {
           >
             <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-4 text-gray-100">
               <Tabs
-                tabs={visibleTabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
+                tabs={mainTabs}
+                activeTab={activeMainTabIndex >= 0 ? activeMainTabIndex : 0}
+                onTabChange={handleMainTabChange}
                 orientation="vertical"
                 className="w-full"
               />
@@ -292,15 +366,79 @@ export const HomePage: React.FC = () => {
                 <div className="h-full">
                   <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                     <div className="flex items-center justify-between mb-4 sm:mb-6">
-                        <h2 className="text-xl sm:text-2xl font-bold text-gray-100">
-                          Меню
-                        </h2>
-                      {/* Индикатор активного таба для мобильных */}
-                      <div className="lg:hidden flex items-center gap-2 text-sm text-gray-200 bg-[#161718] px-3 py-1 rounded-full">
-                        <span>{visibleTabs[activeTab].icon}</span>
-                        <span>{visibleTabs[activeTab].label}</span>
-                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-100">
+                        Меню
+                      </h2>
                     </div>
+                    {activeOrdersCount > 0 && (
+                      <div className="mb-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-sm text-gray-400">Активные заказы</p>
+                            <p className="text-base font-semibold text-gray-100">
+                              {activeOrdersCount === 1
+                                ? 'Есть заказ в работе'
+                                : `${activeOrdersCount} заказов в работе`}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleActiveOrderClick}
+                            className="text-sm font-semibold text-[#69e7b6] hover:text-white transition-colors"
+                          >
+                            Все заказы →
+                          </button>
+                        </div>
+                        <div className="-mx-1 px-1 overflow-x-auto pb-2">
+                          <div className="flex gap-3 min-w-full">
+                            {activeOrders.map(order => {
+                              const statusMeta = orderStatusMeta[order.status] ?? {
+                                label: order.status,
+                                color: 'text-gray-300',
+                              };
+                              const readyTime = formatTime(order.ready_time);
+                              const createdTime = formatTime(order.created_at);
+                              const methodLabel = deliveryMethodLabels[order.delivery_method] ?? 'Заказ';
+                              return (
+                                <button
+                                  key={order._id}
+                                  type="button"
+                                  onClick={handleActiveOrderClick}
+                                  className="flex-shrink-0 w-64 rounded-2xl border border-[#3a3b3c] bg-[#1f2021] px-4 py-3 text-left shadow-md hover:border-[#69e7b6]/60 hover:bg-[#252627] transition-colors"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                                      #{order.order_number}
+                                    </span>
+                                    <span className={`text-xs font-semibold ${statusMeta.color}`}>
+                                      {statusMeta.label}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-200 font-semibold mb-1">
+                                    {methodLabel}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mb-3">
+                                    {readyTime
+                                      ? `Готово к ${readyTime}`
+                                      : createdTime
+                                      ? `Создан в ${createdTime}`
+                                      : 'Обрабатываем заказ'}
+                                  </p>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-lg font-bold text-white">
+                                      {order.total_amount.toLocaleString('ru-RU')} ₽
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                      Tap, чтобы открыть
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex-1 overflow-y-auto">
                       <ItemsList />
                     </div>
@@ -392,6 +530,7 @@ export const HomePage: React.FC = () => {
       <CartModal
         isOpen={isCartModalOpen}
         onClose={() => setIsCartModalOpen(false)}
+        onOrderCreated={handleCartOrderCreated}
       />
 
       <TopUpRequestModal
@@ -402,22 +541,30 @@ export const HomePage: React.FC = () => {
       {/* Мобильная навигация */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#1f2122] border-t border-[#455252] p-3 z-30 shadow-lg">
         <div className="flex justify-around items-center">
-          {visibleTabs.map((tab, index) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(index)}
-              className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] ${
-                activeTab === index
-                  ? 'text-white bg-[#106157]'
-                  : 'text-gray-300 hover:text-white hover:bg-[#2d2d2c]'
-              }`}
-            >
-              <span className="text-lg mb-1">{tab.icon}</span>
-              <span className="text-xs font-medium truncate max-w-[60px]">
-                {tab.label}
-              </span>
-            </button>
-          ))}
+          {mobileTabs.map(tab => {
+            const isActive = visibleTabs[activeTab]?.id === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => selectTabById(tab.id)}
+                className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] relative ${
+                  isActive
+                    ? 'text-white bg-[#106157]'
+                    : 'text-gray-300 hover:text-white hover:bg-[#2d2d2c]'
+                }`}
+              >
+                {tab.id === 'orders' && ordersBadge && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1">
+                    {ordersBadge}
+                  </span>
+                )}
+                <span className="text-lg mb-1">{tab.icon}</span>
+                <span className="text-xs font-medium truncate max-w-[60px]">
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
 
           {/* Кнопка корзины для мобильных */}
           {showCart && (

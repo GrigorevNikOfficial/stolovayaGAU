@@ -6,13 +6,15 @@ import { $currentUser } from '../../models/users.ts';
 interface CartModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOrderCreated?: () => void;
 }
 
-export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
+export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, onOrderCreated }) => {
   const currentUser = useUnit($currentUser);
   const handleOrderCreated = () => {
     // Закрываем модальное окно после успешного создания заказа
     onClose();
+    onOrderCreated?.();
   };
 
   useEffect(() => {

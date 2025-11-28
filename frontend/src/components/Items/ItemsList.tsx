@@ -443,7 +443,7 @@ export const ItemsList: React.FC = () => {
         )}
 
         <div className="w-full">
-          <div className="flex flex-wrap gap-2 hide-scrollbar overflow-x-auto pb-2">
+          <div className="flex gap-2 hide-scrollbar overflow-x-auto pb-2 flex-nowrap md:flex-wrap">
             <button
               onClick={() => handleCategoryTabClick('')}
               className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium transition-all duration-300 border-2 ${

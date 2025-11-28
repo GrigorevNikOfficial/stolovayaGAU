@@ -94,22 +94,26 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Пополнить баланс</h2>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#111213] border border-[#2b2c2d] rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55)] max-w-3xl w-full max-h-[92vh] overflow-hidden text-gray-100">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#2f3031]">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1">Баланс</p>
+            <h2 className="text-2xl font-bold">Пополнить баланс</h2>
+          </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="w-10 h-10 rounded-2xl bg-[#1c1d1e] border border-[#343536] text-gray-400 hover:text-white hover:border-[#69e7b6] transition-all"
+            aria-label="Закрыть"
           >
             ×
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-6 p-6 overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-0 md:gap-6 p-6 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
                 Сумма пополнения
               </label>
               <Input
@@ -123,20 +127,20 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
                 Комментарий (необязательно)
               </label>
               <textarea
                 value={note}
                 onChange={event => setNote(event.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-medium focus:border-transparent"
+                className="w-full rounded-2xl border border-[#2f3031] bg-[#1b1c1d] text-gray-100 px-4 py-3 focus:ring-2 focus:ring-[#106157] focus:border-transparent"
                 rows={3}
                 placeholder="Укажите дополнительную информацию для администратора"
               />
             </div>
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2">
                 {error}
               </div>
             )}
@@ -151,15 +155,15 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
             </div>
           </form>
 
-          <div className="border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="border-t md:border-t-0 md:border-l border-[#2f3031] pt-4 md:pt-0 md:pl-6">
+            <h3 className="text-lg font-semibold text-white mb-4">
               Мои заявки
             </h3>
 
             {isLoading ? (
-              <div className="text-sm text-gray-500">Загружаем заявки…</div>
+              <div className="text-sm text-gray-400">Загружаем заявки…</div>
             ) : sortedRequests.length === 0 ? (
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-400">
                 У вас еще нет заявок на пополнение.
               </div>
             ) : (
@@ -167,10 +171,10 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
                 {sortedRequests.map(request => (
                   <div
                     key={request._id}
-                    className="p-3 border border-gray-100 rounded-2xl bg-gray-50"
+                    className="p-3 border border-[#2f3031] rounded-2xl bg-[#1a1b1c]"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-400">
                         {new Date(request.created_at).toLocaleDateString('ru-RU', {
                           day: '2-digit',
                           month: 'short',
@@ -179,12 +183,12 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
                       </span>
                       <StatusBadge status={request.status} />
                     </div>
-                    <div className="text-lg font-semibold text-gray-900">
+                    <div className="text-lg font-semibold text-white">
                       {formatCurrency(request.amount_requested)}
                     </div>
                     {typeof request.amount_approved === 'number' &&
                       request.status === 'approved' && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-400">
                           Одобрено: {formatCurrency(request.amount_approved)}
                         </div>
                       )}

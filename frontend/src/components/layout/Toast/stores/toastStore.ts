@@ -18,6 +18,8 @@ export const $toast = createStore<{
   type: 'success' | 'error';
   isVisible: boolean;
   persistent?: boolean;
+  actionLabel?: string;
+  onAction?: () => void;
   _timer?: ReturnType<typeof setTimeout> | null;
 }>({
   message: '',

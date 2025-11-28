@@ -191,13 +191,14 @@ sample({
     const noteText = request.note?.trim();
     const noteSuffix = noteText ? ` (${noteText})` : '';
 
-    return {
+    const toastPayload: Parameters<typeof showToast>[0] = {
       message: isApproved
         ? `Заявка на пополнение одобрена${amountSuffix}`
         : `Заявка на пополнение отклонена${noteSuffix}`,
       type: isApproved ? 'success' : 'error',
       persistent: true,
     };
+    return toastPayload;
   },
   target: showToast,
 });
