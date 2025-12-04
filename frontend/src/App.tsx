@@ -1,17 +1,41 @@
-import React from 'react';
 import { useUnit } from 'effector-react';
-import { $currentUser, getMeFx } from './models/users';
-import { HomePage } from './pages/HomePage';
+import React from 'react';
 import { AuthForm } from './components/Auth/AuthForm.tsx';
+import { Toast } from './components/layout/Toast/Toast';
+import { $currentUser, getMeFx, logout } from './models/users';
+import { HomePage } from './pages/HomePage';
+import { NavigationPage } from './pages/NavigationPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { Toast } from './components/layout/Toast/Toast'; // Добавь этот импорт
+import { ChatPage } from './pages/services/chat/ChatPage.tsx';
+import {
+  EventsServicePage,
+  MarketplaceServicePage,
+  NotificationsServicePage,
+} from './pages/services/ServicePlaceholderPages.tsx';
+
+const PROTECTED_PATHS = new Set(['/profile', '/services/cafeteria', '/services/chat']);
+
+const AuthPendingScreen = () => (
+  <div className="flex min-h-screen items-center justify-center bg-[#0f1112] text-gray-100">
+    <div className="text-center space-y-4">
+      <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      <p className="text-sm tracking-widest uppercase text-gray-400">Проверяем авторизацию</p>
+    </div>
+  </div>
+);
 
 function App() {
-  const [currentUser, handleGetMe] = useUnit([$currentUser, getMeFx]);
+  const { currentUser, handleGetMe, handleLogout } = useUnit({
+    currentUser: $currentUser,
+    handleGetMe: getMeFx,
+    handleLogout: logout,
+  });
 
   const [currentPath, setCurrentPath] = React.useState(
     window.location.pathname
   );
+
+  const hasToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('authToken'));
 
   // Проверяем авторизацию при загрузке приложения
   React.useEffect(() => {
@@ -41,58 +65,103 @@ function App() {
   // Перенаправления
   React.useEffect(() => {
     const isAuthPage = currentPath === '/login' || currentPath === '/register';
-    const hasToken = Boolean(localStorage.getItem('authToken'));
+    const token = Boolean(localStorage.getItem('authToken'));
+    const isProtected = PROTECTED_PATHS.has(currentPath);
 
-    if (isAuthPage) {
-      // Если пользователь уже авторизован, перенаправляем на главную
-      if (currentUser) {
-        navigate('/');
-      }
+    if (isAuthPage && currentUser) {
+      navigate('/');
       return;
     }
 
-    // Любой защищенный маршрут перенаправляем на логин, если нет токена/пользователя
-    if (!currentUser && !hasToken) {
-      navigate('/login');
-      return;
-    }
-
-    if (currentPath === '/profile' && !currentUser) {
-      navigate('/login');
+    if (isProtected && !currentUser && !token) {
+      navigate('/');
     }
   }, [currentPath, currentUser, navigate]);
 
-  // Рендер текущей страницы
+  const renderProtectedPage = (component: React.ReactNode) => {
+    if (currentUser) {
+      return component;
+    }
+
+    if (hasToken) {
+      return <AuthPendingScreen />;
+    }
+
+    return <AuthForm />;
+  };
+
   const getCurrentPage = () => {
     console.log('App: текущий путь', currentPath, 'пользователь', currentUser);
 
     const isAuthPage = currentPath === '/login' || currentPath === '/register';
-    const hasToken = Boolean(localStorage.getItem('authToken'));
+
+    if (currentPath === '/') {
+      return (
+        <NavigationPage
+          currentUser={currentUser ?? null}
+          onNavigate={navigate}
+          onLogout={() => {
+            handleLogout();
+            navigate('/');
+          }}
+        />
+      );
+    }
 
     if (isAuthPage) {
-      // Если пользователь уже авторизован, показываем главную
-      if (currentUser) {
-        return <HomePage />;
-      }
-      return <AuthForm />;
-    } else if (currentPath === '/profile') {
-      // Если пользователь не авторизован, показываем форму авторизации
-      if (!currentUser) {
-        return <AuthForm />;
-      }
-      return <ProfilePage />;
-    } else {
-      if (!currentUser && !hasToken) {
-        return <AuthForm />;
-      }
-      return <HomePage />;
+      return currentUser ? (
+        <NavigationPage
+          currentUser={currentUser}
+          onNavigate={navigate}
+          onLogout={() => {
+            handleLogout();
+            navigate('/');
+          }}
+        />
+      ) : (
+        <AuthForm />
+      );
     }
+
+    if (currentPath === '/profile') {
+      return renderProtectedPage(<ProfilePage />);
+    }
+
+    if (currentPath === '/services/cafeteria') {
+      return renderProtectedPage(<HomePage />);
+    }
+
+    if (currentPath === '/services/chat') {
+      return renderProtectedPage(<ChatPage />);
+    }
+
+    if (currentPath === '/services/notifications') {
+      return <NotificationsServicePage />;
+    }
+
+    if (currentPath === '/services/marketplace') {
+      return <MarketplaceServicePage />;
+    }
+
+    if (currentPath === '/services/events') {
+      return <EventsServicePage />;
+    }
+
+    return (
+      <NavigationPage
+        currentUser={currentUser ?? null}
+        onNavigate={navigate}
+        onLogout={() => {
+          handleLogout();
+          navigate('/');
+        }}
+      />
+    );
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
       {getCurrentPage()}
-      {/* Добавь Toast здесь */}
       <Toast />
     </div>
   );

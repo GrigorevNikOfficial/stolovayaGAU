@@ -1,5 +1,6 @@
 // components/layout/Input/Input.tsx
-import React from 'react';
+import React, { useCallback } from 'react';
+import { formatPhoneDisplay } from '../../../utils/phone';
 
 interface InputProps {
   type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'time';
@@ -34,13 +35,26 @@ export const Input: React.FC<InputProps> = ({
   step,
   required,
 }) => {
+  const handleChange = useCallback(
+    (rawValue: string) => {
+      if (type === 'tel') {
+        const formatted = formatPhoneDisplay(rawValue);
+        onChange(formatted || '');
+        return;
+      }
+
+      onChange(rawValue);
+    },
+    [onChange, type]
+  );
+
   return (
     <div className="relative">
       <input
         type={type}
         placeholder={placeholder}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => handleChange(e.target.value)}
         onFocus={onFocus}
         disabled={disabled}
         min={min}

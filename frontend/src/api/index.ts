@@ -6,4 +6,6 @@ export { itemsApi } from './items';
 export { ordersApi } from './orders';
 export { settings } from './settings';
 export { topUpsApi } from './topups';
+export { chatApi } from './chat';
+export { friendsApi } from './friends';
 

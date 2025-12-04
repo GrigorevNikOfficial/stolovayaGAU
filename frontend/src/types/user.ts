@@ -34,3 +34,14 @@ export interface User {
     url: string;
   };
 }
+
+export interface UserPreview {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  role: User['role'];
+  avatar: {
+    key: string;
+    url: string;
+  };
+}

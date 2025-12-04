@@ -53,11 +53,11 @@ export const connectSocket = (token: string | null | undefined) => {
     console.log('[socket.io] connected', socket?.id);
   });
 
-  socket.on('disconnect', reason => {
+  socket.on('disconnect', (reason: Socket.DisconnectReason) => {
     console.log('[socket.io] disconnected', reason);
   });
 
-  socket.on('connect_error', error => {
+  socket.on('connect_error', (error: Error) => {
     console.error('[socket.io] connection error', error.message);
   });
 

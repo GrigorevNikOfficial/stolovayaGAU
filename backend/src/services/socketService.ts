@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import type { Socket } from 'socket.io';
 import { Server } from 'socket.io';
+import { Chat } from '../models/Chat.js';
 import { User } from '../models/User.js';
 
 const STAFF_ROLES = ['admin', 'storeManager', 'canteenManager', 'cateenManager'];
@@ -86,6 +87,17 @@ const authenticateSocket = async (socket: Socket): Promise<SocketUser> => {
   return { _id: user._id.toString(), role: user.role };
 };
 
+const joinUserChatRooms = async (socket: Socket, userId: string) => {
+  try {
+    const chats = await Chat.find({ 'participants.user': userId }).select('_id');
+    chats.forEach(chat => {
+      socket.join(`chat:${chat._id.toString()}`);
+    });
+  } catch (error) {
+    console.error('Failed to join chat rooms:', error);
+  }
+};
+
 export const initSocketServer = (server: HTTPServer) => {
   if (io) {
     return io;
@@ -114,6 +126,10 @@ export const initSocketServer = (server: HTTPServer) => {
   io.on('connection', socket => {
     const user = socket.data.user as SocketUser | undefined;
     console.log('Socket connected:', user?._id, user?.role);
+
+     if (user?._id) {
+       void joinUserChatRooms(socket, user._id);
+     }
 
     socket.on('disconnect', reason => {
       console.log('Socket disconnected:', user?._id, reason);
@@ -154,6 +170,40 @@ export const emitTopUpRequestCreated = (request: unknown & { user_id?: string })
 
 export const emitTopUpRequestUpdated = (request: unknown & { user_id?: string }) => {
   emitToAudiences('topups:updated', request, { staffRoom: 'topups:staff' });
+};
+
+export const emitChatMessage = (
+  chatId: string,
+  message: unknown,
+  participantIds: string[] = []
+) => {
+  if (!io) {
+    return;
+  }
+
+  io.to(`chat:${chatId}`).emit('chat:message', message);
+
+  participantIds.forEach(userId => {
+    io?.to(`user:${userId}`).emit('chat:message', message);
+  });
+};
+
+export const attachUsersToChatRoom = (chatId: string, userIds: string[]) => {
+  if (!io) {
+    return;
+  }
+
+  userIds.forEach(userId => {
+    io!.in(`user:${userId}`).socketsJoin(`chat:${chatId}`);
+  });
+};
+
+export const detachUserFromChatRoom = (chatId: string, userId: string) => {
+  if (!io) {
+    return;
+  }
+
+  io.in(`user:${userId}`).socketsLeave(`chat:${chatId}`);
 };
 
 export const getIO = () => {

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { usersApi } from '../../api/users';
 import type { User } from '../../types/user';
+import { phoneToApiFormat } from '../../utils/phone';
 import Button from '../layout/Button/Button';
 import Input from '../layout/Input/Input';
 import Select from '../layout/Select/Select';
@@ -45,7 +46,14 @@ export const EmployeeManagement: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await usersApi.createEmployee(formData);
+      const preparedPhone = phoneToApiFormat(formData.phone);
+
+      if (!preparedPhone) {
+        showToast({ message: 'Введите телефон в формате +7 (999) 123 45-67', type: 'error' });
+        return;
+      }
+
+      await usersApi.createEmployee({ ...formData, phone: preparedPhone });
       showToast({ message: 'Сотрудник успешно создан', type: 'success' });
       setShowCreateModal(false);
       setFormData({ first_name: '', last_name: '', phone: '', mail: '', password: '', role: 'user' });
@@ -246,7 +254,7 @@ export const EmployeeManagement: React.FC = () => {
               />
               <Input
                 type="tel"
-                placeholder="Телефон"
+                placeholder="Телефон (+7 (999) 123 45-67)"
                 value={formData.phone}
                 onChange={value => setFormData({ ...formData, phone: value })}
               />

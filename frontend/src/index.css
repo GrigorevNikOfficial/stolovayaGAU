@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,11 +10,13 @@
     --color-accent: #106157;
     --color-border: #455252;
     --color-text: #f3f6f4;
+    --font-base: 'Space Grotesk', 'Segoe UI', sans-serif;
 }
 
 body {
     background-color: var(--color-bg);
     color: var(--color-text);
+    font-family: var(--font-base);
 }
 
 @keyframes fadeIn {
@@ -41,6 +45,13 @@ body {
     overflow: hidden;
 }
 
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -48,4 +59,29 @@ body {
 
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
+}
+
+/* Styled scrollbar for chat lists */
+.styled-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(165, 243, 236, 0.6) rgba(0,0,0,0.2);
+}
+
+.styled-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.styled-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.styled-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(105,231,182,0.35), rgba(16,97,87,0.6));
+    border-radius: 999px;
+    border: 2px solid rgba(0,0,0,0.0);
+}
+
+.styled-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(105,231,182,0.6), rgba(16,97,87,0.9));
 }
