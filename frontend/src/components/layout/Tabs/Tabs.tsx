@@ -44,7 +44,7 @@ export const Tabs: React.FC<TabsProps> = ({
     : 'w-full';
 
   const tabBaseClasses =
-    'flex items-center cursor-pointer transition-colors duration-200 rounded-lg flex-shrink-0 border bg-[#161718] border-[#2d2d2c] text-gray-300';
+    'flex items-center cursor-pointer transition-all duration-200 rounded-2xl flex-shrink-0 border bg-white border-border-subtle text-text-secondary shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/40';
 
   const tabSizeClasses = isHorizontal
     ? 'px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm'
@@ -57,21 +57,23 @@ export const Tabs: React.FC<TabsProps> = ({
           <button
             key={tab.id}
             onClick={() => onTabChange(index)}
+            type="button"
             className={`
               ${tabBaseClasses}
               ${tabSizeClasses}
               ${
                 activeTab === index
-                  ? 'text-white border-[#106157] shadow-[0_0_12px_rgba(16,97,87,0.35)]'
-                  : 'hover:text-white hover:border-[#106157]'
+                  ? 'text-text-primary border-brand-indigo bg-brand-seashell shadow-brand-card'
+                  : 'hover:text-text-primary hover:border-brand-indigo'
               }
             `}
+            aria-pressed={activeTab === index}
           >
             <span className="text-sm sm:text-base mr-2">{tab.icon}</span>
             <span className="font-medium whitespace-nowrap flex items-center gap-2">
               {tab.label}
               {tab.badge && (
-                <span className="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-semibold rounded-full bg-[#69e7b6]/20 text-[#69e7b6] border border-[#69e7b6]/40 min-w-[1.75rem]">
+                <span className="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-semibold rounded-full bg-brand-almond text-brand-indigo border border-brand-almond min-w-[1.75rem]">
                   {tab.badge}
                 </span>
               )}

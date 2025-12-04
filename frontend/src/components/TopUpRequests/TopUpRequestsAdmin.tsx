@@ -69,11 +69,11 @@ export const TopUpRequestsAdmin: React.FC = () => {
   }, [activeFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-text-primary">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Заявки на пополнение</h2>
-          <p className="text-sm text-gray-400">
+          <h2 className="text-2xl font-bold text-text-primary">Заявки на пополнение</h2>
+          <p className="text-sm text-text-secondary">
             Управляйте запросами пользователей на пополнение баланса
           </p>
         </div>
@@ -84,8 +84,8 @@ export const TopUpRequestsAdmin: React.FC = () => {
               onClick={() => setActiveFilter(filter.id)}
               className={`px-4 py-2 rounded-2xl text-sm font-medium transition-all border ${
                 activeFilter === filter.id
-                  ? 'bg-[#106157] text-white border-[#106157]'
-                  : 'bg-[#1a1b1c] text-gray-300 border-[#2f3031] hover:border-[#3c3d3f]'
+                  ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
+                  : 'bg-white text-text-secondary border-border-subtle hover:border-brand-indigo/40'
               }`}
             >
               {filter.label}
@@ -97,62 +97,62 @@ export const TopUpRequestsAdmin: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-[#111213] border border-[#2b2c2d] rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden">
+      <div className="bg-white border border-border-soft rounded-3xl shadow-brand-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-[#1f2122] text-gray-100">
-            <thead className="bg-[#151618]">
+          <table className="min-w-full divide-y divide-border-subtle text-text-primary">
+            <thead className="bg-surface-muted">
               <tr>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em]">
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-[0.2em]">
                   Пользователь
                 </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em]">
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-[0.2em]">
                   Сумма
                 </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em]">
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-[0.2em]">
                   Статус
                 </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em]">
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-[0.2em]">
                   Дата
                 </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em]">
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-[0.2em]">
                   Действия
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-[#111213] divide-y divide-[#1c1d1f]">
+            <tbody className="bg-white divide-y divide-border-subtle">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={5} className="px-4 py-6 text-center text-sm text-text-secondary">
                     Загружаем заявки…
                   </td>
                 </tr>
               ) : tableData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={5} className="px-4 py-6 text-center text-sm text-text-secondary">
                     Заявок нет
                   </td>
                 </tr>
               ) : (
                 tableData.map(request => (
-                  <tr key={request._id} className="hover:bg-[#1a1b1d]">
+                  <tr key={request._id} className="hover:bg-surface-muted">
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-text-primary">
                           {request.user_info
                             ? `${request.user_info.first_name} ${request.user_info.last_name}`
                             : 'Неизвестный пользователь'}
                         </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-text-secondary">
                           {request.user_info?.email || request.user_info?.phone || '—'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-100">
-                      <div className="font-semibold text-white">
+                    <td className="px-4 py-3 text-sm text-text-primary">
+                      <div className="font-semibold text-text-primary">
                         {formatCurrency(request.amount_requested)}
                       </div>
                       {typeof request.amount_approved === 'number' && request.status !== 'pending' && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-text-secondary">
                           Одобрено: {formatCurrency(request.amount_approved)}
                         </div>
                       )}
@@ -160,7 +160,7 @@ export const TopUpRequestsAdmin: React.FC = () => {
                     <td className="px-4 py-3">
                       <StatusBadge status={request.status} />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-400">
+                    <td className="px-4 py-3 text-sm text-text-secondary">
                       {new Date(request.created_at).toLocaleString('ru-RU', {
                         day: '2-digit',
                         month: 'short',
@@ -187,7 +187,7 @@ export const TopUpRequestsAdmin: React.FC = () => {
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-500">Обработано</span>
+                        <span className="text-xs text-text-secondary">Обработано</span>
                       )}
                     </td>
                   </tr>

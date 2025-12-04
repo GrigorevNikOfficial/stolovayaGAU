@@ -205,10 +205,10 @@ export const OrdersList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 text-gray-100">
+    <div className="space-y-6 text-text-primary">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-100">
+          <h2 className="text-2xl font-bold text-text-primary">
             {currentUser?.role === 'admin' ||
             currentUser?.role === 'storeManager' ||
             currentUser?.role === 'canteenManager' ||
@@ -216,7 +216,7 @@ export const OrdersList: React.FC = () => {
               ? 'Все заказы'
               : 'Мои заказы'}
           </h2>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-text-secondary text-sm mt-1">
             {orders.length} заказ(ов)
           </p>
         </div>
@@ -256,25 +256,25 @@ export const OrdersList: React.FC = () => {
               : '';
 
         const cardBorderClass = isOrderOverdue
-          ? 'border-red-500/60'
+          ? 'border-red-200'
           : isStaffUser && readyTime
-            ? 'border-[#106157]/60'
-            : 'border-[#2f3032]';
+            ? 'border-emerald-200'
+            : 'border-border-soft';
 
         return (
           <div
             key={order._id}
-            className={`bg-[#2d2d2c] rounded-2xl shadow-lg p-6 border-[3px] ${cardBorderClass} hover:shadow-xl hover:shadow-[#106157]/20 transition-all duration-300`}
+            className={`bg-white rounded-3xl shadow-brand-card p-6 border ${cardBorderClass} transition-all duration-300 hover:-translate-y-0.5`}
           >
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-xl font-bold text-gray-100">
+                  <h3 className="text-xl font-bold text-text-primary">
                     Заказ #{order.order_number}
                   </h3>
                   <StatusBadge status={order.status} />
                 </div>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                <div className="flex flex-wrap gap-4 text-sm text-text-secondary">
                   <span>
                     📅 {new Date(order.created_at).toLocaleString('ru-RU')}
                   </span>
@@ -292,18 +292,18 @@ export const OrdersList: React.FC = () => {
                 </div>
                 {(currentUser?.role === 'admin' ||
                   currentUser?.role === 'storeManager') && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-text-muted">
                     Пользователь ID: {order.user_id}
                   </p>
                 )}
                 {order.delivery_address && (
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-text-secondary">
                     📍 Адрес: {order.delivery_address}
                   </p>
                 )}
                 {isStaffUser && readyTimeLabel && (
                   <p
-                    className={`text-sm font-semibold flex items-center gap-2 ${isOrderOverdue ? 'text-red-400' : 'text-emerald-400'}`}
+                    className={`text-sm font-semibold flex items-center gap-2 ${isOrderOverdue ? 'text-red-500' : 'text-emerald-600'}`}
                   >
                     ⏱️ Готовность: {readyTimeLabel}
                     {isOrderOverdue && <span className="text-xs">(не успеваем)</span>}
@@ -316,7 +316,7 @@ export const OrdersList: React.FC = () => {
                   onClick={() => handleCancel(order._id)}
                   variant="outline"
                   size="sm"
-                  className="text-red-300 border-red-500/60 hover:bg-red-500/10"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
                 >
                   Отменить
                 </Button>
@@ -324,8 +324,8 @@ export const OrdersList: React.FC = () => {
             </div>
 
             {(order as any).items && (order as any).items.length > 0 && (
-              <div className="border-t border-[#3a3b3d] pt-4 mb-4">
-                <h4 className="text-sm font-semibold text-gray-100 mb-3">
+              <div className="border-t border-border-subtle pt-4 mb-4">
+                <h4 className="text-sm font-semibold text-text-primary mb-3">
                   Состав заказа:
                 </h4>
                 <ul className="space-y-2">
@@ -335,20 +335,20 @@ export const OrdersList: React.FC = () => {
                       className="flex justify-between items-center text-sm"
                     >
                       <div className="flex-1">
-                        <span className="font-medium text-gray-100">
+                        <span className="font-medium text-text-primary">
                           {orderItem.name || `Товар ${index + 1}`}
                         </span>
                         {orderItem.description && (
-                          <p className="text-gray-500 text-xs mt-1">
+                          <p className="text-text-muted text-xs mt-1">
                             {orderItem.description}
                           </p>
                         )}
                       </div>
                       <div className="text-right">
-                        <span className="font-semibold text-gray-100">
+                        <span className="font-semibold text-text-primary">
                           {orderItem.quantity} × {orderItem.price} ₽
                         </span>
-                        <p className="text-emerald-300 font-bold">
+                        <p className="text-brand-indigo font-bold">
                           {orderItem.quantity * orderItem.price} ₽
                         </p>
                       </div>
@@ -358,20 +358,20 @@ export const OrdersList: React.FC = () => {
               </div>
             )}
 
-            <div className="border-t border-[#3a3b3d] pt-4">
+            <div className="border-t border-border-subtle pt-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="space-y-1">
                   {typeof order.items_total === 'number' && (
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-text-secondary">
                       Сумма товаров: {order.items_total} ₽
                     </p>
                   )}
                   {order.service_fee && order.service_fee > 0 && (
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-text-secondary">
                       Сервисный сбор{serviceFeeLabel}: {order.service_fee} ₽
                     </p>
                   )}
-                  <p className="text-xl font-bold text-emerald-300">
+                  <p className="text-xl font-bold text-brand-indigo">
                     Итого: {order.total_amount} ₽
                   </p>
                 </div>
@@ -439,12 +439,12 @@ export const OrdersList: React.FC = () => {
       })}
 
       {orders.length === 0 && (
-        <div className="text-center py-16 fade-in text-gray-300">
-          <div className="text-6xl text-gray-500 mb-4">📦</div>
-          <p className="text-gray-300 text-xl font-medium mb-3">
+        <div className="text-center py-16 fade-in text-text-secondary">
+          <div className="text-6xl text-text-muted mb-4">📦</div>
+          <p className="text-text-primary text-xl font-medium mb-3">
             Заказы не найдены
           </p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-text-secondary text-sm">
             {currentUser?.role === 'admin'
               ? 'Нет заказов в системе'
               : 'У вас еще нет заказов'}
@@ -501,22 +501,22 @@ const OrderEditModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1f2022] border border-[#455252] rounded-2xl p-8 max-w-md w-full shadow-2xl text-gray-100">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+      <div className="bg-white border border-border-soft rounded-3xl p-8 max-w-md w-full shadow-brand-card text-text-primary">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-100">
+          <h2 className="text-2xl font-bold text-text-primary">
             Редактировать заказ
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#2d2d2c] hover:bg-[#343536] text-gray-300 flex items-center justify-center transition-all duration-300"
+            className="w-8 h-8 rounded-full border border-border-soft text-text-secondary hover:text-brand-indigo hover:border-brand-indigo/40 flex items-center justify-center transition-all duration-300"
           >
             ×
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Статус
             </label>
             <select
@@ -524,7 +524,7 @@ const OrderEditModal: React.FC<{
               onChange={e =>
                 setFormData({ ...formData, status: e.target.value })
               }
-              className="w-full px-4 py-3 rounded-xl bg-[#161718] border border-[#2d2d2c] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-[#106157] transition-all duration-300"
+              className="w-full px-4 py-3 rounded-2xl bg-white border border-border-soft text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-indigo/30"
             >
               <option value="created">Создан</option>
               <option value="cooking">Готовится</option>
@@ -536,7 +536,7 @@ const OrderEditModal: React.FC<{
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Способ получения
             </label>
             <select
@@ -547,7 +547,7 @@ const OrderEditModal: React.FC<{
                   delivery_method: e.target.value as any,
                 })
               }
-              className="w-full px-4 py-3 rounded-xl bg-[#161718] border border-[#2d2d2c] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-[#106157] transition-all duration-300"
+              className="w-full px-4 py-3 rounded-2xl bg-white border border-border-soft text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-indigo/30"
             >
               <option value="pickup">Самовывоз</option>
               <option value="dine_in">В зале</option>
@@ -556,7 +556,7 @@ const OrderEditModal: React.FC<{
           </div>
           {formData.delivery_method === 'dine_in' && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Номер стола
               </label>
               <Input
@@ -572,7 +572,7 @@ const OrderEditModal: React.FC<{
           )}
           {formData.delivery_method === 'delivery' && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Адрес доставки
               </label>
               <Input

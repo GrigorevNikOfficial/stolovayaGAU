@@ -92,7 +92,7 @@ const renderMessageContent = (text: string) => {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-emerald-200 underline decoration-dotted break-all hover:text-emerald-100"
+        className="text-brand-indigo underline decoration-dotted break-all hover:text-brand-grape"
       >
         {url}
       </a>
@@ -120,7 +120,7 @@ type MessageCluster = {
 const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster }) => (
   <div className={`flex flex-col gap-1 ${cluster.isOwn ? 'items-end' : 'items-start'}`}>
     {!cluster.isOwn && (
-      <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">
+      <p className="text-[11px] uppercase tracking-[0.25em] text-text-muted">
         {cluster.sender.first_name} {cluster.sender.last_name}
       </p>
     )}
@@ -128,10 +128,10 @@ const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster })
       {cluster.messages.map(message => (
         <div
           key={message._id}
-          className={`max-w-[80%] rounded-3xl px-4 py-2 text-sm leading-relaxed shadow-lg shadow-black/20 break-words ${
+          className={`max-w-[80%] rounded-3xl px-4 py-2 text-sm leading-relaxed shadow-brand-card break-words ${
             cluster.isOwn
-              ? 'bg-gradient-to-br from-[#106157] to-[#0a3c35] text-white'
-              : 'bg-white/10 text-white'
+              ? 'bg-gradient-to-br from-brand-indigo to-brand-grape text-white'
+              : 'bg-white text-text-primary border border-border-soft'
           }`}
         >
           {renderMessageContent(message.content)}
@@ -139,11 +139,11 @@ const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster })
       ))}
     </div>
     <div className="flex items-center gap-2">
-      <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+      <span className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
         {formatTime(cluster.lastTimestamp)}
       </span>
       {cluster.isOwn && (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-emerald-200">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-brand-indigo">
           <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
@@ -157,17 +157,17 @@ const ChatListItem: React.FC<{ chat: ChatSummary; active: boolean; onSelect: () 
     onClick={onSelect}
     className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
       active
-        ? 'border-white/40 bg-white/10 shadow-lg'
-        : 'border-white/5 bg-white/0 hover:border-white/20'
+        ? 'border-brand-indigo/30 bg-white shadow-brand-card'
+        : 'border-border-subtle bg-transparent hover:border-brand-indigo/30'
     }`}
   >
     <div className="flex items-center justify-between gap-2">
-      <p className="text-base font-semibold text-white line-clamp-1">{chat.name}</p>
-      <span className="text-[11px] uppercase tracking-widest text-gray-400">
+      <p className="text-base font-semibold text-text-primary line-clamp-1">{chat.name}</p>
+      <span className="text-[11px] uppercase tracking-widest text-text-muted">
         {formatTime(chat.lastMessageAt)}
       </span>
     </div>
-    <p className="mt-1 text-sm text-white/70 line-clamp-2">
+    <p className="mt-1 text-sm text-text-secondary line-clamp-2">
       {chat.lastMessagePreview || 'Будьте первым, кто напишет сообщение'}
     </p>
   </button>
@@ -178,20 +178,20 @@ const FriendCard: React.FC<{
   onMessage: () => void;
   onRemove: () => void;
 }> = ({ friendship, onMessage, onRemove }) => (
-  <div className="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-3">
+  <div className="rounded-2xl border border-border-subtle bg-white p-4 flex items-center justify-between gap-3 shadow-brand-card">
     <div>
-      <p className="text-white font-semibold">
+      <p className="text-text-primary font-semibold">
         {friendship.user.first_name} {friendship.user.last_name}
       </p>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/50 mt-1">
+      <p className="text-xs uppercase tracking-[0.3em] text-text-muted mt-1">
         {friendship.status === 'accepted' ? 'в друзьях' : friendship.status}
       </p>
     </div>
     <div className="flex gap-2">
-      <Button size="sm" variant="outline" className="border-white/40" onClick={onMessage}>
+      <Button size="sm" variant="outline" className="border-border-soft text-text-primary" onClick={onMessage}>
         Написать
       </Button>
-      <Button size="sm" variant="outline" className="border-red-400/50 text-red-200" onClick={onRemove}>
+      <Button size="sm" variant="outline" className="border-red-200 text-red-600" onClick={onRemove}>
         Удалить
       </Button>
     </div>
@@ -202,15 +202,15 @@ const FriendSearchResultCard: React.FC<{
   user: FriendSearchResult;
   onAdd: () => void;
 }> = ({ user, onAdd }) => (
-  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 flex items-center justify-between">
+  <div className="rounded-2xl border border-border-subtle bg-white p-3 flex items-center justify-between shadow-brand-card">
     <div>
-      <p className="text-white font-semibold">
+      <p className="text-text-primary font-semibold">
         {user.first_name} {user.last_name}
       </p>
-      <p className="text-xs text-white/50">{user.friendshipStatus || 'не в списке друзей'}</p>
+      <p className="text-xs text-text-muted">{user.friendshipStatus || 'не в списке друзей'}</p>
     </div>
     {!user.friendshipStatus && (
-      <Button size="sm" variant="outline" className="border-white/40" onClick={onAdd}>
+      <Button size="sm" variant="outline" className="border-border-soft text-text-primary" onClick={onAdd}>
         Добавить
       </Button>
     )}
@@ -224,12 +224,12 @@ const RequestBadge: React.FC<{ label: string; actionLabel: string; onClick: () =
       onClick={onClick}
       className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold flex justify-between items-center ${
         tone === 'primary'
-          ? 'border-white/15 bg-white/5 text-white'
-          : 'border-red-300/40 bg-red-500/10 text-red-100'
+          ? 'border-border-soft bg-white text-text-primary shadow-brand-card'
+          : 'border-red-200 bg-red-50 text-red-600'
       }`}
     >
       <span>{label}</span>
-      <span className="text-xs uppercase tracking-[0.3em]">{actionLabel}</span>
+      <span className="text-xs uppercase tracking-[0.3em] text-text-muted">{actionLabel}</span>
     </button>
   );
 
@@ -245,8 +245,8 @@ const useDebouncedValue = (value: string, delay = 350) => {
 const ChatHeader: React.FC<{ chat: ChatSummary }> = ({ chat }) => (
   <div className="flex items-center justify-between">
     <div>
-      <p className="text-2xl font-semibold text-white">{chat.name}</p>
-      <p className="text-sm text-white/50">
+      <p className="text-2xl font-semibold text-text-primary">{chat.name}</p>
+      <p className="text-sm text-text-secondary">
         {chat.type === 'direct'
           ? 'Личное общение'
           : chat.visibility === 'public'
@@ -254,7 +254,7 @@ const ChatHeader: React.FC<{ chat: ChatSummary }> = ({ chat }) => (
           : 'Закрытая группа'}
       </p>
     </div>
-    <div className="text-right text-xs uppercase tracking-[0.3em] text-white/50">
+    <div className="text-right text-xs uppercase tracking-[0.3em] text-text-muted">
       {chat.participantCount} участников
     </div>
   </div>
@@ -499,16 +499,13 @@ export const ChatPage: React.FC = () => {
   
 
   return (
-    <div className="relative min-h-screen bg-[#030405] text-white overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#040b0a] via-[#050607] to-[#07020e]" />
-      <div className="absolute -top-24 right-0 w-[520px] h-[520px] bg-[#0f3e39]/40 blur-[200px]" />
-      <div className="absolute bottom-0 left-0 w-[460px] h-[460px] bg-[#2b1559]/30 blur-[220px]" />
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid gap-6 lg:grid-cols-[360px_1fr]">
+    <div className="min-h-screen text-text-primary">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid gap-6 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-white/5/60 backdrop-blur-2xl p-5 space-y-4 shadow-xl shadow-black/30">
+          <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-4 shadow-brand-card">
             <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-white/50">диалоги</p>
-              <h2 className="text-2xl font-semibold">Ваши чаты</h2>
+              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">диалоги</p>
+              <h2 className="text-2xl font-semibold text-text-primary">Ваши чаты</h2>
             </div>
             <Input
               placeholder="Поиск диалога"
@@ -519,7 +516,7 @@ export const ChatPage: React.FC = () => {
               <Button className="flex-1" size="md" variant="primary" onClick={() => setDirectModalOpen(true)}>
                 Новый диалог
               </Button>
-              <Button className="flex-1" size="md" variant="outline" onClick={() => setGroupModalOpen(true)}>
+              <Button className="flex-1 text-text-primary border-border-soft" size="md" variant="outline" onClick={() => setGroupModalOpen(true)}>
                 Группа
               </Button>
             </div>
@@ -533,31 +530,31 @@ export const ChatPage: React.FC = () => {
                 />
               ))}
               {!filteredChats.length && (
-                <p className="text-sm text-white/50">Пока нет чатов — начните с создания диалога.</p>
+                <p className="text-sm text-text-secondary">Пока нет чатов — начните с создания диалога.</p>
               )}
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5/60 backdrop-blur-2xl p-5 space-y-3 shadow-lg shadow-black/20">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/50">доступ по ссылке</p>
+          <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-3 shadow-brand-card">
+            <p className="text-xs uppercase tracking-[0.4em] text-text-muted">доступ по ссылке</p>
             <Input
               placeholder="Вставьте код приглашения"
               value={joinCode}
               onChange={setJoinCode}
             />
-            <Button variant="outline" className="border-white/30" onClick={handleJoin}>
+            <Button variant="outline" className="border-border-soft text-text-primary" onClick={handleJoin}>
               Присоединиться
             </Button>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5/60 backdrop-blur-2xl p-5 space-y-4 shadow-lg shadow-black/20">
+          <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-4 shadow-brand-card">
             <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-white/50">друзья</p>
-              <h3 className="text-xl font-semibold">Список контактов</h3>
+              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">друзья</p>
+              <h3 className="text-xl font-semibold text-text-primary">Список контактов</h3>
             </div>
             <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
               {friends.length === 0 && (
-                <p className="text-sm text-white/50">Добавляйте коллег, чтобы быстрее находить их в чатах.</p>
+                <p className="text-sm text-text-secondary">Добавляйте коллег, чтобы быстрее находить их в чатах.</p>
               )}
               {friends.map(friendship => (
                 <FriendCard
@@ -606,7 +603,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </aside>
 
-        <section className="rounded-[32px] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-6 flex flex-col min-h-[72vh] backdrop-blur-xl shadow-2xl shadow-black/40">
+        <section className="rounded-[32px] border border-border-soft bg-white p-6 flex flex-col min-h-[72vh] shadow-brand-card">
           {activeChat ? (
             <>
               <div className="flex items-center justify-between mb-4">
@@ -614,34 +611,34 @@ export const ChatPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => { window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}
-                    className="rounded-full p-2 bg-black/20 hover:bg-black/30"
+                    className="rounded-full p-2 border border-border-subtle bg-white hover:bg-brand-almond/40 transition-colors"
                     aria-label="Назад"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white/90">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-text-primary">
                       <path d="M15 18l-6-6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                   <div>
-                    <p className="text-xs text-white/50">Сервис</p>
+                    <p className="text-xs text-text-muted">Сервис</p>
                     <h3 className="text-lg font-semibold">Корпоративный чат</h3>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" className="border-white/20 h-9">Поиск</Button>
-                  <Button variant="outline" size="sm" className="border-white/20 h-9" onClick={() => handleRequestGroupChat({ name: 'Новая группа (через шапку)' })}>Создать</Button>
+                  <Button variant="outline" size="sm" className="border-border-soft text-text-primary h-9">Поиск</Button>
+                  <Button variant="outline" size="sm" className="border-border-soft text-text-primary h-9" onClick={() => handleRequestGroupChat({ name: 'Новая группа (через шапку)' })}>Создать</Button>
                 </div>
               </div>
               <ChatHeader chat={activeChat} />
               {inviteCode && (
                 <div className="mt-4 flex flex-wrap gap-3 items-center">
-                  <div className="flex-1 min-w-[240px] rounded-2xl border border-white/10 bg-black/40 p-4">
-                    <p className="text-xs uppercase tracking-[0.4em] text-white/50">код доступа</p>
+                  <div className="flex-1 min-w-[240px] rounded-2xl border border-border-soft bg-surface-muted p-4">
+                    <p className="text-xs uppercase tracking-[0.4em] text-text-muted">код доступа</p>
                     <div className="mt-2 flex items-center gap-3">
-                      <p className="flex-1 break-all font-mono text-white text-sm">{inviteCode}</p>
+                      <p className="flex-1 break-all font-mono text-text-primary text-sm">{inviteCode}</p>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-white/40 text-xs h-9"
+                        className="border-border-soft text-text-primary text-xs h-9"
                         onClick={() => handleCopyInviteCode(inviteCode)}
                       >
                         {inviteCopied ? 'Скопировано' : 'Копировать'}
@@ -652,7 +649,7 @@ export const ChatPage: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-red-400/60 text-red-200 h-11"
+                      className="border-red-200 text-red-600 h-11"
                       onClick={handleLeaveCurrentChat}
                     >
                       Покинуть чат
@@ -662,7 +659,7 @@ export const ChatPage: React.FC = () => {
               )}
               <div ref={messageListRef} className="flex-1 mt-6 overflow-y-auto space-y-5 pr-3 styled-scrollbar">
                 {messageGroups.length === 0 && (
-                  <div className="text-center text-white/40 text-sm py-10">
+                  <div className="text-center text-text-secondary text-sm py-10">
                     Здесь пока пусто. Начните переписку!
                   </div>
                 )}
@@ -684,7 +681,7 @@ export const ChatPage: React.FC = () => {
                     }
                   }}
                   rows={1}
-                  className="flex-1 rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#106157] resize-none min-h-[56px] max-h-32"
+                  className="flex-1 rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo resize-none min-h-[56px] max-h-32"
                 />
                 <Button variant="primary" onClick={handleSendMessage} disabled={!messageDraft.trim()} className="min-w-[120px]">
                   Отправить
@@ -692,7 +689,7 @@ export const ChatPage: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center flex-1 text-center text-white/50">
+            <div className="flex flex-col items-center justify-center flex-1 text-center text-text-secondary">
               <p>Выберите чат слева или создайте новый, чтобы начать общение.</p>
             </div>
           )}
@@ -700,26 +697,26 @@ export const ChatPage: React.FC = () => {
       </div>
 
       {directModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#050607] border border-white/10 rounded-3xl p-6 w-full max-w-xl space-y-4">
-            <h3 className="text-2xl font-semibold">Новый диалог</h3>
+        <div className="fixed inset-0 bg-brand-indigo/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-border-soft rounded-3xl p-6 w-full max-w-xl space-y-4 shadow-brand-card">
+            <h3 className="text-2xl font-semibold text-text-primary">Новый диалог</h3>
             <Input placeholder="Поиск по имени" value={directFilter} onChange={setDirectFilter} />
             <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
               {filteredFriendOptions.length === 0 && (
-                <p className="text-sm text-white/50">Нет друзей, соответствующих запросу</p>
+                <p className="text-sm text-text-secondary">Нет друзей, соответствующих запросу</p>
               )}
               {filteredFriendOptions.map(friendship => (
                 <button
                   key={friendship._id}
                   type="button"
                   onClick={() => handleStartDirectChat(friendship.user._id)}
-                  className="w-full text-left rounded-2xl border border-white/10 bg-white/5 p-3 hover:border-white/30"
+                  className="w-full text-left rounded-2xl border border-border-subtle bg-surface-muted p-3 hover:border-brand-indigo/40 transition-colors"
                 >
                   {friendship.user.first_name} {friendship.user.last_name}
                 </button>
               ))}
             </div>
-            <Button variant="outline" className="w-full border-white/30" onClick={() => setDirectModalOpen(false)}>
+            <Button variant="outline" className="w-full border-border-soft text-text-primary" onClick={() => setDirectModalOpen(false)}>
               Закрыть
             </Button>
           </div>
@@ -727,22 +724,24 @@ export const ChatPage: React.FC = () => {
       )}
 
       {groupModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#050607] border border-white/10 rounded-3xl p-6 w-full max-w-xl space-y-4">
-            <h3 className="text-2xl font-semibold">Новая группа</h3>
+        <div className="fixed inset-0 bg-brand-indigo/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-border-soft rounded-3xl p-6 w-full max-w-xl space-y-4 shadow-brand-card">
+            <h3 className="text-2xl font-semibold text-text-primary">Новая группа</h3>
             <Input placeholder="Название" value={groupName} onChange={setGroupName} />
             <textarea
               value={groupDescription}
               onChange={event => setGroupDescription(event.target.value)}
               placeholder="Описание (необязательно)"
-              className="w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#106157]"
+              className="w-full rounded-2xl border border-border-soft bg-surface-muted p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo"
               rows={3}
             />
             <div className="flex gap-3">
               <button
                 type="button"
                 className={`flex-1 rounded-2xl border px-4 py-2 ${
-                  groupVisibility === 'private' ? 'border-white text-white' : 'border-white/20 text-white/50'
+                  groupVisibility === 'private'
+                    ? 'border-brand-indigo text-text-primary bg-brand-almond/40'
+                    : 'border-border-subtle text-text-muted'
                 }`}
                 onClick={() => setGroupVisibility('private')}
               >
@@ -751,7 +750,9 @@ export const ChatPage: React.FC = () => {
               <button
                 type="button"
                 className={`flex-1 rounded-2xl border px-4 py-2 ${
-                  groupVisibility === 'public' ? 'border-white text-white' : 'border-white/20 text-white/50'
+                  groupVisibility === 'public'
+                    ? 'border-brand-indigo text-text-primary bg-brand-almond/40'
+                    : 'border-border-subtle text-text-muted'
                 }`}
                 onClick={() => setGroupVisibility('public')}
               >
@@ -760,7 +761,7 @@ export const ChatPage: React.FC = () => {
             </div>
             <div className="max-h-64 overflow-y-auto space-y-2">
               {friends.map(friendship => (
-                <label key={friendship._id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                <label key={friendship._id} className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-white p-3 shadow-sm">
                   <input
                     type="checkbox"
                     checked={groupMembers.has(friendship.user._id)}
@@ -771,7 +772,7 @@ export const ChatPage: React.FC = () => {
                   </span>
                 </label>
               ))}
-              {friends.length === 0 && <p className="text-sm text-white/50">Нет друзей для добавления</p>}
+              {friends.length === 0 && <p className="text-sm text-text-secondary">Нет друзей для добавления</p>}
             </div>
             <div className="flex gap-3 pt-2">
               <Button className="flex-1" variant="outline" onClick={() => setGroupModalOpen(false)}>

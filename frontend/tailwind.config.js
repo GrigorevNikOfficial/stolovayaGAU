@@ -1,46 +1,63 @@
+const withOpacityValue = (variable) => ({ opacityValue }) => {
+  if (opacityValue !== undefined) {
+    return `rgb(var(${variable}) / ${opacityValue})`;
+  }
+  return `rgb(var(${variable}))`;
+};
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./src/**/*.{html,js,ts,jsx,tsx,vue}', './public/**/*.html'],
   theme: {
     extend: {
       colors: {
-        green: {
-          dark: '#2E7D32',
-          darker: '#1B5E20',
-          medium: '#4CAF50',
-          light: '#E8F5E9',
-          lighter: '#C8E6C9',
+        brand: {
+          indigo: withOpacityValue('--space-indigo'),
+          grape: withOpacityValue('--dusty-grape'),
+          lilac: withOpacityValue('--lilac-ash'),
+          almond: withOpacityValue('--almond-silk'),
+          seashell: withOpacityValue('--seashell'),
+        },
+        surface: {
+          base: withOpacityValue('--surface-base'),
+          muted: withOpacityValue('--surface-muted'),
+          elevated: withOpacityValue('--surface-elevated'),
+        },
+        border: {
+          soft: withOpacityValue('--border-soft'),
+          subtle: withOpacityValue('--border-subtle'),
+        },
+        text: {
+          primary: withOpacityValue('--text-primary'),
+          secondary: withOpacityValue('--text-secondary'),
+          muted: withOpacityValue('--text-muted'),
+        },
+        accent: {
+          blush: withOpacityValue('--almond-silk'),
         },
         gray: {
-          text: {
-            primary: '#4B5563',
-            secondary: '#6B7280',
-          },
-          background: {
-            light: '#F8FAFC',
-            medium: '#E2E8F0',
-          },
-          border: {
-            primary: '#D1D5DB',
-            secondary: '#E5E7EB',
-          },
-        },
-        dark: {
-          footer: '#111827',
+          50: '#f8f6f4',
+          100: '#f2e9e4',
+          200: '#e6dcd7',
+          300: '#d7c8c3',
+          400: '#c9ada7',
+          500: '#b497a1',
+          600: '#9a8c98',
+          700: '#706375',
+          800: '#4a4e69',
+          900: '#22223b',
+          950: '#151320',
         },
       },
-      backgroundColor: {
-        primary: '#FFFFFF',
-        'gray-light': '#F8FAFC',
-        'gray-medium': '#E2E8F0',
+      fontFamily: {
+        sans: ['"Space Grotesk"', '"Segoe UI"', 'sans-serif'],
       },
-      textColor: {
-        'gray-primary': '#4B5563',
-        'gray-secondary': '#6B7280',
+      boxShadow: {
+        'brand-card': '0 18px 45px rgba(34, 34, 59, 0.12)',
       },
-      borderColor: {
-        'gray-primary': '#D1D5DB',
-        'gray-secondary': '#E5E7EB',
+      backgroundImage: {
+        'brand-overlay':
+          'linear-gradient(135deg, rgba(34,34,59,0.92), rgba(74,78,105,0.8))',
       },
     },
     screens: {

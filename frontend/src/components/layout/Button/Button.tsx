@@ -24,23 +24,23 @@ export const Button: React.FC<ButtonProps> = ({
   initials,
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+    'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-indigo/30 focus:ring-offset-brand-seashell';
 
   const sizeClasses = {
-    sm: 'h-8 px-4 text-sm',
-    md: 'h-11 px-6 text-sm',
-    lg: 'h-14 px-8 text-base',
-    xl: 'h-18 px-10 text-xl',
+    sm: 'h-8 px-4 text-sm rounded-xl',
+    md: 'h-11 px-6 text-sm rounded-2xl',
+    lg: 'h-14 px-8 text-base rounded-2xl',
+    xl: 'h-18 px-10 text-xl rounded-3xl',
   };
 
   const variantClasses = {
     primary:
-      'bg-[#106157] border-2 border-[#0c4a43] text-white shadow-sm hover:bg-[#0d584c] hover:border-[#0a3c35] hover:shadow-lg shadow-[#106157]/30 transform hover:translate-y-[-2px] transition-all duration-400 ease-out',
+      'bg-brand-indigo border border-brand-indigo text-white shadow-brand-card hover:bg-brand-grape hover:border-brand-grape',
     secondary:
-      'bg-[#0d4a43] border border-[#106157] text-white shadow-sm hover:bg-[#106157] focus:ring-[#106157]/40',
+      'bg-brand-almond border border-brand-almond text-brand-indigo shadow-sm hover:bg-brand-seashell',
     outline:
-      'bg-transparent border border-[#455252] text-white hover:bg-[#2d2d2c] focus:ring-[#106157]/40',
-    icon: 'bg-transparent border-none shadow-none hover:bg-[#2d2d2c] focus:ring-[#106157]/40 rounded-full text-white',
+      'bg-transparent border border-border-soft text-brand-indigo hover:border-brand-indigo hover:bg-brand-seashell',
+    icon: 'bg-white border border-border-soft text-brand-indigo hover:bg-brand-seashell rounded-full shadow-sm',
   };
 
   const disabledClasses = 'opacity-50 cursor-not-allowed';
@@ -50,7 +50,7 @@ export const Button: React.FC<ButtonProps> = ({
     sizeClasses[size],
     variantClasses[variant],
     disabled && disabledClasses,
-    variant === 'icon' ? 'rounded-full' : 'rounded-lg',
+    variant === 'icon' ? 'rounded-full' : '',
     className,
   ]
     .filter(Boolean)

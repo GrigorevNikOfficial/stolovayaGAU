@@ -16,10 +16,10 @@ import {
 const PROTECTED_PATHS = new Set(['/profile', '/services/cafeteria', '/services/chat']);
 
 const AuthPendingScreen = () => (
-  <div className="flex min-h-screen items-center justify-center bg-[#0f1112] text-gray-100">
+  <div className="flex min-h-screen items-center justify-center text-text-primary">
     <div className="text-center space-y-4">
-      <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-      <p className="text-sm tracking-widest uppercase text-gray-400">Проверяем авторизацию</p>
+      <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo" />
+      <p className="text-sm tracking-[0.35em] uppercase text-text-muted">Проверяем авторизацию</p>
     </div>
   </div>
 );
@@ -160,7 +160,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen text-text-primary">
       {getCurrentPage()}
       <Toast />
     </div>

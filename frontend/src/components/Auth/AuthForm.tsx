@@ -158,16 +158,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
   const isEmbedded = variant === 'embedded';
 
   const successContent = (
-    <div className="text-center bg-[#1b1c1d] border border-[#2f3133] rounded-3xl shadow-2xl shadow-[#0b2a25]/40 p-10 w-full">
-      <div className="w-20 h-20 bg-[#106157]/20 border border-[#106157]/50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-[#69e7b6]">
+    <div className="text-center bg-white border border-border-soft rounded-3xl shadow-brand-card p-10 w-full">
+      <div className="w-20 h-20 bg-brand-seashell border border-brand-indigo/30 rounded-3xl flex items-center justify-center mx-auto mb-6 text-brand-indigo">
         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-3xl font-bold text-white mb-3">Успешная авторизация</h2>
-      <p className="text-gray-400 mb-8">
+      <h2 className="text-3xl font-bold text-text-primary mb-3">Успешная авторизация</h2>
+      <p className="text-text-secondary mb-8">
         Добро пожаловать,
-        <span className="font-semibold text-white">
+        <span className="font-semibold text-text-primary">
           {' '}
           {currentUser?.first_name} {currentUser?.last_name}
         </span>
@@ -189,23 +189,22 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
     }
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f1112] px-4 py-10 text-gray-100 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-60 bg-[radial-gradient(circle_at_top,_rgba(16,97,87,0.25),_transparent_55%)]" />
-        <div className="relative z-10 max-w-lg w-full">{successContent}</div>
+      <div className="min-h-screen flex items-center justify-center px-4 py-10 text-text-primary">
+        <div className="w-full max-w-lg">{successContent}</div>
       </div>
     );
   }
 
   const formCard = (
-    <div className="bg-[#1a1b1c]/95 border border-[#2c2d30] rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/40 backdrop-blur-lg">
+    <div className="bg-white border border-border-soft rounded-3xl p-6 sm:p-8 shadow-brand-card backdrop-blur-lg">
       <div className="mb-8 text-center space-y-3">
-        <p className="text-sm uppercase tracking-[0.3em] text-gray-500">
+        <p className="text-sm uppercase tracking-[0.3em] text-text-muted">
           {isLogin ? 'Вход' : 'Регистрация'}
         </p>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-text-primary">
           {isLogin ? 'Рады видеть вас снова' : 'Добро пожаловать в столовую ГАУ'}
         </h1>
-        <p className="text-gray-400">
+        <p className="text-text-secondary">
           {isLogin
             ? 'Авторизуйтесь, чтобы управлять заказами и балансом.'
             : 'Зарегистрируйтесь и оформляйте заказы онлайн за пару кликов.'}
@@ -213,7 +212,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
       </div>
 
       {authError && (
-        <div className="bg-red-950/40 border border-red-500/40 rounded-2xl p-4 mb-6 text-sm text-red-200">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 text-sm text-red-700">
           {authError}
         </div>
       )}
@@ -323,7 +322,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
           <button
             type="button"
             onClick={switchMode}
-            className="text-[#69e7b6] hover:text-white font-semibold transition-colors"
+            className="text-brand-indigo hover:text-brand-grape font-semibold transition-colors"
           >
             {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
           </button>
@@ -337,12 +336,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1112] text-gray-100 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-70 bg-[radial-gradient(circle_at_top,_rgba(105,231,182,0.08),_transparent_55%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(16,97,87,0.35),_transparent_60%)]" />
-      <div className="relative z-10 flex min-h-screen items-center justify-center py-10 px-4 sm:px-6">
-        <div className="w-full max-w-xl">{formCard}</div>
-      </div>
+    <div className="min-h-screen text-text-primary flex items-center justify-center py-10 px-4 sm:px-6">
+      <div className="w-full max-w-xl">{formCard}</div>
     </div>
   );
 };

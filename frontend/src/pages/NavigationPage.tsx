@@ -9,7 +9,7 @@ const services = [
     title: 'Столовая ГАУ',
     description: 'Полноценный сервис заказа блюд, управление балансом и отслеживание доставки в реальном времени.',
     status: 'live',
-    accent: 'from-[#69e7b6] to-[#0d4a43]',
+    accent: 'from-brand-grape to-brand-indigo',
     icon: '🍽️',
     path: '/services/cafeteria',
   },
@@ -18,7 +18,7 @@ const services = [
     title: 'Корпоративный чат',
     description: 'Создавайте тематические каналы, общайтесь с коллегами и получайте быстрый доступ к поддержке.',
     status: 'testing',
-    accent: 'from-[#60a5fa] to-[#1e3a8a]',
+    accent: 'from-brand-indigo to-brand-lilac',
     icon: '💬',
     path: '/services/chat',
   },
@@ -27,7 +27,7 @@ const services = [
     title: 'Уведомления',
     description: 'Централизованные уведомления по заказам, поставкам, внутренним объявлениям и важным новостям.',
     status: 'soon',
-    accent: 'from-[#fcd34d] to-[#b45309]',
+    accent: 'from-amber-200 to-amber-400',
     icon: '🔔',
     path: '/services/notifications',
   },
@@ -36,7 +36,7 @@ const services = [
     title: 'Маркетплейс услуг',
     description: 'Локальные сервисы сотрудников и партнёров: аренда, обучение, консультации и другие предложения.',
     status: 'soon',
-    accent: 'from-[#fdba74] to-[#c2410c]',
+    accent: 'from-orange-200 to-orange-400',
     icon: '🛠️',
     path: '/services/marketplace',
   },
@@ -45,16 +45,16 @@ const services = [
     title: 'Афиша событий',
     description: 'Календарь мероприятий университета, напоминания и быстрые регистрации на встречи и активности.',
     status: 'soon',
-    accent: 'from-[#c084fc] to-[#6b21a8]',
+    accent: 'from-brand-almond to-brand-lilac',
     icon: '🎭',
     path: '/services/events',
   },
 ];
 
 const statusMap: Record<string, { label: string; tone: string }> = {
-  live: { label: 'Работает', tone: 'bg-emerald-400/20 text-emerald-200 border border-emerald-400/30' },
-  testing: { label: 'Тестируется', tone: 'bg-amber-400/20 text-amber-200 border border-amber-400/30' },
-  soon: { label: 'В разработке', tone: 'bg-white/10 text-white/80 border border-white/20' },
+  live: { label: 'Работает', tone: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  testing: { label: 'Тестируется', tone: 'bg-amber-50 text-amber-700 border border-amber-200' },
+  soon: { label: 'В разработке', tone: 'bg-surface-muted text-text-secondary border border-border-subtle' },
 };
 
 type NavigationPageProps = {
@@ -65,30 +65,35 @@ type NavigationPageProps = {
 
 export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigate, onLogout }) => {
   return (
-    <div className="relative min-h-screen bg-[#030405] text-white overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#030c0a] via-[#050607] to-[#05020b]" />
-      <div className="absolute -top-1/3 right-0 w-[520px] h-[520px] bg-[#106157]/30 blur-[160px]" />
-      <div className="absolute top-1/2 -left-20 w-[420px] h-[420px] bg-[#4c1d95]/20 blur-[160px]" />
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.15),_transparent_60%)]" />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="min-h-screen text-text-primary">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
         <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-400 mb-3">Единая цифровая платформа</p>
-            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-white">
+            <p className="text-xs uppercase tracking-[0.4em] text-brand-lilac mb-3">Единая цифровая платформа</p>
+            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-brand-indigo">
               Экосистема сервисов ГАУ
             </h1>
-            <p className="mt-4 text-gray-300 text-lg max-w-2xl">
+            <p className="mt-4 text-text-secondary text-lg max-w-2xl">
               Все цифровые сервисы университета в одном месте. Один аккаунт, синхронизированные данные и бесшовный переход между продуктами.
             </p>
           </div>
           <div className="flex items-center gap-4">
             {currentUser ? (
               <>
-                <Button variant="outline" size="md" onClick={() => onNavigate('/profile')} className="border border-white/30">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => onNavigate('/profile')}
+                  className="bg-gradient-to-r from-brand-indigo to-brand-grape border-transparent shadow-lg shadow-brand-grape/25 hover:-translate-y-0.5"
+                >
                   Профиль
                 </Button>
-                <Button variant="outline" size="md" onClick={onLogout} className="border border-white/30">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={onLogout}
+                  className="border-brand-indigo/40 text-brand-indigo font-semibold shadow-lg shadow-brand-indigo/15 hover:bg-brand-indigo hover:text-white hover:-translate-y-0.5"
+                >
                   Выйти
                 </Button>
               </>
@@ -102,21 +107,21 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
 
         <div className="grid gap-10 xl:grid-cols-[1.3fr_0.7fr]">
           <section className="space-y-6">
-            <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-xl">
+            <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-emerald-200 uppercase tracking-[0.4em]">центральная консоль</p>
-                  <h2 className="mt-3 text-3xl font-semibold text-white">Выберите сервис для продолжения</h2>
-                  <p className="mt-4 text-gray-300">
+                  <p className="text-sm font-semibold text-brand-lilac uppercase tracking-[0.4em]">центральная консоль</p>
+                  <h2 className="mt-3 text-3xl font-semibold text-brand-indigo">Выберите сервис для продолжения</h2>
+                  <p className="mt-4 text-text-secondary">
                     Доступные продукты обновляются автоматически. Новые сервисы появятся в вашей панели без повторной регистрации.
                   </p>
                 </div>
                 {currentUser && (
-                  <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-sm text-gray-200">
-                    <p className="text-white mb-1 font-semibold">
+                  <div className="rounded-2xl border border-border-subtle bg-surface-muted px-5 py-4 text-sm text-text-secondary">
+                    <p className="text-brand-indigo mb-1 font-semibold">
                       {currentUser.first_name} {currentUser.last_name}
                     </p>
-                    <p className="text-gray-400">Статус аккаунта синхронизирован</p>
+                    <p className="text-text-muted">Статус аккаунта синхронизирован</p>
                   </div>
                 )}
               </div>
@@ -132,7 +137,7 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                     type="button"
                     disabled={isDisabled}
                     onClick={() => !isDisabled && onNavigate(service.path)}
-                    className={`group relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br ${service.accent} p-6 text-left shadow-lg transition-all duration-300 hover:translate-y-[-4px] hover:shadow-emerald-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+                    className={`group relative overflow-hidden rounded-[28px] border border-transparent bg-gradient-to-br ${service.accent} p-6 text-left text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-brand-grape/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
                       isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
                     }`}
                   >
@@ -142,7 +147,7 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                         {tone.label}
                       </span>
                     </div>
-                    <h3 className="mt-4 text-2xl font-semibold text-white">{service.title}</h3>
+                    <h3 className="mt-4 text-2xl font-semibold">{service.title}</h3>
                     <p className="mt-2 text-sm text-white/90 leading-relaxed line-clamp-3">
                       {service.description}
                     </p>
@@ -159,13 +164,13 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
           </section>
 
           <aside className="space-y-6">
-            <div className="rounded-3xl border border-white/5 bg-white/5 backdrop-blur-xl p-6 sm:p-8">
+            <div className="rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card">
               {currentUser ? (
                 <div className="space-y-6">
                   <div>
-                    <p className="text-sm uppercase tracking-[0.4em] text-emerald-200">аккаунт активен</p>
-                    <h3 className="mt-2 text-2xl font-semibold text-white">Вы уже авторизованы</h3>
-                    <p className="mt-3 text-sm text-gray-300">
+                    <p className="text-sm uppercase tracking-[0.4em] text-brand-lilac">аккаунт активен</p>
+                    <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">Вы уже авторизованы</h3>
+                    <p className="mt-3 text-sm text-text-secondary">
                       Можете сразу перейти в рабочие продукты. Все данные синхронизированы со столовой и будущими сервисами.
                     </p>
                   </div>
@@ -173,23 +178,29 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                     <Button type="button" variant="primary" size="lg" className="w-full" onClick={() => onNavigate('/services/cafeteria')}>
                       Открыть столовую
                     </Button>
-                    <Button type="button" variant="outline" size="md" className="w-full border-white/30" onClick={() => onNavigate('/profile')}>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-brand-indigo to-brand-grape border-transparent shadow-lg shadow-brand-grape/25 hover:-translate-y-0.5"
+                      onClick={() => onNavigate('/profile')}
+                    >
                       Перейти в профиль
                     </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <p className="text-sm uppercase tracking-[0.4em] text-gray-400 mb-4">единый вход</p>
+                  <p className="text-sm uppercase tracking-[0.4em] text-text-muted mb-4">единый вход</p>
                   <AuthForm variant="embedded" />
                 </>
               )}
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-transparent p-6">
-              <p className="text-xs uppercase tracking-[0.4em] text-gray-400">дорожная карта</p>
-              <h3 className="mt-2 text-xl font-semibold text-white">Новые сервисы появятся поэтапно</h3>
-              <ul className="mt-4 space-y-3 text-sm text-gray-300">
+            <div className="rounded-3xl border border-border-subtle bg-white p-6 shadow-brand-card">
+              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">дорожная карта</p>
+              <h3 className="mt-2 text-xl font-semibold text-brand-indigo">Новые сервисы появятся поэтапно</h3>
+              <ul className="mt-4 space-y-3 text-sm text-text-secondary">
                 <li>• Q1 2025 — запуск уведомлений и мобильных пушей</li>
                 <li>• Q2 2025 — общий чат и поддержка</li>
                 <li>• Q3 2025 — маркетплейс услуг сотрудников</li>

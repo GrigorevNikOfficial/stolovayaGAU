@@ -313,13 +313,13 @@ export const ItemsList: React.FC = () => {
     return (
       <div
         onClick={() => setShowCreateModal(true)}
-        className="bg-[#2d2d2c] rounded-xl p-2.5 border border-dashed border-[#455252] hover:border-[#106157] hover:shadow-lg hover:shadow-[#106157]/30 transition-all duration-300 ease-out cursor-pointer flex items-center justify-center min-h-[160px] group"
+        className="bg-white rounded-2xl p-3 border border-dashed border-border-soft hover:border-brand-indigo hover:shadow-brand-card transition-all duration-300 ease-out cursor-pointer flex items-center justify-center min-h-[160px] group"
       >
         <div className="text-center">
-          <div className="text-3xl text-gray-500 mb-2 group-hover:text-[#69e7b6] transition-colors duration-300">
+          <div className="text-3xl text-text-muted mb-2 group-hover:text-brand-indigo transition-colors duration-300">
             +
           </div>
-          <h3 className="text-xs font-semibold text-gray-200 group-hover:text-white">
+          <h3 className="text-xs font-semibold text-text-secondary group-hover:text-text-primary">
             Добавить блюдо
           </h3>
         </div>
@@ -328,9 +328,9 @@ export const ItemsList: React.FC = () => {
   };
 
   return (
-    <div className="fade-in text-gray-100">
+    <div className="fade-in text-text-primary">
       {itemsError && (
-        <div className="bg-red-900/30 border border-red-500/60 text-red-200 px-4 py-3 rounded-2xl mb-6 transition-all duration-300">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6 transition-all duration-300">
           {itemsError}
         </div>
       )}
@@ -358,10 +358,10 @@ export const ItemsList: React.FC = () => {
         </div>
 
         {filtersOpen && (
-          <div className="rounded-2xl border border-[#3a3b3a] bg-[#1a1b1c] p-4">
+          <div className="rounded-2xl border border-border-soft bg-white p-4 shadow-brand-card">
             <div className="flex flex-col lg:flex-row flex-wrap gap-4">
-              <div className="flex-1 min-w-[240px]">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-sm font-medium text-text-muted mb-2">
                   Ценовой диапазон (₽)
                 </label>
                 <div className="flex gap-2">
@@ -404,7 +404,7 @@ export const ItemsList: React.FC = () => {
               </div>
 
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-muted mb-2">
                   Сортировка
                 </label>
                 <Select
@@ -446,10 +446,10 @@ export const ItemsList: React.FC = () => {
           <div className="flex gap-2 hide-scrollbar overflow-x-auto pb-2 flex-nowrap md:flex-wrap">
             <button
               onClick={() => handleCategoryTabClick('')}
-              className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium transition-all duration-300 border-2 ${
+              className={`flex-shrink-0 px-4 py-3 rounded-2xl font-medium transition-all duration-200 border ${
                 selectedCategory === ''
-                  ? 'bg-[#106157] text-white shadow-lg shadow-[#106157]/30 border-[#106157]'
-                  : 'bg-[#2d2d2c] text-gray-300 border-[#455252] hover:text-white hover:border-[#106157]/40'
+                  ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
+                  : 'bg-white text-text-secondary border-border-soft hover:text-text-primary hover:border-brand-indigo'
               }`}
             >
               Все категории
@@ -459,10 +459,10 @@ export const ItemsList: React.FC = () => {
               <button
                 key={category.value}
                 onClick={() => handleCategoryTabClick(category.value)}
-                className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium transition-all duration-300 border-2 ${
+                className={`flex-shrink-0 px-4 py-3 rounded-2xl font-medium transition-all duration-200 border ${
                   selectedCategory === category.value
-                    ? 'bg-[#106157] text-white shadow-lg shadow-[#106157]/30 border-[#106157]'
-                    : 'bg-[#2d2d2c] text-gray-300 border-[#455252] hover:text-white hover:border-[#106157]/40'
+                    ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
+                    : 'bg-white text-text-secondary border-border-soft hover:text-text-primary hover:border-brand-indigo'
                 }`}
               >
                 {category.label}
@@ -512,8 +512,8 @@ export const ItemsList: React.FC = () => {
               className="space-y-4"
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-100">{group.label}</h3>
-                <span className="text-sm text-gray-400">{group.items.length} шт.</span>
+                <h3 className="text-lg font-semibold text-text-primary">{group.label}</h3>
+                <span className="text-sm text-text-muted">{group.items.length} шт.</span>
               </div>
 
               <div className="grid grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 gap-3">
@@ -523,36 +523,36 @@ export const ItemsList: React.FC = () => {
                   const isInCart = quantity > 0;
                   const isAvailable = item.is_available !== false;
                   const availabilityBadgeClasses = isAvailable
-                    ? 'bg-[#106157]/20 text-[#69e7b6] border-[#106157]/40'
-                    : 'bg-[#1f2122] text-gray-400 border-[#3a3b3a]';
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-surface-muted text-text-muted border border-border-soft';
 
                   return (
                     <div
                       key={item._id}
                       onClick={() => handleItemClick(item)}
-                      className="relative bg-[#2d2d2c] rounded-xl p-2.5 border border-[#3a3b3a] shadow-sm hover:shadow-lg hover:shadow-[#106157]/30 transition-all duration-300 ease-out cursor-pointer group"
+                      className="relative bg-white rounded-2xl p-3 border border-border-soft shadow-brand-card hover:shadow-lg hover:border-brand-indigo/40 transition-all duration-300 ease-out cursor-pointer group"
                     >
                       {isAdminOrCanteenManager && (
                         <div className="absolute top-2 right-2 z-10">
                           <button
                             onClick={e => handleMenuClick(e, item._id)}
-                            className="w-8 h-8 rounded-full bg-[#1f2122]/90 hover:bg-[#2d2d2c] border border-[#69e7b6]/30 shadow-sm flex items-center justify-center text-gray-200 hover:text-white backdrop-blur-sm transition-all duration-300 text-sm"
+                            className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-border-soft shadow-sm flex items-center justify-center text-text-secondary hover:text-brand-indigo backdrop-blur-sm transition-all duration-300 text-sm"
                           >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                             </svg>
                           </button>
                           {menuOpen === item._id && (
-                            <div className="absolute right-0 mt-1 w-36 bg-[#1f2122] rounded-lg shadow-xl z-20 border border-[#455252] backdrop-blur-sm">
+                            <div className="absolute right-0 mt-1 w-40 bg-white rounded-2xl shadow-brand-card z-20 border border-border-soft">
                               <button
                                 onClick={e => handleEditClick(e, item)}
-                                className="block w-full text-left px-4 py-2.5 text-sm font-medium text-gray-200 hover:bg-[#106157]/20 hover:text-white transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
+                                className="block w-full text-left px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-brand-seashell transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl"
                               >
                                 Редактировать
                               </button>
                               <button
                                 onClick={e => handleDeleteClick(e, item)}
-                                className="block w-full text-left px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors duration-300 first:rounded-t-lg last:rounded-b-lg"
+                                className="block w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl"
                               >
                                 Удалить
                               </button>
@@ -564,28 +564,28 @@ export const ItemsList: React.FC = () => {
                       <div className="relative mb-2.5 w-full overflow-hidden rounded-xl">
                         <div className="relative w-full pb-[100%]">
                           {item.image_url || item.image?.url ? (
-                            <img
+                              <img
                               src={item.image_url || item.image?.url}
                               alt={item.name}
                               className="absolute inset-0 w-full h-full object-cover shadow-sm group-hover:shadow-md transition-shadow duration-300"
                             />
                           ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#1f2122] to-[#2d2d2c] flex items-center justify-center border-2 border-[#3a3b3a]">
-                              <span className="text-2xl text-gray-500">🍽️</span>
+                              <div className="absolute inset-0 bg-gradient-to-br from-surface-muted to-white flex items-center justify-center border border-border-soft">
+                                <span className="text-2xl text-text-muted">🍽️</span>
                             </div>
                           )}
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-base font-bold text-gray-100 line-clamp-2 leading-snug min-h-[3rem] text-center">
+                        <h3 className="text-base font-bold text-text-primary line-clamp-2 leading-snug min-h-[3rem] text-center">
                           {item.name}
                         </h3>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-bold text-[#69e7b6]">{item.price} ₽</span>
+                          <span className="text-base font-bold text-brand-indigo">{item.price} ₽</span>
                           <span
-                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${availabilityBadgeClasses}`}
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${availabilityBadgeClasses}`}
                           >
                             {isAvailable ? 'Доступно' : 'Недоступно'}
                           </span>
@@ -604,20 +604,20 @@ export const ItemsList: React.FC = () => {
                                 {isAvailable ? '🛒 В корзину' : 'Недоступно'}
                               </Button>
                             ) : (
-                              <div className="flex items-center justify-between bg-[#106157]/10 border border-[#106157]/30 rounded-lg p-1.5">
+                              <div className="flex items-center justify-between bg-brand-seashell border border-brand-indigo/30 rounded-xl p-1.5">
                                 <button
                                   onClick={e => handleDecreaseQuantity(e, item._id)}
-                                  className="w-8 h-8 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-base font-bold hover:bg-[#106157] hover:text-white transition-all duration-200"
+                                  className="w-8 h-8 rounded-full bg-white text-brand-indigo border border-brand-indigo/40 flex items-center justify-center text-base font-bold hover:bg-brand-indigo hover:text-white transition-all duration-200"
                                 >
                                   -
                                 </button>
-                                <span className="text-base font-bold text-gray-100 mx-2 min-w-[28px] text-center">
+                                <span className="text-base font-bold text-text-primary mx-2 min-w-[28px] text-center">
                                   {quantity}
                                 </span>
                                 <button
                                   onClick={e => handleIncreaseQuantity(e, item)}
                                   disabled={!isAvailable}
-                                  className="w-8 h-8 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-base font-bold hover:bg-[#106157] hover:text-white transition-all duration-200"
+                                  className="w-8 h-8 rounded-full bg-white text-brand-indigo border border-brand-indigo/40 flex items-center justify-center text-base font-bold hover:bg-brand-indigo hover:text-white transition-all duration-200"
                                 >
                                   +
                                 </button>
@@ -642,9 +642,9 @@ export const ItemsList: React.FC = () => {
 
       {!isLoading && visibleItems.length === 0 && (
         <div className="text-center py-16 fade-in">
-          <div className="text-6xl text-gray-300 mb-4">🍽️</div>
-          <p className="text-gray-500 text-xl font-medium mb-3">Товары не найдены</p>
-          <p className="text-gray-400 text-sm mb-6">
+          <div className="text-6xl text-text-muted mb-4">🍽️</div>
+          <p className="text-text-secondary text-xl font-medium mb-3">Товары не найдены</p>
+          <p className="text-text-muted text-sm mb-6">
             {searchQuery ||
             priceRange.min ||
             priceRange.max ||

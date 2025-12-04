@@ -62,9 +62,10 @@ export const Input: React.FC<InputProps> = ({
         step={step}
         required={required}
         className={`
-          w-full px-6 py-4 rounded-2xl border border-[#2d2d2c]
-          focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-[#106157]
-          transition-all duration-300 bg-[#161718] text-gray-100 placeholder-gray-500 shadow-sm hover:shadow-md hover:border-[#106157]
+          w-full px-5 py-3.5 rounded-2xl border border-border-soft bg-surface-muted
+          text-text-primary placeholder:text-text-muted
+          focus:outline-none focus:ring-2 focus:ring-brand-indigo focus:border-brand-indigo
+          transition-colors duration-200 shadow-sm hover:bg-white
           disabled:opacity-50 disabled:cursor-not-allowed
           ${icon ? 'pr-12' : ''}
           ${className}
@@ -76,12 +77,12 @@ export const Input: React.FC<InputProps> = ({
             type="button"
             onClick={onIconClick}
             aria-label={iconAriaLabel}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-brand-indigo transition-colors"
           >
             {icon}
           </button>
         ) : (
-          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-text-secondary text-lg">
             {icon}
           </div>
         )

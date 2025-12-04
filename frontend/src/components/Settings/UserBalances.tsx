@@ -93,37 +93,37 @@ export const UserBalances: React.FC = () => {
 
       {filteredUsers.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-400">Пользователи не найдены</p>
+          <p className="text-text-secondary">Пользователи не найдены</p>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredUsers.map(user => (
             <div
               key={user._id}
-              className="p-4 border border-[#2f3031] bg-[#1a1b1c] rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-gray-100"
+                  className="p-4 border border-border-soft bg-white rounded-3xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-text-primary shadow-brand-card"
             >
               <div className="flex-1">
-                <p className="text-lg font-semibold text-white">
+                    <p className="text-lg font-semibold text-text-primary">
                   {user.first_name} {user.last_name}
                 </p>
-                <p className="text-sm text-gray-400">
+                    <p className="text-sm text-text-secondary">
                   {user.phone} • {user.mail || 'почта не указана'}
                 </p>
-                <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#262728] text-gray-200 border border-[#343536]">
+                    <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-surface-muted text-text-secondary border border-border-subtle">
                   {user.role}
                 </div>
               </div>
 
               <div className="flex flex-col md:items-end gap-2 w-full md:w-auto">
-                <div className="text-xs text-gray-500 uppercase tracking-wide">Текущий баланс</div>
-                <div className="text-2xl font-bold text-[#69e7b6]">
+                    <div className="text-xs text-text-muted uppercase tracking-wide">Текущий баланс</div>
+                    <div className="text-2xl font-bold text-brand-indigo">
                   {(user.balance ?? 0).toLocaleString('ru-RU')} ₽
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 w-full md:w-[420px]">
                 <div>
-                  <div className="text-[11px] text-gray-500 mb-1 uppercase tracking-[0.2em]">
+                  <div className="text-[11px] text-text-muted mb-1 uppercase tracking-[0.2em]">
                     Пополнить на сумму
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -148,7 +148,7 @@ export const UserBalances: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className="text-[11px] text-gray-500 mb-1 uppercase tracking-[0.2em]">
+                  <div className="text-[11px] text-text-muted mb-1 uppercase tracking-[0.2em]">
                     Установить точный баланс
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">

@@ -66,12 +66,12 @@ export const Settings: React.FC = () => {
 
   if (!currentUser || currentUser.role !== 'admin') {
     return (
-      <div className="text-center py-16 fade-in">
-        <div className="text-6xl text-gray-300 mb-4">🚫</div>
-        <p className="text-gray-500 text-xl font-medium mb-3">
+      <div className="text-center py-16 fade-in text-text-secondary">
+        <div className="text-6xl text-text-muted mb-4">🚫</div>
+        <p className="text-text-primary text-xl font-medium mb-3">
           Доступ запрещен
         </p>
-        <p className="text-gray-400 text-sm">
+        <p className="text-text-secondary text-sm">
           Требуются права администратора для доступа к настройкам
         </p>
       </div>
@@ -79,13 +79,13 @@ export const Settings: React.FC = () => {
   }
 
   return (
-    <div className="fade-in text-gray-100">
+    <div className="fade-in text-text-primary">
       {/* Заголовок */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-100 mb-2">
+        <h1 className="text-3xl font-bold text-text-primary mb-2">
           Настройки системы
         </h1>
-        <p className="text-gray-400">Управление параметрами работы столовой</p>
+        <p className="text-text-secondary">Управление параметрами работы столовой</p>
       </div>
 
       {/* Табы настроек */}
@@ -101,7 +101,7 @@ export const Settings: React.FC = () => {
 
       {/* Контент активного таба */}
       {activeTab < visibleTabs.length && (
-        <div className="bg-[#2d2d2c] border border-[#455252] rounded-2xl shadow-lg p-6 text-gray-100">
+        <div className="bg-white border border-border-soft rounded-3xl shadow-brand-card p-6 text-text-primary">
           {visibleTabs[activeTab].id === 'delivery' && <DeliverySettings />}
 
           {visibleTabs[activeTab].id === 'orders' && <OrderSettings />}
@@ -113,22 +113,22 @@ export const Settings: React.FC = () => {
           {visibleTabs[activeTab].id === 'topups' && <TopUpRequestsAdmin />}
 
           {visibleTabs[activeTab].id === 'notifications' && (
-            <div className="text-center py-12">
-              <div className="text-6xl text-gray-300 mb-4">🔔</div>
-              <p className="text-gray-500 text-xl font-medium mb-3">
+            <div className="text-center py-12 text-text-secondary">
+              <div className="text-6xl text-text-muted mb-4">🔔</div>
+              <p className="text-text-primary text-xl font-medium mb-3">
                 Настройки уведомлений
               </p>
-              <p className="text-gray-400 text-sm">Раздел в разработке</p>
+              <p className="text-text-secondary text-sm">Раздел в разработке</p>
             </div>
           )}
 
           {visibleTabs[activeTab].id === 'general' && (
-            <div className="text-center py-12">
-              <div className="text-6xl text-gray-300 mb-4">⚙️</div>
-              <p className="text-gray-500 text-xl font-medium mb-3">
+            <div className="text-center py-12 text-text-secondary">
+              <div className="text-6xl text-text-muted mb-4">⚙️</div>
+              <p className="text-text-primary text-xl font-medium mb-3">
                 Основные настройки
               </p>
-              <p className="text-gray-400 text-sm">Раздел в разработке</p>
+              <p className="text-text-secondary text-sm">Раздел в разработке</p>
             </div>
           )}
         </div>

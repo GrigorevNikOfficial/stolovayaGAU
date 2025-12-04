@@ -131,13 +131,13 @@ export const EmployeeManagement: React.FC = () => {
   }, [users, activeRoleFilter, sortOption]);
 
   return (
-    <div className="space-y-6 text-gray-100">
+    <div className="space-y-6 text-text-primary">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-100 mb-2">
+          <h2 className="text-2xl font-bold text-text-primary mb-2">
             Управление сотрудниками
           </h2>
-          <p className="text-gray-400">
+          <p className="text-text-secondary">
             Создание и управление учетными записями сотрудников
           </p>
         </div>
@@ -152,7 +152,7 @@ export const EmployeeManagement: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-[#18191b] border border-[#2f3032] rounded-2xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="bg-white border border-border-soft rounded-3xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between shadow-brand-card">
             <div className="flex flex-wrap gap-2">
               {roleTabs.map(tab => (
                 <button
@@ -160,8 +160,8 @@ export const EmployeeManagement: React.FC = () => {
                   onClick={() => setActiveRoleFilter(tab.id)}
                   className={`px-4 py-2 rounded-2xl text-sm font-medium border transition-all ${
                     activeRoleFilter === tab.id
-                      ? 'bg-[#106157] text-white border-[#106157] shadow-[0_0_12px_rgba(16,97,87,0.35)]'
-                      : 'border-[#2f3032] text-gray-300 hover:text-white hover:border-[#106157]'
+                      ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
+                      : 'border-border-subtle text-text-secondary hover:text-brand-indigo hover:border-brand-indigo/50'
                   }`}
                 >
                   {tab.label}
@@ -185,44 +185,43 @@ export const EmployeeManagement: React.FC = () => {
               />
             </div>
           </div>
-
-          <div className="bg-[#1f2022] rounded-xl border border-[#2f3032] shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-[#2f3032]">
-            <thead className="bg-[#161718]">
+          <div className="bg-white rounded-3xl border border-border-soft shadow-brand-card overflow-hidden">
+          <table className="min-w-full divide-y divide-border-subtle">
+            <thead className="bg-surface-muted">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Имя</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Телефон</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Роль</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Баланс</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wide">Действия</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wide">Имя</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wide">Телефон</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wide">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wide">Роль</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wide">Баланс</th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-text-secondary uppercase tracking-wide">Действия</th>
               </tr>
             </thead>
-            <tbody className="bg-[#1f2022] divide-y divide-[#2f3032]">
+            <tbody className="bg-white divide-y divide-border-subtle">
               {filteredUsers.map(user => (
-                <tr key={user._id} className="hover:bg-[#242527] transition-colors">
+                <tr key={user._id} className="hover:bg-surface-muted transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-100">
+                    <div className="text-sm font-medium text-text-primary">
                       {user.first_name} {user.last_name}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{user.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{user.mail}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{user.phone}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{user.mail}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                      user.role === 'admin' ? 'bg-purple-500/20 text-purple-200' :
-                      user.role === 'canteenManager' || user.role === 'cateenManager' ? 'bg-blue-500/20 text-blue-200' :
-                      user.role === 'storeManager' ? 'bg-green-500/20 text-green-200' :
-                      'bg-gray-500/20 text-gray-200'
+                      user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                      user.role === 'canteenManager' || user.role === 'cateenManager' ? 'bg-sky-100 text-sky-700' :
+                      user.role === 'storeManager' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-surface-muted text-text-secondary'
                     }`}>
                       {getRoleName(user.role)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">{user.balance}₽</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">{user.balance}₽</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => handleDelete(user._id)}
-                      className="text-red-300 hover:text-red-200 transition-colors"
+                      className="text-red-500 hover:text-red-600 transition-colors"
                     >
                       Удалить
                     </button>
@@ -236,8 +235,8 @@ export const EmployeeManagement: React.FC = () => {
       )}
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1f2022] border border-[#2f3032] rounded-2xl p-6 max-w-md w-full mx-4 text-gray-100">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white border border-border-soft rounded-3xl p-6 max-w-md w-full mx-4 text-text-primary shadow-brand-card">
             <h3 className="text-xl font-bold mb-4">Создать сотрудника</h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <Input
