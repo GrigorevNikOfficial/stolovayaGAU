@@ -10,3 +10,7 @@ export interface DeliverySettings {
   serviceFeeType: 'percent' | 'fixed';
   serviceFeeValue: number;
 }
+
+export interface MarketplaceSettings {
+  marketplaceCommissionPercent: number;
+}

@@ -9,9 +9,9 @@ import { ProfilePage } from './pages/ProfilePage';
 import { ChatPage } from './pages/services/chat/ChatPage.tsx';
 import {
   EventsServicePage,
-  MarketplaceServicePage,
   NotificationsServicePage,
 } from './pages/services/ServicePlaceholderPages.tsx';
+import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
 
 const PROTECTED_PATHS = new Set(['/profile', '/services/cafeteria', '/services/chat']);
 
@@ -58,8 +58,10 @@ function App() {
 
   // Функция для навигации
   const navigate = React.useCallback((path: string) => {
-    window.history.pushState({}, '', path);
-    setCurrentPath(path);
+    const nextUrl = new URL(path, window.location.origin);
+    const relativeUrl = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+    window.history.pushState({}, '', relativeUrl);
+    setCurrentPath(nextUrl.pathname);
   }, []);
 
   // Перенаправления
@@ -140,7 +142,7 @@ function App() {
     }
 
     if (currentPath === '/services/marketplace') {
-      return <MarketplaceServicePage />;
+      return <MarketplacePage />;
     }
 
     if (currentPath === '/services/events') {

@@ -38,8 +38,4 @@ export const chatApi = {
   async sendMessage(chatId: string, content: string) {
     return httpClient.post<{ message: ChatMessage }>(`/chats/${chatId}/messages`, { content });
   },
-
-  async leaveChat(chatId: string) {
-    return httpClient.post<{ message: string }>(`/chats/${chatId}/leave`);
-  },
 };

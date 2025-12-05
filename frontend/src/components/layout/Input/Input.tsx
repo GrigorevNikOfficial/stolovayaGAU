@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import { formatPhoneDisplay } from '../../../utils/phone';
 
 interface InputProps {
-  type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'time';
+  type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'time' | 'date';
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;

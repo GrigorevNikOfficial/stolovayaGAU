@@ -35,7 +35,7 @@ const services = [
     id: 'marketplace',
     title: 'Маркетплейс услуг',
     description: 'Локальные сервисы сотрудников и партнёров: аренда, обучение, консультации и другие предложения.',
-    status: 'soon',
+    status: 'testing',
     accent: 'from-orange-200 to-orange-400',
     icon: '🛠️',
     path: '/services/marketplace',

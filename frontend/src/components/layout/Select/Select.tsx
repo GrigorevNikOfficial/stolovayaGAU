@@ -26,6 +26,9 @@ export const Select: React.FC<SelectProps> = ({
   icon,
   required = false,
 }) => {
+  const hasEmptyOption = options.some(option => option.value === '');
+  const shouldRenderPlaceholder = Boolean(placeholder) && !hasEmptyOption;
+
   return (
     <div className="relative">
       <select
@@ -43,9 +46,11 @@ export const Select: React.FC<SelectProps> = ({
           ${className}
         `}
       >
-        <option value="" disabled>
-          {placeholder}
-        </option>
+        {shouldRenderPlaceholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
         {options.map(option => (
           <option key={option.value} value={option.value}>
             {option.label}

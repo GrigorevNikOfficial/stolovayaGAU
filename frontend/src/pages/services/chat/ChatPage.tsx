@@ -336,6 +336,20 @@ export const ChatPage: React.FC = () => {
     }
   }, [activeChatId, chats, handleSelectChat]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const targetChatId = params.get('chatId');
+
+    if (!targetChatId) {
+      return;
+    }
+
+    const exists = chats.some(chat => chat._id === targetChatId);
+    if (exists) {
+      handleSelectChat(targetChatId);
+    }
+  }, [chats, handleSelectChat]);
+
   const handleAcceptRequest = (requestId: string) =>
     handleRespond({ requestId, action: 'accept' });
 

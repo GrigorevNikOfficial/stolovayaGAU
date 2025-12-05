@@ -156,6 +156,101 @@ const emitToAudiences = (
   }
 };
 
+type AnyPayload = Record<string, unknown>;
+
+const ensureString = (value: unknown): string | undefined => {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value;
+  }
+
+  return undefined;
+};
+
+const extractOwnerId = (payload: AnyPayload): string | undefined => {
+  const owner = payload['owner'] as AnyPayload | undefined;
+  return (
+    ensureString(owner?.id) ||
+    ensureString(payload['ownerId']) ||
+    ensureString(payload['user_id']) ||
+    ensureString(payload['userId'])
+  );
+};
+
+const extractParticipantIds = (payload: AnyPayload): string[] => {
+  const participants = new Set<string>();
+
+  const customer = payload['customer'] as AnyPayload | undefined;
+  const provider = payload['provider'] as AnyPayload | undefined;
+
+  const candidateValues = [
+    ensureString(customer?.id),
+    ensureString(provider?.id),
+    ensureString(payload['customerId']),
+    ensureString(payload['providerId']),
+    ensureString(payload['customer_id']),
+    ensureString(payload['provider_id']),
+  ];
+
+  candidateValues.forEach(id => {
+    if (id) {
+      participants.add(id);
+    }
+  });
+
+  return Array.from(participants);
+};
+
+const emitToUsers = (event: string, payload: AnyPayload, userIds: string[]) => {
+  if (!io || userIds.length === 0) {
+    return;
+  }
+
+  userIds.forEach(userId => {
+    io!.to(`user:${userId}`).emit(event, payload);
+  });
+};
+
+const broadcastListing = (event: string, payload: AnyPayload) => {
+  if (!io) {
+    return;
+  }
+
+  io.emit(event, payload);
+};
+
+export const emitMarketplaceListingCreated = (listing: AnyPayload) => {
+  broadcastListing('marketplace:listings:created', listing);
+};
+
+export const emitMarketplaceListingUpdated = (listing: AnyPayload) => {
+  broadcastListing('marketplace:listings:updated', listing);
+};
+
+export const emitMarketplaceListingDeleted = (payload: AnyPayload) => {
+  const enrichedPayload = {
+    ...payload,
+    ownerId: extractOwnerId(payload) || ensureString(payload['ownerId']),
+  };
+  broadcastListing('marketplace:listings:deleted', enrichedPayload);
+};
+
+const emitRequestEvent = (event: string, payload: AnyPayload) => {
+  const participantIds = extractParticipantIds(payload);
+  emitToUsers(event, payload, participantIds);
+};
+
+export const emitMarketplaceRequestCreated = (request: AnyPayload) => {
+  emitRequestEvent('marketplace:requests:created', request);
+};
+
+export const emitMarketplaceRequestUpdated = (request: AnyPayload) => {
+  emitRequestEvent('marketplace:requests:updated', request);
+};
+
+export const emitMarketplaceRequestDeleted = (request: AnyPayload & { id?: string }) => {
+  emitRequestEvent('marketplace:requests:deleted', request);
+};
+
 export const emitOrderCreated = (order: unknown & { user_id?: string }) => {
   emitToAudiences('orders:created', order, { staffRoom: 'orders:staff' });
 };

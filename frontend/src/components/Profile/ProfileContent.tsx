@@ -7,6 +7,7 @@ interface ProfileContentProps {
   onLoadOrders: () => void;
   isAvatarUploading: boolean;
   layout?: 'standalone' | 'embedded';
+  showHeader?: boolean;
 }
 
 export const ProfileContent: React.FC<ProfileContentProps> = ({
@@ -15,6 +16,7 @@ export const ProfileContent: React.FC<ProfileContentProps> = ({
   onLoadOrders,
   isAvatarUploading,
   layout = 'standalone',
+  showHeader = true,
 }) => {
   const avatarUrl = currentUser.avatar?.url;
   const userInitials = `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`
@@ -35,47 +37,46 @@ export const ProfileContent: React.FC<ProfileContentProps> = ({
 
   const containerClasses =
     layout === 'embedded'
-      ? 'bg-white border border-border-soft rounded-2xl shadow-brand-card p-4 sm:p-6 h-full flex flex-col text-text-primary'
+      ? 'flex flex-col text-text-primary gap-4'
       : 'bg-white border border-border-soft shadow-brand-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 text-text-primary';
 
-  const infoWrapperClasses =
-    layout === 'embedded'
-      ? 'space-y-4 sm:space-y-6 flex-1 overflow-y-auto'
-      : 'space-y-4 sm:space-y-6';
+  const infoWrapperClasses = layout === 'embedded' ? 'space-y-4 sm:space-y-6' : 'space-y-4 sm:space-y-6';
 
   return (
     <div className={containerClasses}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="flex items-center gap-4 sm:gap-6">
-          <label htmlFor="avatar-input" className="cursor-pointer group">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-brand-indigo to-brand-grape overflow-hidden border-2 border-white/70 shadow-brand-card flex items-center justify-center text-xl sm:text-2xl font-bold text-white group-hover:shadow-xl group-hover:scale-105 transition-all duration-200">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={`${currentUser.first_name} ${currentUser.last_name}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span>{userInitials}</span>
-              )}
+      {showHeader && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <label htmlFor="avatar-input" className="cursor-pointer group">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-brand-indigo to-brand-grape overflow-hidden border-2 border-white/70 shadow-brand-card flex items-center justify-center text-xl sm:text-2xl font-bold text-white group-hover:shadow-xl group-hover:scale-105 transition-all duration-200">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={`${currentUser.first_name} ${currentUser.last_name}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{userInitials}</span>
+                )}
+              </div>
+              <input
+                id="avatar-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+                disabled={isAvatarUploading}
+              />
+            </label>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
+                {currentUser.first_name} {currentUser.last_name}
+              </h1>
+              <p className="text-text-secondary text-sm sm:text-base mt-1">Личный кабинет</p>
             </div>
-            <input
-              id="avatar-input"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-              disabled={isAvatarUploading}
-            />
-          </label>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
-              {currentUser.first_name} {currentUser.last_name}
-            </h1>
-            <p className="text-text-secondary text-sm sm:text-base mt-1">Личный кабинет</p>
           </div>
         </div>
-      </div>
+      )}
 
       <div className={infoWrapperClasses}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">

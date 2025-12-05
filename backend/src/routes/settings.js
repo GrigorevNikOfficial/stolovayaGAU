@@ -1,6 +1,7 @@
 // src/routes/settings.js
 import express from 'express';
-import { Settings } from '../models/Settings.js'; // Именованный импорт
+import { authenticateToken, requireAdmin } from '../controllers/auth.js';
+import { Settings } from '../models/Settings.js';
 
 const router = express.Router();
 
@@ -14,19 +15,29 @@ const serializeSettings = (settings) => ({
     dineInTimeEnd: settings.dineInTimeEnd,
     serviceFeeType: settings.serviceFeeType,
     serviceFeeValue: settings.serviceFeeValue,
+    marketplaceCommissionPercent: settings.marketplaceCommissionPercent,
 });
+
+const serializeServiceSettings = (settings) => ({
+    marketplaceCommissionPercent: settings.marketplaceCommissionPercent,
+});
+
+const ensureSettingsDocument = async (name, defaults = {}) => {
+    let settings = await Settings.findOne({ name });
+
+    if (!settings) {
+        settings = await Settings.create({ name, ...defaults });
+    }
+
+    return settings;
+};
 
 // GET /api/settings/delivery - получить настройки доставки
 router.get('/delivery', async (req, res) => {
     try {
         console.log('GET /api/settings/delivery - запрос получен');
 
-        let settings = await Settings.findOne({ name: 'main' });
-
-        if (!settings) {
-            console.log('Настройки не найдены, создаем по умолчанию');
-            settings = await Settings.create({ name: 'main' });
-        }
+        const settings = await ensureSettingsDocument('main');
 
         const payload = serializeSettings(settings);
         console.log('Отправляем настройки:', payload);
@@ -87,6 +98,51 @@ router.put('/delivery', async (req, res) => {
         res.json(payload);
     } catch (error) {
         console.error('Ошибка обновления настроек:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// GET /api/settings/services - получить настройки маркетплейса
+router.get('/services', async (req, res) => {
+    try {
+        const settings = await ensureSettingsDocument('services', {
+            marketplaceCommissionPercent: 15,
+        });
+
+        res.json(serializeServiceSettings(settings));
+    } catch (error) {
+        console.error('Ошибка получения настроек маркетплейса:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT /api/settings/services - обновить настройки маркетплейса (только админ)
+router.put('/services', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { marketplaceCommissionPercent } = req.body;
+
+        if (marketplaceCommissionPercent === undefined) {
+            return res.status(400).json({ error: 'Не передано значение комиссии' });
+        }
+
+        const parsedValue = Number(marketplaceCommissionPercent);
+
+        if (Number.isNaN(parsedValue) || parsedValue < 0 || parsedValue > 100) {
+            return res.status(400).json({ error: 'Комиссия должна быть числом от 0 до 100' });
+        }
+
+        const settings = await Settings.findOneAndUpdate(
+            { name: 'services' },
+            {
+                $set: { marketplaceCommissionPercent: parsedValue },
+                $setOnInsert: { name: 'services' },
+            },
+            { new: true, upsert: true }
+        );
+
+        res.json(serializeServiceSettings(settings));
+    } catch (error) {
+        console.error('Ошибка обновления настроек маркетплейса:', error);
         res.status(400).json({ error: error.message });
     }
 });

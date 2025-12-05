@@ -18,8 +18,11 @@ import { router as friendRoutes } from './src/routes/friends.js';
 import { router as itemRoutes } from './src/routes/items.js';
 import { router as orderRoutes } from './src/routes/orders.js';
 import { router as settingsRoutes } from './src/routes/settings.js';
+import { router as serviceRequestRoutes } from './src/routes/serviceRequests.js';
+import { router as serviceRoutes } from './src/routes/services.js';
 import { router as topUpRoutes } from './src/routes/topups.js';
 import { router as userRoutes } from './src/routes/users.js';
+import { router as paymentRoutes } from './src/routes/payments.js';
 
 const app = express();
 
@@ -40,6 +43,9 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/topups', topUpRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/friends', friendRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/service-requests', serviceRequestRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

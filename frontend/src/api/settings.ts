@@ -1,5 +1,5 @@
 // api/settingsApi.ts
-import type { DeliverySettings } from '../types/settings';
+import type { DeliverySettings, MarketplaceSettings } from '../types/settings';
 import { httpClient } from './http-client';
 
 export const settingsApi = {
@@ -14,6 +14,23 @@ export const settingsApi = {
   ): Promise<DeliverySettings> => {
     const response = await httpClient.put<DeliverySettings>(
       '/settings/delivery',
+      data
+    );
+    return response;
+  },
+
+  getMarketplaceSettings: async (): Promise<MarketplaceSettings> => {
+    const response = await httpClient.get<MarketplaceSettings>(
+      '/settings/services'
+    );
+    return response;
+  },
+
+  updateMarketplaceSettings: async (
+    data: Partial<MarketplaceSettings>
+  ): Promise<MarketplaceSettings> => {
+    const response = await httpClient.put<MarketplaceSettings>(
+      '/settings/services',
       data
     );
     return response;
