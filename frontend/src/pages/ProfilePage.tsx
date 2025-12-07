@@ -242,13 +242,14 @@ export const ProfilePage: React.FC = () => {
                   alt="Логотип сервиса"
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
                 />
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted transition-colors duration-200 group-hover:text-brand-indigo">
-                    профиль
-                  </p>
-                  <h1 className="text-lg font-semibold text-brand-indigo transition-colors duration-200 group-hover:text-brand-grape sm:text-xl lg:text-2xl">
-                    Личный кабинет
+                <div className="leading-tight">
+                  <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
+                    <span className="tracking-[-0.04em]">STUD</span>
+                    <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
+                      MI
+                    </span>
                   </h1>
+                  <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">профиль</p>
                 </div>
               </button>
             </div>

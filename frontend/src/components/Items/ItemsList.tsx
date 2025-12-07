@@ -447,10 +447,10 @@ export const ItemsList: React.FC = () => {
           <div className="flex gap-2 hide-scrollbar overflow-x-auto pb-2 flex-nowrap md:flex-wrap">
             <button
               onClick={() => handleCategoryTabClick('')}
-              className={`flex-shrink-0 px-4 py-3 rounded-2xl font-medium transition-all duration-200 border ${
+              className={`flex-shrink-0 px-4 py-3 rounded-2xl font-semibold transition-all duration-200 border ${
                 selectedCategory === ''
-                  ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
-                  : 'bg-white text-text-secondary border-border-soft hover:text-text-primary hover:border-brand-indigo'
+                  ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
+                  : 'border-transparent bg-white text-text-secondary hover:text-emerald-600 hover:border-emerald-200'
               }`}
             >
               Все категории
@@ -460,10 +460,10 @@ export const ItemsList: React.FC = () => {
               <button
                 key={category.value}
                 onClick={() => handleCategoryTabClick(category.value)}
-                className={`flex-shrink-0 px-4 py-3 rounded-2xl font-medium transition-all duration-200 border ${
+                className={`flex-shrink-0 px-4 py-3 rounded-2xl font-semibold transition-all duration-200 border ${
                   selectedCategory === category.value
-                    ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
-                    : 'bg-white text-text-secondary border-border-soft hover:text-text-primary hover:border-brand-indigo'
+                    ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
+                    : 'border-transparent bg-white text-text-secondary hover:text-emerald-600 hover:border-emerald-200'
                 }`}
               >
                 {category.label}

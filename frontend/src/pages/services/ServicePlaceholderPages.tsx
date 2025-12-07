@@ -70,7 +70,7 @@ const ServicePlaceholder: FC<PlaceholderProps> = ({ icon, title, tagline, descri
 export const ChatServicePage: FC = () => (
   <ServicePlaceholder
     icon={<ChatBubblesIcon className="w-10 h-10" />}
-    title="Корпоративный чат"
+    title="Чат"
     tagline="Общайтесь с командами, создавайте проектные каналы и получайте поддержку без переключения между приложениями."
     description="Мы строим чат на той же платформе авторизации, что и столовая. Вы сможете использовать единый профиль, видеть статусы коллег и мгновенно обсуждать оперативные вопросы."
     highlights={[

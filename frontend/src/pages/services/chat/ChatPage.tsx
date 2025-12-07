@@ -1,7 +1,9 @@
 import { useUnit } from 'effector-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import Button from '../../../components/layout/Button/Button.tsx';
+import Footer from '../../../components/layout/Footer/Footer.tsx';
 import Input from '../../../components/layout/Input/Input.tsx';
+import TopUpRequestModal from '../../../components/Modal/TopUpRequestModal.tsx';
 import {
     $activeChatId,
     $chats,
@@ -24,7 +26,10 @@ import {
     selectChat,
     sendFriendRequest,
 } from '../../../models/chat';
-import { $currentUser } from '../../../models/users';
+  import { $currentUser, logout } from '../../../models/users';
+  import { BellIcon } from '../../../components/icons/ServiceIcons';
+  import LogoSAU from '../../../images/logo.jpg';
+  import { formatBalance } from '../../../utils/formatBalance';
 import type { ChatMessage, ChatSummary } from '../../../types/chat';
 import type { FriendSearchResult, Friendship } from '../../../types/friend';
 import type { UserPreview } from '../../../types/user';
@@ -130,7 +135,7 @@ const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster })
           key={message._id}
           className={`max-w-[80%] rounded-3xl px-4 py-2 text-sm leading-relaxed shadow-brand-card break-words ${
             cluster.isOwn
-              ? 'bg-gradient-to-br from-brand-indigo to-brand-grape text-white'
+              ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white'
               : 'bg-white text-text-primary border border-border-soft'
           }`}
         >
@@ -283,6 +288,7 @@ export const ChatPage: React.FC = () => {
     handleRespond,
     handleRemoveFriend,
     handleLeaveChat,
+    handleLogout,
   } = useUnit({
     chats: $chats,
     activeChatId: $activeChatId,
@@ -305,6 +311,7 @@ export const ChatPage: React.FC = () => {
     handleRespond: respondToRequest,
     handleRemoveFriend: removeFriend,
     handleLeaveChat: leaveChat,
+    handleLogout: logout,
   });
 
   const currentUserId = currentUser?._id ?? '';
@@ -320,6 +327,7 @@ export const ChatPage: React.FC = () => {
   const [directModalOpen, setDirectModalOpen] = useState(false);
   const [directFilter, setDirectFilter] = useState('');
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const messageListRef = React.useRef<HTMLDivElement | null>(null);
 
   const debouncedSearch = useDebouncedValue(searchQuery);
@@ -510,11 +518,117 @@ export const ChatPage: React.FC = () => {
     setDirectFilter('');
   };
 
+  const handleNavigation = React.useCallback((path: string) => {
+    window.history.pushState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, []);
+
+  const NotificationBellButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Уведомления"
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+    >
+      <BellIcon className="h-5 w-5" />
+    </button>
+  );
+
+  const avatarUrl = currentUser?.avatar?.url;
+  const userInitials = `${currentUser?.first_name?.[0] ?? ''}${currentUser?.last_name?.[0] ?? ''}`.toUpperCase() || 'U';
+
+  const handleProfileNavigate = React.useCallback(() => {
+    handleNavigation('/profile');
+  }, [handleNavigation]);
+
+  const handleLogoutClick = React.useCallback(() => {
+    handleLogout();
+    setTimeout(() => handleNavigation('/'), 120);
+  }, [handleLogout, handleNavigation]);
+
   
 
   return (
-    <div className="min-h-screen text-text-primary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid gap-6 lg:grid-cols-[360px_1fr]">
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
+      <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
+        <div className="px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
+            <button
+              type="button"
+              onClick={() => handleNavigation('/')}
+              className="group flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-brand-indigo/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
+              aria-label="Перейти на главную"
+            >
+              <img
+                src={LogoSAU}
+                alt="Логотип сервиса"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
+              />
+              <div className="leading-tight">
+                <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
+                  <span className="tracking-[-0.04em]">STUD</span>
+                  <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
+                    MI
+                  </span>
+                </h1>
+                <p className="text-xs uppercase tracking-[0.35em] text-text-muted">чат</p>
+              </div>
+            </button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsTopUpModalOpen(true)}
+                    className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
+                  >
+                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
+                  </button>
+                  <NotificationBellButton />
+                  <button
+                    type="button"
+                    onClick={handleProfileNavigate}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
+                    aria-label="Профиль"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
+                      {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogoutClick}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+                    aria-label="Выйти"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                      <polyline points="10 17 15 12 10 7" />
+                      <line x1="15" y1="12" x2="3" y2="12" />
+                    </svg>
+                  </button>
+                </>
+              ) : (
+                <Button variant="primary" size="md" onClick={() => handleNavigation('/login')}>
+                  Войти
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid gap-6 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-6">
           <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-4 shadow-brand-card">
             <div>
@@ -634,12 +748,25 @@ export const ChatPage: React.FC = () => {
                   </button>
                   <div>
                     <p className="text-xs text-text-muted">Сервис</p>
-                    <h3 className="text-lg font-semibold">Корпоративный чат</h3>
+                    <h3 className="text-lg font-semibold">Чат</h3>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" className="border-border-soft text-text-primary h-9">Поиск</Button>
-                  <Button variant="outline" size="sm" className="border-border-soft text-text-primary h-9" onClick={() => handleRequestGroupChat({ name: 'Новая группа (через шапку)' })}>Создать</Button>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="min-w-[120px] h-11 px-6"
+                  >
+                    Поиск
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="min-w-[140px] h-11 px-6"
+                    onClick={() => handleRequestGroupChat({ name: 'Новая группа (через шапку)' })}
+                  >
+                    Создать
+                  </Button>
                 </div>
               </div>
               <ChatHeader chat={activeChat} />
@@ -709,6 +836,10 @@ export const ChatPage: React.FC = () => {
           )}
         </section>
       </div>
+      </main>
+
+      <Footer />
+      <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
 
       {directModalOpen && (
         <div className="fixed inset-0 bg-brand-indigo/20 backdrop-blur-md flex items-center justify-center p-4 z-50">

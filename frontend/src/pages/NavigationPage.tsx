@@ -50,7 +50,7 @@ const services: ServiceCardDescriptor[] = [
   },
   {
     id: 'chat',
-    title: 'Корпоративный чат',
+    title: 'Чат',
     description: 'Создавайте тематические каналы, общайтесь с коллегами и получайте быстрый доступ к поддержке.',
     status: 'testing',
     Icon: ChatBubblesIcon,
@@ -68,7 +68,7 @@ const services: ServiceCardDescriptor[] = [
   },
   {
     id: 'marketplace',
-    title: 'Маркетплейс услуг',
+    title: 'Услуги',
     description: 'Локальные сервисы сотрудников и партнёров: аренда, обучение, консультации и другие предложения.',
     status: 'testing',
     Icon: ToolkitIcon,
@@ -98,9 +98,10 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
     ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
     : '';
 
-  const NotificationBell = () => (
+  const NotificationBell: FC<{ onClick?: () => void }> = ({ onClick }) => (
     <button
       type="button"
+      onClick={onClick}
       aria-label="Уведомления"
       className="w-11 h-11 flex items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 transition-colors bg-surface-base"
     >
@@ -113,67 +114,67 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
         <div className="px-3 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1">
-                <img
-                  src={LogoSAU}
-                  alt="Логотип сервиса"
-                  className="w-12 h-12 rounded-3xl border border-transparent sm:w-14 sm:h-14"
-                />
-                <div className="leading-tight">
-                  <h1 className="text-lg font-semibold text-brand-indigo sm:text-xl lg:text-2xl">
-                    <span className="text-text-primary">Stud</span>
-                    <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm">
-                      Mi
-                    </span>
-                  </h1>
-                </div>
+            <div className="flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1">
+              <img
+                src={LogoSAU}
+                alt="Логотип сервиса"
+                className="w-12 h-12 rounded-3xl border border-transparent sm:w-14 sm:h-14"
+              />
+              <div className="leading-tight">
+                <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
+                  <span className="tracking-[-0.04em]">STUD</span>
+                  <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
+                    MI
+                  </span>
+                </h1>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-                {currentUser ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate('/profile')}
-                      className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('/profile')}
+                    className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
+                  >
+                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
+                  </button>
+                  <NotificationBell />
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('/profile')}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
+                    aria-label="Профиль"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
+                      {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+                    aria-label="Выйти"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
-                    </button>
-                    <NotificationBell />
-                    <button
-                      type="button"
-                      onClick={() => onNavigate('/profile')}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
-                      aria-label="Профиль"
-                    >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
-                        {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onLogout}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-                      aria-label="Выйти"
-                    >
-                      <svg
-                        className="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                        <polyline points="10 17 15 12 10 7" />
-                        <line x1="15" y1="12" x2="3" y2="12" />
-                      </svg>
-                    </button>
-                  </>
-                ) : (
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                      <polyline points="10 17 15 12 10 7" />
+                      <line x1="15" y1="12" x2="3" y2="12" />
+                    </svg>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <NotificationBell onClick={() => onNavigate('/login')} />
                   <Button
                     variant="primary"
                     size="md"
@@ -182,10 +183,9 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                   >
                     Войти
                   </Button>
-                )}
-              </div>
+                </>
+              )}
             </div>
-
           </div>
         </div>
       </header>
@@ -258,7 +258,6 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
               {currentUser ? (
                 <div className="space-y-6">
                   <div>
-                    <p className="text-sm uppercase tracking-[0.4em] text-brand-lilac">аккаунт активен</p>
                     <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">Вы уже авторизованы</h3>
                     <p className="mt-3 text-sm text-text-secondary">
                       Можете сразу перейти в рабочие продукты. Все данные синхронизированы со столовой и будущими сервисами.

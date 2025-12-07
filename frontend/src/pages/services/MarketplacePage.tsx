@@ -37,7 +37,6 @@ import type {
 } from '../../types/services';
 import type { MarketplaceSettings } from '../../types/settings';
 import type { User } from '../../types/user';
-
 type FiltersState = {
   search: string;
   category: string;
@@ -199,21 +198,21 @@ type MarketplaceTab = {
 const MARKETPLACE_TABS: MarketplaceTab[] = [
   {
     id: 'catalog_request',
-    label: 'Заказ',
-    mode: 'request',
-    description: 'Формируйте задачу и замораживайте бюджет сразу — оплата перейдёт исполнителю после завершения.',
+    label: 'Заказы',
+    description: 'Создавайте задачи с замороженным бюджетом',
     roles: ['guest', 'user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
+    mode: 'request',
   },
   {
     id: 'catalog_offer',
     label: 'Услуги',
-    mode: 'offer',
-    description: 'Публикуйте навыки, получайте запросы от коллег и подтверждайте подходящие проекты.',
+    description: 'Предлагайте свои навыки коллегам',
     roles: ['guest', 'user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
+    mode: 'offer',
   },
   {
     id: 'manage',
-    label: 'Мои услуги',
+    label: 'Мои объявления',
     roles: ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
   },
   {
@@ -232,13 +231,6 @@ const getMarketplaceTabs = (user: User | null): MarketplaceTab[] => {
   const role: MarketplaceRole = user?.role ?? 'guest';
   return MARKETPLACE_TABS.filter(tab => tab.roles.includes(role));
 };
-
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title?: string;
-  children: React.ReactNode;
-}
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) {
@@ -850,7 +842,7 @@ const RequestCard: React.FC<{
         )}
         {canOpenChat && (
           <Button size="sm" variant="outline" onClick={handleChatOpen}>
-            Открыть чат
+            Связаться с заказчиком
           </Button>
         )}
       </div>
@@ -1297,19 +1289,7 @@ export const MarketplacePage: React.FC = () => {
     [myServices]
   );
 
-  const headerTabs = React.useMemo(
-    () =>
-      availableTabs.map(tab => {
-        if (tab.mode === 'request') {
-          return { ...tab, badge: activeRequestsCount };
-        }
-        if (tab.mode === 'offer') {
-          return { ...tab, badge: activeOffersCount };
-        }
-        return tab;
-      }),
-    [availableTabs, activeOffersCount, activeRequestsCount]
-  );
+  const headerTabs = React.useMemo(() => availableTabs, [availableTabs]);
 
   const renderHeaderTabs = React.useCallback(
     (className = '') => (
@@ -1317,7 +1297,6 @@ export const MarketplacePage: React.FC = () => {
         {headerTabs.map((tab, index) => {
           const isActive = safeActiveTabIndex === index;
           const isDisabled = Boolean(tab.disabled);
-          const badgeContent = tab.badge;
           return (
             <button
               key={tab.id}
@@ -1339,18 +1318,7 @@ export const MarketplacePage: React.FC = () => {
                 isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-0.5'
               } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
             >
-              <span className="flex items-center gap-2 whitespace-nowrap">
-                {tab.label}
-                {badgeContent ? (
-                  <span className={`inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                    isActive
-                      ? 'border-emerald-400 bg-white/70 text-emerald-700'
-                      : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  }`}>
-                    {badgeContent}
-                  </span>
-                ) : null}
-              </span>
+              <span className="flex items-center gap-2 whitespace-nowrap">{tab.label}</span>
               <span
                 className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
                   isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
@@ -1607,9 +1575,15 @@ export const MarketplacePage: React.FC = () => {
                   alt="Логотип сервиса"
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
                 />
-                <h1 className="text-lg font-semibold text-brand-indigo transition-colors duration-200 group-hover:text-brand-grape sm:text-xl lg:text-2xl">
-                  Маркетплейс услуг
-                </h1>
+                <div className="leading-tight">
+                  <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
+                    <span className="tracking-[-0.04em]">STUD</span>
+                    <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
+                      MI
+                    </span>
+                  </h1>
+                  <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">услуги</p>
+                </div>
               </button>
             </div>
             <div className="hidden lg:flex flex-1 justify-center">
@@ -1680,27 +1654,30 @@ export const MarketplacePage: React.FC = () => {
               <section className="rounded-[36px] border border-border-soft bg-white p-8 shadow-brand-card">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <h2 className="mt-3 text-4xl font-semibold text-brand-indigo">Маркетплейс услуг</h2>
+                    <h2 className="mt-3 text-4xl font-semibold text-brand-indigo">Услуги</h2>
                     <p className="mt-4 max-w-2xl text-lg text-text-secondary">
                       Два сценария в одном окне: создавайте задачи с заморозкой бюджета или предлагайте собственные услуги коллегам. Все платежи проходят внутри баланса.
                     </p>
-                    <div className="mt-6 flex flex-wrap gap-4 text-sm text-text-secondary">
-                      <div className="rounded-2xl border border-border-soft px-4 py-2">
-                        {pagination?.total ?? 0}{' '}
-                        {filters.mode === 'request' ? 'активных заказов' : 'активных предложений'}
-                      </div>
-                      <div className="rounded-2xl border border-border-soft px-4 py-2">{uniqueCategories} категорий</div>
-                      <div className="rounded-2xl border border-border-soft px-4 py-2">
-                        {uniqueProviders} {filters.mode === 'request' ? 'заказчиков' : 'исполнителей'}
-                      </div>
-                    </div>
                     <div className="mt-6 flex flex-wrap gap-3">
-                      <Button variant="primary" size="md" onClick={openCreateRequestListingModal}>
-                        Создать заказ
-                      </Button>
-                      <Button variant="secondary" size="md" onClick={openCreateOfferListingModal}>
-                        Предложить услуги
-                      </Button>
+                      {filters.mode === 'request' ? (
+                        <Button
+                          variant="primary"
+                          size="md"
+                          className="min-w-[200px]"
+                          onClick={openCreateRequestListingModal}
+                        >
+                          Создать заказ
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="md"
+                          className="min-w-[200px]"
+                          onClick={openCreateOfferListingModal}
+                        >
+                          Предложить услуги
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="rounded-3xl border border-brand-indigo/15 bg-brand-indigo/5 p-5 text-sm text-brand-indigo">
@@ -1715,16 +1692,11 @@ export const MarketplacePage: React.FC = () => {
               <section className="grid gap-8">
                 <div className="space-y-6">
                   <div className="rounded-[28px] border border-border-soft bg-white p-6 shadow-sm">
-                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary">
-                        {currentMode === 'request' ? 'Сценарий: заказчик' : 'Сценарий: исполнитель'}
+                    <div className="mb-5 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-brand-indigo">Фильтры</h3>
+                      <span className="text-xs uppercase tracking-[0.35em] text-text-muted">
+                        {filters.mode === 'request' ? 'для заказов' : 'для услуг'}
                       </span>
-                      <span className="rounded-full border border-border-subtle px-3 py-1 text-xs uppercase tracking-[0.3em] text-text-muted">
-                        {currentMode === 'request' ? 'Бюджет заморожен' : 'Ждём запросов'}
-                      </span>
-                      {currentModeDescription ? (
-                        <p className="w-full text-xs text-text-secondary">{currentModeDescription}</p>
-                      ) : null}
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <Input
@@ -1777,6 +1749,19 @@ export const MarketplacePage: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
+                    <div className="rounded-2xl border border-border-soft bg-white px-4 py-3 text-sm text-text-primary">
+                      <div className="flex flex-wrap items-center gap-4 font-semibold">
+                        <span>
+                          {pagination?.total ?? 0}{' '}
+                          {filters.mode === 'request' ? 'активных заказов' : 'активных предложений'}
+                        </span>
+                        <span>{uniqueCategories} категорий</span>
+                        <span>
+                          {uniqueProviders} {filters.mode === 'request' ? 'заказчиков' : 'исполнителей'}
+                        </span>
+                      </div>
+                    </div>
+
                     {isLoading ? (
                       <div className="flex items-center justify-center py-20">
                         <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo"></div>
@@ -1787,7 +1772,7 @@ export const MarketplacePage: React.FC = () => {
                         description="Измените фильтры или станьте первым, кто опубликует услугу для коллег."
                       />
                     ) : (
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-4">
                         {services.map(service => (
                           <ServiceCard
                             key={service.id}
@@ -1800,32 +1785,29 @@ export const MarketplacePage: React.FC = () => {
                     )}
 
                     {pagination && pagination.pages > 1 && (
-                      <div className="flex items-center justify-between rounded-2xl border border-border-soft bg-white px-4 py-3 text-sm">
-                        <span className="text-text-secondary">
-                          Страница {pagination.page} из {pagination.pages}
-                        </span>
-                        <div className="flex gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={pagination.page === 1}
-                            onClick={() => handleFilterChange('page', Math.max(1, (pagination?.page ?? 1) - 1))}
-                          >
-                            Назад
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={pagination.page === pagination.pages}
-                            onClick={() =>
-                              handleFilterChange('page', Math.min(pagination.pages, (pagination?.page ?? 1) + 1))
-                            }
-                          >
-                            Вперёд
-                          </Button>
-                        </div>
+                      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border-soft bg-white px-4 py-3 text-sm text-text-secondary">
+                        {Array.from({ length: pagination.pages }, (_, index) => {
+                          const pageNumber = index + 1;
+                          const isActivePage = pageNumber === pagination.page;
+                          return (
+                            <button
+                              key={pageNumber}
+                              type="button"
+                              aria-current={isActivePage ? 'page' : undefined}
+                              onClick={() => handleFilterChange('page', pageNumber)}
+                              className={`rounded-full px-3 py-1 text-sm font-semibold transition-colors ${
+                                isActivePage
+                                  ? 'bg-brand-indigo text-white shadow-sm'
+                                  : 'border border-border-soft bg-white text-text-secondary hover:border-brand-indigo/60 hover:text-brand-indigo'
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
+
                   </div>
                 </div>
               </section>
@@ -1858,7 +1840,7 @@ export const MarketplacePage: React.FC = () => {
                     description="Как только коллеги откликнутся на заказ или забронируют предложение, заявка появится в этом блоке."
                   />
                 ) : (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="mt-4 grid grid-cols-1 gap-3">
                     {incomingRequests.slice(0, 4).map(request => {
                       const inboxScope: 'customer' | 'provider' =
                         resolveRequestMode(request) === 'offer' ? 'provider' : 'customer';
@@ -1886,14 +1868,23 @@ export const MarketplacePage: React.FC = () => {
                 <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.4em] text-text-muted">мои размещения</p>
-                      <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">Управляйте своими услугами</h3>
+                      <h3 className="text-2xl font-semibold text-brand-indigo">Управляйте своими услугами</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="primary" size="sm" onClick={openCreateOfferListingModal}>
+                      <Button
+                        variant="primary"
+                        size="md"
+                        className="min-w-[180px]"
+                        onClick={openCreateOfferListingModal}
+                      >
                         Предложить услуги
                       </Button>
-                      <Button variant="outline" size="sm" onClick={openCreateRequestListingModal}>
+                      <Button
+                        variant="primary"
+                        size="md"
+                        className="min-w-[180px]"
+                        onClick={openCreateRequestListingModal}
+                      >
                         Создать заказ
                       </Button>
                     </div>
@@ -1951,11 +1942,6 @@ export const MarketplacePage: React.FC = () => {
                           </div>
                         ))
                       )}
-                      {myServices.length > 0 && (
-                        <p className="text-xs text-text-muted">
-                          Удалить объявление можно, пока по нему нет активных заявок (принятых или в работе).
-                        </p>
-                      )}
                     </div>
                   ) : (
                     <div className="mt-4 text-sm text-text-secondary">
@@ -1971,6 +1957,9 @@ export const MarketplacePage: React.FC = () => {
                     <li>Добавляйте до пяти тегов — система выделит популярные навыки.</li>
                     <li>Скрывайте услуги, когда заняты: клиенты увидят статус в карточке.</li>
                   </ul>
+                  <p className="text-xs text-text-muted">
+                    Удалить объявление можно, пока по нему нет активных заявок (принятых или в работе).
+                  </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <DetailStat label="Активные заказы" value={activeRequestsCount} />
                     <DetailStat label="Активные предложения" value={activeOffersCount} />
@@ -1990,8 +1979,7 @@ export const MarketplacePage: React.FC = () => {
                 <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.4em] text-text-muted">заявки и отклики</p>
-                      <h3 className="mt-2 text-xl font-semibold text-brand-indigo">Управление заказами</h3>
+                      <h3 className="text-2xl font-semibold text-brand-indigo">Управление заказами</h3>
                     </div>
                     <div className="flex gap-2 rounded-2xl border border-border-soft bg-surface-muted p-1">
                       {(['customer', 'provider'] as const).map(scope => (
@@ -2010,7 +1998,7 @@ export const MarketplacePage: React.FC = () => {
                   </div>
 
                       {currentUser ? (
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <div className="mt-4 grid grid-cols-1 gap-3">
                       {isLoadingRequests ? (
                         <div className="flex items-center gap-3 rounded-2xl border border-border-soft px-4 py-3 text-sm text-text-secondary">
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo"></div>

@@ -247,7 +247,7 @@ export const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen text-text-primary flex flex-col overflow-x-hidden">
         {/* Шапка */}
-        <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
+        <header className="fixed top-0 left-0 right-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
         <div className="px-3 sm:px-4 lg:px-6">
           {/* Вся навигация в одной строке */}
           <div className="flex items-center justify-between py-3 sm:py-4 gap-4 min-h-[72px]">
@@ -263,13 +263,14 @@ export const HomePage: React.FC = () => {
                 alt="Логотип столовой ГАУ"
                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
               />
-              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-brand-indigo whitespace-nowrap transition-colors duration-200 group-hover:text-brand-almond">
-                  Столовая ГАУ
+              <div className="leading-tight">
+                <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
+                  <span className="tracking-[-0.04em]">STUD</span>
+                  <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
+                    MI
+                  </span>
                 </h1>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-brand-almond/15 text-brand-indigo border border-brand-almond/40">
-                  тестовая версия
-                </span>
+                <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">еда</p>
               </div>
             </button>
 
@@ -282,6 +283,7 @@ export const HomePage: React.FC = () => {
                 orientation="horizontal"
                 justify="center"
                 className="max-w-3xl w-full"
+                variant="marketplace"
               />
             </div>
 
@@ -304,7 +306,7 @@ export const HomePage: React.FC = () => {
                   {profileTabIndex !== -1 && (
                     <button
                       type="button"
-                      onClick={handleProfileTabOpen}
+                      onClick={() => handleNavigation('/profile')}
                       aria-pressed={profileTabActive}
                       className={`w-11 h-11 rounded-full border transition-all duration-200 flex items-center justify-center ${profileTabActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-brand-card' : 'border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 bg-white'}`}
                     >
@@ -357,7 +359,7 @@ export const HomePage: React.FC = () => {
         </header>
 
         {/* Основной контент */}
-        <div className="flex-1 px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+        <div className="flex-1 px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-[88px] sm:mt-[96px] lg:mt-[104px]">
         <div className="h-full">
           {/* Мобильное меню */}
           <div
@@ -370,6 +372,7 @@ export const HomePage: React.FC = () => {
                 onTabChange={handleMainTabChange}
                 orientation="vertical"
                 className="w-full"
+                variant="marketplace"
               />
             </div>
           </div>
