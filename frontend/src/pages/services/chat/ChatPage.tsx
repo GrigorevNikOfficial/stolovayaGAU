@@ -5,31 +5,31 @@ import Footer from '../../../components/layout/Footer/Footer.tsx';
 import Input from '../../../components/layout/Input/Input.tsx';
 import TopUpRequestModal from '../../../components/Modal/TopUpRequestModal.tsx';
 import {
-    $activeChatId,
-    $chats,
-    $friendRequests,
-    $friendSearchResults,
-    $friends,
-    $messagesByChat,
-    joinChatByCode,
-    leaveChat,
-    loadChats,
-    loadFriendRequests,
-    loadFriends,
-    postMessage,
-    removeFriend,
-    requestDirectChat,
-    requestGroupChat,
-    requestMessages,
-    respondToRequest,
-    searchFriends,
-    selectChat,
-    sendFriendRequest,
+  $activeChatId,
+  $chats,
+  $friendRequests,
+  $friendSearchResults,
+  $friends,
+  $messagesByChat,
+  joinChatByCode,
+  leaveChat,
+  loadChats,
+  loadFriendRequests,
+  loadFriends,
+  postMessage,
+  removeFriend,
+  requestDirectChat,
+  requestGroupChat,
+  requestMessages,
+  respondToRequest,
+  searchFriends,
+  selectChat,
+  sendFriendRequest,
 } from '../../../models/chat';
-  import { $currentUser, logout } from '../../../models/users';
-  import { BellIcon } from '../../../components/icons/ServiceIcons';
-  import LogoSAU from '../../../images/logo.jpg';
-  import { formatBalance } from '../../../utils/formatBalance';
+import { $currentUser, logout } from '../../../models/users';
+import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
+import LogoSAU from '../../../images/logo.jpg';
+import { formatBalance } from '../../../utils/formatBalance';
 import type { ChatMessage, ChatSummary } from '../../../types/chat';
 import type { FriendSearchResult, Friendship } from '../../../types/friend';
 import type { UserPreview } from '../../../types/user';
@@ -523,17 +523,6 @@ export const ChatPage: React.FC = () => {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }, []);
 
-  const NotificationBellButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Уведомления"
-      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-    >
-      <BellIcon className="h-5 w-5" />
-    </button>
-  );
-
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = `${currentUser?.first_name?.[0] ?? ''}${currentUser?.last_name?.[0] ?? ''}`.toUpperCase() || 'U';
 
@@ -585,7 +574,7 @@ export const ChatPage: React.FC = () => {
                     <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
                   </button>
-                  <NotificationBellButton />
+                  <NotificationBell />
                   <button
                     type="button"
                     onClick={handleProfileNavigate}

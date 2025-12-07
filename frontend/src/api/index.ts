@@ -11,4 +11,5 @@ export { friendsApi } from './friends';
 export { marketplaceApi } from './services';
 export { serviceRequestsApi } from './service-requests';
 export { paymentsApi } from './payments';
+export { notificationsApi } from './notifications';
 

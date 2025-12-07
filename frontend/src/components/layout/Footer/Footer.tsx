@@ -1,103 +1,50 @@
 // components/layout/Footer/Footer.tsx
 import React from 'react';
-import { ClockIcon, LocationIcon, MailIcon, PhoneIcon } from '../../icons/ServiceIcons';
+
+const SERVICES = ['Главная', 'Маркетплейс', 'События', 'Заказ еды', 'Расписание', 'Контакты'];
 
 export const Footer: React.FC = () => {
-  const currentYear = new Date().getFullYear();
-
   return (
-    <footer className="bg-[#111516] text-white border-t border-[#455252]">
+    <footer className="bg-[#0c1011] text-white border-t border-white/10">
       <div className="px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-7xl mx-auto">
-          {/* Основной контент футера */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-            {/* Лого и описание */}
-            <div className="lg:col-span-2">
-              <h3 className="text-xl font-bold mb-4 text-gray-100">СтоловаяГАУ</h3>
-              <p className="text-gray-400 text-sm leading-relaxed max-w-md">
-                Современная столовая с вкусной и здоровой пищей. Мы заботимся о
-                качестве наших блюд и вашем комфорте.
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
+            <div>
+              <p className="text-sm uppercase tracking-[0.4em] text-emerald-300">StudMi</p>
+              <h3 className="text-2xl font-semibold text-white mt-2">Студенческая экосистема</h3>
+              <p className="mt-4 text-gray-400 text-sm leading-relaxed max-w-md">
+                Объединяем все необходимые сервисы для комфортной учёбы и жизни в университете:
+                питание, расписание, события, маркетплейс и общие коммуникации.
               </p>
             </div>
 
-            {/* Контакты */}
             <div>
-              <h4 className="text-lg font-semibold mb-4 text-gray-100">Контакты</h4>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">
-                    <PhoneIcon className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <p className="text-gray-300">+7 (939) 782-06-57</p>
-                    <p className="text-gray-400 text-xs">
-                      Ежедневно 8:00-20:00
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">
-                    <MailIcon className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <p className="text-gray-300">4bsolutefleur@gmail.com</p>
-                    <p className="text-gray-400 text-xs">
-                      Разработчик ответит в течении дня
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <h4 className="text-lg font-semibold text-white mb-4">Сервисы</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                {SERVICES.map(item => (
+                  <li key={item} className="hover:text-white transition-colors cursor-pointer">
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            {/* Адрес */}
-            <div>
-              <h4 className="text-lg font-semibold mb-4 text-gray-100">Адрес</h4>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">
-                    <LocationIcon className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <p className="text-gray-300">ул. Студенческая, 15</p>
-                    <p className="text-gray-400 text-xs">
-                      Главный корпус, 1 этаж
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">
-                    <ClockIcon className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <p className="text-gray-300">Пн-Пт: 8:00-18:00</p>
-                    <p className="text-gray-400 text-xs">Сб-Вс: 9:00-16:00</p>
-                  </div>
-                </div>
+            <div className="space-y-4 text-sm text-gray-300">
+              <div>
+                <p className="font-semibold text-white mb-1">Контакты</p>
+                <p>info@studmi.ru</p>
+                <p>+7 (XXX) XXX-XX-XX</p>
+              </div>
+              <div>
+                <p className="font-semibold text-white mb-1">Адрес</p>
+                <p>г. Москва, Университетская ул., 1</p>
               </div>
             </div>
           </div>
 
-          {/* Нижняя часть с копирайтом */}
-          <div className="border-t border-[#455252] mt-8 pt-8">
-            <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-              <p className="text-gray-400 text-sm">
-                © {currentYear} СтоловаяГАУ. Все права защищены.
-              </p>
-              <div className="flex space-x-6 text-sm">
-                <a
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Политика конфиденциальности
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Условия использования
-                </a>
-              </div>
-            </div>
+          <div className="flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <p>© 2025 StudMi. Все права защищены.</p>
+            <p>Экосистема студенческих сервисов</p>
           </div>
         </div>
       </div>

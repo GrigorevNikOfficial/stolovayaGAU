@@ -4,6 +4,7 @@ import {
   emitTopUpRequestCreated,
   emitTopUpRequestUpdated,
 } from "../services/socketService.js";
+import { createUserNotification } from "../services/notificationService.js";
 
 const normalizeId = (value) => {
   if (!value) return undefined;
@@ -61,6 +62,41 @@ const populateRequestDoc = async (doc) => {
   await doc.populate("user_id", "first_name last_name phone email role balance");
   await doc.populate("admin_id", "first_name last_name email role");
   return doc;
+};
+
+const notifyTopUpStatus = async (requestDoc, { approved }) => {
+  const userId = requestDoc?.user_id?._id || requestDoc?.user_id;
+  if (!userId) {
+    return;
+  }
+
+  const amountSource = approved ? requestDoc.amount_approved : requestDoc.amount_requested;
+  const amountNumber = Number(amountSource || 0);
+  const formattedAmount = amountNumber.toLocaleString('ru-RU');
+
+  try {
+    await createUserNotification({
+      userId: userId.toString(),
+      title: approved ? 'Баланс пополнен' : 'Пополнение отклонено',
+      body: approved
+        ? `На счёт зачислено ${formattedAmount} руб.`
+        : 'Заявка на пополнение не прошла модерацию.',
+      category: 'balance',
+      severity: approved ? 'success' : 'warning',
+      type: approved ? 'topup_approved' : 'topup_rejected',
+      icon: approved ? '💳' : '⚠️',
+      actionLabel: 'Открыть баланс',
+      actionUrl: '/profile?tab=notifications',
+      metadata: {
+        requestId: requestDoc._id?.toString?.(),
+        amount: amountNumber,
+        status: requestDoc.status,
+      },
+      sourceId: requestDoc._id?.toString?.(),
+    });
+  } catch (error) {
+    console.error('Top-up notification error:', error);
+  }
 };
 
 export const createTopUpRequest = async (req, res) => {
@@ -199,6 +235,8 @@ export const processTopUpRequest = async (req, res) => {
 
     await request.save();
     await populateRequestDoc(request);
+
+    await notifyTopUpStatus(request, { approved: status === "approved" });
 
     const responsePayload = mapTopUpRequestToResponse(request);
     emitTopUpRequestUpdated(responsePayload);

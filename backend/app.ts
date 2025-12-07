@@ -23,6 +23,7 @@ import { router as serviceRoutes } from './src/routes/services.js';
 import { router as topUpRoutes } from './src/routes/topups.js';
 import { router as userRoutes } from './src/routes/users.js';
 import { router as paymentRoutes } from './src/routes/payments.js';
+import { router as notificationRoutes } from './src/routes/notifications.js';
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/service-requests', serviceRequestRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

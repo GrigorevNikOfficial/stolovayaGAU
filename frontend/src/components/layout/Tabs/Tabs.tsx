@@ -18,6 +18,7 @@ interface TabsProps {
   orientation?: 'horizontal' | 'vertical';
   justify?: 'start' | 'center' | 'between' | 'end';
   variant?: 'default' | 'marketplace';
+  wrap?: boolean;
 }
 
 export const Tabs: React.FC<TabsProps> = ({
@@ -28,6 +29,7 @@ export const Tabs: React.FC<TabsProps> = ({
   orientation = 'horizontal',
   justify = 'start',
   variant = 'default',
+  wrap = true,
 }) => {
   const isHorizontal = orientation === 'horizontal';
   const isMarketplaceVariant = variant === 'marketplace' && isHorizontal;
@@ -39,8 +41,10 @@ export const Tabs: React.FC<TabsProps> = ({
     end: 'md:justify-end',
   };
 
+  const wrapClasses = wrap ? 'flex-nowrap md:flex-wrap' : 'flex-nowrap';
+
   const containerClasses = isHorizontal
-    ? `flex gap-2 sm:gap-3 flex-nowrap md:flex-wrap overflow-x-auto hide-scrollbar justify-start ${justifyClassMap[justify]}`
+    ? `flex gap-2 sm:gap-3 ${wrapClasses} overflow-x-auto hide-scrollbar justify-start ${justifyClassMap[justify]}`
     : 'flex flex-col space-y-1';
 
   const wrapperClasses = isHorizontal

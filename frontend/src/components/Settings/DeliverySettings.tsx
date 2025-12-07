@@ -319,42 +319,7 @@ export const DeliverySettings: React.FC = () => {
           <p className="text-sm text-gray-400">Обновление настроек...</p>
         </div>
       )}
-
-      {/* Текущие данные из БД */}
-      <div className="p-6 bg-[#1f2022] rounded-2xl border border-[#2f3032]">
-        <h4 className="text-lg font-semibold text-gray-100 mb-4">
-          Текущие настройки из базы данных
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="font-medium text-gray-300">Статус доставки:</span>
-            <span
-              className={`ml-2 font-medium inline-flex items-center gap-2 ${
-                settings.deliveryEnabled ? 'text-emerald-300' : 'text-red-300'
-              }`}
-            >
-              {settings.deliveryEnabled ? (
-                <>
-                  <CheckIcon className="w-4 h-4" />
-                  Включена
-                </>
-              ) : (
-                <>
-                  <CloseIcon className="w-4 h-4" />
-                  Выключена
-                </>
-              )}
-            </span>
-          </div>
-          <div>
-            <span className="font-medium text-gray-300">Время работы:</span>
-            <span className="ml-2 text-gray-400">
-              {settings.deliveryTimeStart || 'Не установлено'} -{' '}
-              {settings.deliveryTimeEnd || 'Не установлено'}
-            </span>
-          </div>
-        </div>
-      </div>
+      
     </div>
   );
 };

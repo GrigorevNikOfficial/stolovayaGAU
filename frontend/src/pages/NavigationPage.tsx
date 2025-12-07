@@ -9,6 +9,7 @@ import {
   ToolkitIcon,
 } from '../components/icons/ServiceIcons.tsx';
 import type { IconProps } from '../components/icons/ServiceIcons.tsx';
+import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import LogoSAU from '../images/logo.jpg';
 import type { User } from '../types/user';
 import { formatBalance } from '../utils/formatBalance';
@@ -61,7 +62,7 @@ const services: ServiceCardDescriptor[] = [
     id: 'notifications',
     title: 'Уведомления',
     description: 'Централизованные уведомления по заказам, поставкам, внутренним объявлениям и важным новостям.',
-    status: 'soon',
+    status: 'testing',
     Icon: BellIcon,
     iconAccent: 'from-amber-300 to-amber-500',
     path: '/services/notifications',
@@ -97,17 +98,6 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
   const userInitials = currentUser
     ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
     : '';
-
-  const NotificationBell: FC<{ onClick?: () => void }> = ({ onClick }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Уведомления"
-      className="w-11 h-11 flex items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 transition-colors bg-surface-base"
-    >
-      <BellIcon className="h-5 w-5" />
-    </button>
-  );
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col bg-surface-base">
@@ -174,7 +164,7 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                 </>
               ) : (
                 <>
-                  <NotificationBell onClick={() => onNavigate('/login')} />
+                  <NotificationBell onRequireAuth={() => onNavigate('/login')} />
                   <Button
                     variant="primary"
                     size="md"

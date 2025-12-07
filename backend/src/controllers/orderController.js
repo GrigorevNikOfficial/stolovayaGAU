@@ -2,6 +2,7 @@ import { Item } from "../models/Item.js";
 import { Order } from "../models/Order.js";
 import { Settings } from "../models/Settings.js";
 import { User } from "../models/User.js";
+import { createUserNotification } from "../services/notificationService.js";
 import { emitOrderCreated, emitOrderUpdated } from "../services/socketService.js";
 
 const normalizeId = (value) => {
@@ -22,6 +23,85 @@ const normalizeStatus = (status) => {
     delivered: "completed",
   };
   return statusMap[status] || status;
+};
+
+const ORDER_STATUS_MESSAGES = {
+  created: "Заказ создан",
+  cooking: "Заказ в работе",
+  waiting_delivery: "Готовится к доставке",
+  in_transit: "Передан доставке",
+  ready_for_pickup: "Готов к получению",
+  completed: "Заказ завершён",
+  cancelled: "Заказ отменён",
+};
+
+const ORDER_STATUS_SEVERITY = {
+  completed: "success",
+  ready_for_pickup: "success",
+  cancelled: "warning",
+};
+
+const resolveUserId = (candidate) => {
+  if (!candidate) {
+    return null;
+  }
+
+  if (typeof candidate === "string") {
+    return candidate;
+  }
+
+  if (candidate._id) {
+    return candidate._id.toString();
+  }
+
+  if (candidate.toString) {
+    return candidate.toString();
+  }
+
+  return null;
+};
+
+const buildOrderActionUrl = (orderId) => {
+  if (!orderId) {
+    return "/services/cafeteria?tab=orders";
+  }
+  return `/services/cafeteria?tab=orders&order=${orderId}`;
+};
+
+const notifyOrderStatus = async (orderDoc, nextStatus, overrides = {}) => {
+  try {
+    const userId = resolveUserId(orderDoc?.user_id);
+    if (!userId) {
+      return;
+    }
+
+    const resolvedStatus = normalizeStatus(nextStatus || orderDoc?.status);
+    const message = overrides.body || ORDER_STATUS_MESSAGES[resolvedStatus] || `Статус обновлён: ${resolvedStatus}`;
+    const orderId = orderDoc?._id?.toString?.() ?? orderDoc?._id;
+
+    await createUserNotification({
+      userId,
+      title:
+        overrides.title ||
+        `Заказ #${orderDoc?.order_number || ""}`.trim(),
+      body: message,
+      category: "orders",
+      severity: overrides.severity || ORDER_STATUS_SEVERITY[resolvedStatus] || "info",
+      type: overrides.type || "order_status",
+      icon: overrides.icon || "🍽️",
+      actionLabel: overrides.actionLabel || "Открыть заказ",
+      actionUrl: overrides.actionUrl || buildOrderActionUrl(orderId),
+      metadata: {
+        ...overrides.metadata,
+        orderId,
+        orderNumber: orderDoc?.order_number,
+        status: resolvedStatus,
+      },
+      sourceId: orderId,
+    });
+  } catch (error) {
+    console.error("Order notification error:", error);
+  }
 };
 
 const mapOrderToResponse = (order) => {
@@ -234,6 +314,10 @@ export const createOrder = async (req, res) => {
 
     const mappedOrder = mapOrderToResponse(order);
     emitOrderCreated(mappedOrder);
+    await notifyOrderStatus(order, order.status, {
+      title: `Заказ #${orderNumber} создан`,
+      body: "Мы начали обрабатывать ваш заказ.",
+    });
 
     res.status(201).json({
       message: "Заказ успешно создан",
@@ -430,16 +514,6 @@ export const updateOrder = async (req, res) => {
         }
       }
 
-      const statusNotes = {
-        created: "Заказ создан",
-        cooking: "Столовая приняла заказ и приступила к нему",
-        waiting_delivery: "Столовая приготовила и ждёт доставщика",
-        in_transit: "Передан в доставку",
-        ready_for_pickup: "Готов к получению в буфете",
-        completed: "Пользователь забрал заказ",
-        cancelled: "Заказ отменен",
-      };
-
       if (updateData.status === "cancelled" && originalStatus === "completed") {
         return res
           .status(400)
@@ -450,7 +524,7 @@ export const updateOrder = async (req, res) => {
       order.status_history.push({
         status: updateData.status,
         notes:
-          statusNotes[updateData.status] ||
+          ORDER_STATUS_MESSAGES[updateData.status] ||
           `Статус изменен на ${updateData.status}`,
         changed_at: new Date(),
       });
@@ -477,6 +551,9 @@ export const updateOrder = async (req, res) => {
 
     const mappedOrder = mapOrderToResponse(order);
     emitOrderUpdated(mappedOrder);
+    if (updateData.status && updateData.status !== originalStatus) {
+      await notifyOrderStatus(order, updateData.status);
+    }
 
     res.json({
       message: "Заказ успешно обновлен",
@@ -585,16 +662,6 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
-    const statusNotes = {
-      created: "Заказ создан",
-      cooking: "Столовая приняла заказ и приступила к нему",
-      waiting_delivery: "Столовая приготовила и ждёт доставщика",
-      in_transit: "Передан в доставку",
-      ready_for_pickup: "Готов к получению в буфете",
-      completed: "Пользователь забрал заказ",
-      cancelled: "Заказ отменен",
-    };
-
     if (status === "cancelled" && originalStatus === "completed") {
       return res
         .status(400)
@@ -604,7 +671,8 @@ export const updateOrderStatus = async (req, res) => {
     order.status = status;
     order.status_history.push({
       status: status,
-      notes: statusNotes[status] || `Статус изменен на ${status}`,
+      notes:
+        ORDER_STATUS_MESSAGES[status] || `Статус изменен на ${status}`,
       changed_at: new Date(),
     });
 
@@ -617,6 +685,7 @@ export const updateOrderStatus = async (req, res) => {
 
     const mappedOrder = mapOrderToResponse(order);
     emitOrderUpdated(mappedOrder);
+    await notifyOrderStatus(order, status);
 
     res.json({
       order: mappedOrder,

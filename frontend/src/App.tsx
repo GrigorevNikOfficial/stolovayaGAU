@@ -7,10 +7,7 @@ import { HomePage } from './pages/HomePage';
 import { NavigationPage } from './pages/NavigationPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ChatPage } from './pages/services/chat/ChatPage.tsx';
-import {
-  EventsServicePage,
-  NotificationsServicePage,
-} from './pages/services/ServicePlaceholderPages.tsx';
+import { EventsServicePage } from './pages/services/ServicePlaceholderPages.tsx';
 import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
 
 const PROTECTED_PATHS = new Set(['/profile', '/services/cafeteria', '/services/chat']);
@@ -125,6 +122,10 @@ function App() {
       );
     }
 
+    if (currentPath === '/services/notifications') {
+      return renderProtectedPage(<ProfilePage initialTab="notifications" />);
+    }
+
     if (currentPath === '/profile') {
       return renderProtectedPage(<ProfilePage />);
     }
@@ -135,10 +136,6 @@ function App() {
 
     if (currentPath === '/services/chat') {
       return renderProtectedPage(<ChatPage />);
-    }
-
-    if (currentPath === '/services/notifications') {
-      return <NotificationsServicePage />;
     }
 
     if (currentPath === '/services/marketplace') {

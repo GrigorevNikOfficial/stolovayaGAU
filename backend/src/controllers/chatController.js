@@ -3,6 +3,7 @@ import { Chat } from '../models/Chat.js';
 import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
 import { attachUsersToChatRoom, detachUserFromChatRoom, emitChatMessage } from '../services/socketService.js';
+import { createUserNotification } from '../services/notificationService.js';
 import { DEFAULT_PROFILE_PICTURE_KEY, buildPublicUrl } from '../services/storageService.js';
 
 const ensureObjectId = (value) => new mongoose.Types.ObjectId(value);
@@ -82,6 +83,72 @@ const mapChat = (chat, currentUserId) => {
 
 const populateChatUsers = async (chat) =>
   chat.populate({ path: 'participants.user', select: 'first_name last_name avatar role' });
+
+const buildChatActionUrl = (chatId) => `/services/chat?chat=${chatId}`;
+
+const formatUserDisplayName = (user) => {
+  if (!user) {
+    return 'Коллега';
+  }
+  const first = user.first_name || user.firstName || '';
+  const last = user.last_name || user.lastName || '';
+  const name = `${first} ${last}`.trim();
+  return name || 'Коллега';
+};
+
+const notifyChatParticipants = async (chatDoc, messageDoc) => {
+  if (!chatDoc || !messageDoc) {
+    return;
+  }
+
+  const senderId = messageDoc.sender?._id?.toString?.() ?? messageDoc.sender?.toString?.();
+  if (!senderId) {
+    return;
+  }
+
+  const chatId = chatDoc._id?.toString?.() ?? chatDoc.id;
+  const recipients = (chatDoc.participants || [])
+    .map((participant) => {
+      const raw = participant?.user;
+      if (!raw) {
+        return null;
+      }
+      return raw._id?.toString?.() ?? raw.toString?.();
+    })
+    .filter((id) => id && id !== senderId);
+
+  if (!recipients.length) {
+    return;
+  }
+
+  const senderName = formatUserDisplayName(messageDoc.sender);
+  const previewText = messageDoc.content?.trim() || (messageDoc.attachments?.length ? 'Вложение' : 'Новое сообщение');
+  const chatTitle = chatDoc.type === 'group'
+    ? `Новое сообщение в «${chatDoc.name || 'групповом чате'}»`
+    : 'Новое личное сообщение';
+  const actionUrl = buildChatActionUrl(chatId);
+
+  await Promise.allSettled(
+    recipients.map((userId) =>
+      createUserNotification({
+        userId,
+        title: chatTitle,
+        body: `${senderName}: ${previewText}`,
+        category: 'chat',
+        severity: 'info',
+        type: 'chat_message',
+        icon: '💬',
+        actionLabel: 'Открыть чат',
+        actionUrl,
+        metadata: {
+          chatId,
+          messageId: messageDoc._id?.toString?.() ?? messageDoc._id,
+        },
+        sourceId: messageDoc._id?.toString?.() ?? messageDoc._id,
+      })
+    )
+  );
+};
 
 const assertParticipant = (chat, userId) => {
   const isMember = chat.participants.some((participant) => participant.user.toString() === userId.toString());
@@ -284,6 +351,8 @@ export const sendMessage = async (req, res) => {
 
     const participantIds = chat.participants.map((participant) => participant.user.toString());
     emitChatMessage(chat._id.toString(), mapMessage(message), participantIds);
+
+    await notifyChatParticipants(chat, message);
 
     res.status(201).json({ message: mapMessage(message) });
   } catch (error) {

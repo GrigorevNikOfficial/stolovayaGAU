@@ -20,12 +20,12 @@ import {
   TargetIcon,
   ToolkitIcon,
 } from '../../components/icons/ServiceIcons.tsx';
+import NotificationBell from '../../components/Notifications/NotificationBell.tsx';
 import { showToast } from '../../components/layout/Toast/stores/toastStore';
 import LogoSAU from '../../images/logo.jpg';
 import { $currentUser, logout } from '../../models/users';
 import { onSocketEvent } from '../../lib/socket';
 import { formatBalance } from '../../utils/formatBalance';
-import { BellIcon } from '../../components/icons/ServiceIcons';
 import type {
   MarketplaceListingMode,
   ServiceListing,
@@ -981,16 +981,6 @@ export const MarketplacePage: React.FC = () => {
   const handleProfileNavigate = React.useCallback(() => {
     handleNavigate('/profile');
   }, [handleNavigate]);
-
-  const NotificationBell = () => (
-    <button
-      type="button"
-      aria-label="Уведомления"
-      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-    >
-      <BellIcon className="h-5 w-5" />
-    </button>
-  );
 
   const handleOpenChat = React.useCallback(
     (chatId: string) => {

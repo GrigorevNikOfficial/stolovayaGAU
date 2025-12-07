@@ -20,7 +20,8 @@ import { $orders, loadOrders } from '../models/orders';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal.tsx';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
 import { formatBalance } from '../utils/formatBalance';
-import { CartIcon, BellIcon } from '../components/icons/ServiceIcons';
+import { CartIcon } from '../components/icons/ServiceIcons';
+import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -233,16 +234,6 @@ export const HomePage: React.FC = () => {
       minute: '2-digit',
     });
   };
-
-  const NotificationBell = () => (
-    <button
-      type="button"
-      aria-label="Уведомления"
-      className="w-11 h-11 flex items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 transition-colors bg-surface-base"
-    >
-      <BellIcon className="w-5 h-5" />
-    </button>
-  );
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col overflow-x-hidden">

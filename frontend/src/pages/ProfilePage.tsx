@@ -7,41 +7,59 @@ import { loadOrders } from '../models/orders';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs';
-import { BellIcon } from '../components/icons/ServiceIcons';
+import NotificationBell from '../components/Notifications/NotificationBell.tsx';
+import NotificationSettings from '../components/Profile/NotificationSettings.tsx';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal';
 import LogoSAU from '../images/logo.jpg';
 import { formatBalance } from '../utils/formatBalance';
 
-type ProfileTabId = 'data' | 'stats' | 'achievements';
+type ProfileTabId = 'data' | 'stats' | 'notifications' | 'achievements';
 
 const PROFILE_TABS: Array<{
   id: ProfileTabId;
   label: string;
   description: string;
-  icon: string;
   disabled?: boolean;
 }> = [
   {
     id: 'data',
     label: 'Данные',
     description: 'Персональная информация и доступ',
-    icon: '📋',
   },
   {
     id: 'stats',
     label: 'Статистика',
     description: 'Активность в маркетплейсе',
-    icon: '📊',
+  },
+  {
+    id: 'notifications',
+    label: 'Уведомления',
+    description: 'Колокольчик и каналы доставки',
   },
   {
     id: 'achievements',
     label: 'Достижения в разработке',
     description: 'Скоро появятся награды',
-    icon: '⭐',
     disabled: true,
   },
 ];
+
+type ProfilePageProps = {
+  initialTab?: ProfileTabId;
+};
+
+const isValidProfileTab = (candidate: string | null): candidate is ProfileTabId =>
+  Boolean(candidate && PROFILE_TABS.some(tab => tab.id === candidate && !tab.disabled));
+
+const getTabFromLocation = (): ProfileTabId | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('tab');
+  return isValidProfileTab(requested) ? requested : null;
+};
 
 type ProfileStats = {
   requestsAsCustomer: number;
@@ -61,7 +79,7 @@ const defaultStats: ProfileStats = {
   lastServiceUpdatedAt: null,
 };
 
-export const ProfilePage: React.FC = () => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
   const {
     currentUser,
     handleLoadOrders,
@@ -76,29 +94,57 @@ export const ProfilePage: React.FC = () => {
     isAvatarUploading: uploadAvatarFx.pending,
   });
 
-  const [activeTab, setActiveTab] = React.useState<ProfileTabId>('data');
+  const [activeTab, setActiveTab] = React.useState<ProfileTabId>(() => {
+    const fromUrl = getTabFromLocation();
+    if (fromUrl) {
+      return fromUrl;
+    }
+    if (initialTab && isValidProfileTab(initialTab)) {
+      return initialTab;
+    }
+    return 'data';
+  });
   const [stats, setStats] = React.useState<ProfileStats>(defaultStats);
   const [isStatsLoading, setIsStatsLoading] = React.useState(false);
   const [statsError, setStatsError] = React.useState<string | null>(null);
   const [hasLoadedStats, setHasLoadedStats] = React.useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = React.useState(false);
+  const updateTabInUrl = React.useCallback((tabId: ProfileTabId) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tabId);
+    window.history.replaceState({}, '', url.toString());
+  }, []);
 
-  const NotificationBell = () => (
-    <button
-      type="button"
-      aria-label="Уведомления"
-      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-    >
-      <BellIcon className="h-5 w-5" />
-    </button>
-  );
+  const syncTabFromUrl = React.useCallback(() => {
+    const nextTab = getTabFromLocation();
+    if (nextTab) {
+      setActiveTab(nextTab);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    syncTabFromUrl();
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    window.addEventListener('popstate', syncTabFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncTabFromUrl);
+    };
+  }, [syncTabFromUrl]);
+
+  React.useEffect(() => {
+    updateTabInUrl(activeTab);
+  }, [activeTab, updateTabInUrl]);
 
   const headerTabs = React.useMemo(
     () =>
       PROFILE_TABS.map(tab => ({
         id: tab.id,
         label: tab.label,
-        icon: tab.icon,
         roles: ['user'],
         disabled: tab.disabled,
       })),
@@ -255,7 +301,15 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <div className="hidden flex-1 justify-center lg:flex">
-              <Tabs tabs={headerTabs} activeTab={activeTabIndex} onTabChange={handleHeaderTabChange} justify="center" className="max-w-xl" />
+              <Tabs
+                tabs={headerTabs}
+                activeTab={activeTabIndex}
+                onTabChange={handleHeaderTabChange}
+                justify="center"
+                className="max-w-xl"
+                wrap={false}
+                variant="marketplace"
+              />
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -301,8 +355,16 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div className="pb-3 lg:hidden">
-            <Tabs tabs={headerTabs} activeTab={activeTabIndex} onTabChange={handleHeaderTabChange} className="w-full" />
+            <Tabs
+              tabs={headerTabs}
+              activeTab={activeTabIndex}
+              onTabChange={handleHeaderTabChange}
+              className="w-full"
+              wrap={false}
+              variant="marketplace"
+            />
           </div>
+
         </div>
       </header>
 
@@ -333,6 +395,8 @@ export const ProfilePage: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {activeTab === 'notifications' && <NotificationSettings />}
 
               {activeTab === 'achievements' && (
                 <div className="rounded-3xl border border-dashed border-border-soft bg-surface-muted px-5 py-8 text-center text-text-secondary">
