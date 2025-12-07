@@ -45,6 +45,7 @@ const PROFILE_TABS: Array<{
   },
 ];
 
+
 type ProfilePageProps = {
   initialTab?: ProfileTabId;
 };
@@ -150,6 +151,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
       })),
     []
   );
+  const mobileTabs = React.useMemo(() => PROFILE_TABS.filter(tab => !tab.disabled), []);
 
   const activeTabIndex = React.useMemo(() => {
     const index = PROFILE_TABS.findIndex(tab => tab.id === activeTab);
@@ -248,6 +250,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
     .toUpperCase()
     .trim() || 'U';
   const totalRequests = stats.requestsAsCustomer + stats.requestsAsProvider;
+  const balanceLabel = formatBalance(currentUser.balance);
 
   const renderStatsTab = () => (
     <div className="space-y-6">
@@ -275,8 +278,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
     <div className="min-h-screen text-text-primary flex flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)]">
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
         <div className="px-3 sm:px-4 lg:px-6">
-          <div className="flex flex-wrap items-center gap-4 py-3 sm:py-4 lg:flex-nowrap lg:justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 py-3 sm:py-4 lg:gap-4 lg:justify-between">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 type="button"
                 onClick={() => handleNavigation('/')}
@@ -305,21 +308,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
                 tabs={headerTabs}
                 activeTab={activeTabIndex}
                 onTabChange={handleHeaderTabChange}
-                justify="center"
-                className="max-w-xl"
+                className="max-w-2xl w-full"
                 wrap={false}
                 variant="marketplace"
               />
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setIsTopUpModalOpen(true)}
-                className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
               >
-                <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
+                <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
+                  {balanceLabel}
+                </span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
               </button>
               <NotificationBell />
               <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary">
@@ -354,21 +358,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
             </div>
           </div>
 
-          <div className="pb-3 lg:hidden">
-            <Tabs
-              tabs={headerTabs}
-              activeTab={activeTabIndex}
-              onTabChange={handleHeaderTabChange}
-              className="w-full"
-              wrap={false}
-              variant="marketplace"
-            />
-          </div>
-
         </div>
       </header>
 
-      <main className="flex-1 pb-10 pt-6 px-3 sm:px-6">
+      <main className="flex-1 pb-28 pt-6 px-3 sm:px-6 sm:pb-32 lg:pb-10">
         <div className="max-w-5xl mx-auto">
           <div className="rounded-[32px] border border-border-soft bg-white shadow-brand-card overflow-hidden">
             <div className="p-4 sm:p-8">
@@ -410,6 +403,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
 
       <Footer />
       <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
+
+      {mobileTabs.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 p-3 shadow-lg backdrop-blur z-40">
+          <div className="flex justify-around items-center">
+            {mobileTabs.map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center gap-1 rounded-2xl border px-3 py-2 text-center text-xs font-medium transition-all duration-300 min-w-[80px] ${
+                    isActive
+                      ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
+                      : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
+                  }`}
+                >
+                  <span className="whitespace-normal leading-tight">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

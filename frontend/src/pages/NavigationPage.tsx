@@ -98,6 +98,7 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
   const userInitials = currentUser
     ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
     : '';
+  const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col bg-surface-base">
@@ -125,10 +126,12 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                   <button
                     type="button"
                     onClick={() => onNavigate('/profile')}
-                    className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
+                    className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
                   >
-                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
+                    <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
+                      {balanceLabel}
+                    </span>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
                   </button>
                   <NotificationBell />
                   <button

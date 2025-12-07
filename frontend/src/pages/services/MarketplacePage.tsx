@@ -227,6 +227,7 @@ const MARKETPLACE_TABS: MarketplaceTab[] = [
   },
 ];
 
+
 const getMarketplaceTabs = (user: User | null): MarketplaceTab[] => {
   const role: MarketplaceRole = user?.role ?? 'guest';
   return MARKETPLACE_TABS.filter(tab => tab.roles.includes(role));
@@ -948,6 +949,7 @@ export const MarketplacePage: React.FC = () => {
   const userInitials = currentUser
     ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
     : '';
+  const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
 
   const handleNavigate = React.useCallback((path: string) => {
     const nextUrl = new URL(path, window.location.origin);
@@ -968,6 +970,16 @@ export const MarketplacePage: React.FC = () => {
       }
     },
     [availableTabs, filters.mode, setFilters]
+  );
+
+  const handleTabSelectById = React.useCallback(
+    (tabId: MarketplaceTabId) => {
+      const nextIndex = availableTabs.findIndex(tab => tab.id === tabId);
+      if (nextIndex !== -1) {
+        handleHeaderTabChange(nextIndex);
+      }
+    },
+    [availableTabs, handleHeaderTabChange]
   );
 
 
@@ -1280,6 +1292,7 @@ export const MarketplacePage: React.FC = () => {
   );
 
   const headerTabs = React.useMemo(() => availableTabs, [availableTabs]);
+  const mobileHeaderTabs = React.useMemo(() => availableTabs.filter(tab => !tab.disabled), [availableTabs]);
 
   const renderHeaderTabs = React.useCallback(
     (className = '') => (
@@ -1587,10 +1600,12 @@ export const MarketplacePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
+                    className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
                   >
-                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
+                    <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
+                      {balanceLabel}
+                    </span>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
                   </button>
                   <NotificationBell />
                   <button
@@ -1631,13 +1646,11 @@ export const MarketplacePage: React.FC = () => {
               )}
             </div>
           </div>
-          <div className="pb-3 lg:hidden">
-            {renderHeaderTabs()}
-          </div>
+          
         </div>
       </header>
 
-      <main className="w-full flex-1">
+      <main className="w-full flex-1 pb-28 sm:pb-32 lg:pb-0">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           {isCatalogTab && (
             <div className="space-y-10">
@@ -2163,6 +2176,36 @@ export const MarketplacePage: React.FC = () => {
       </main>
 
       <Footer />
+
+      {mobileHeaderTabs.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 p-3 shadow-lg backdrop-blur z-40">
+          <div className="flex justify-around items-center">
+            {mobileHeaderTabs.map(tab => {
+              const isActive = tab.id === activeTabId;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => handleTabSelectById(tab.id)}
+                  className={`relative flex flex-col items-center gap-1 rounded-2xl border px-3 py-2 text-center text-xs font-medium transition-all duration-300 min-w-[80px] ${
+                    isActive
+                      ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
+                      : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
+                  }`}
+                >
+                  {tab.badge ? (
+                    <span className="absolute -top-1 -right-1 bg-brand-almond text-brand-indigo text-xs font-semibold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1">
+                      {tab.badge}
+                    </span>
+                  ) : null}
+                  <span className="whitespace-normal leading-tight">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <CreateServiceModal
         isOpen={isCreateRequestModalOpen}
