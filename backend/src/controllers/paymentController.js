@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ServiceRequest } from '../models/ServiceRequest.js';
 import { Transaction } from '../models/Transaction.js';
 import { User } from '../models/User.js';
-import { getMarketplaceCommissionPercent } from '../utils/commission.js';
+import { adjustMarketplaceBalance, getMarketplaceCommissionPercent } from '../utils/commission.js';
 
 const mapTransactionResponse = (transaction) => ({
   id: transaction._id,
@@ -146,6 +146,12 @@ export const processServicePayment = async (req, res) => {
     }
 
     await session.endSession();
+
+    try {
+      await adjustMarketplaceBalance(commissionAmount);
+    } catch (error) {
+      console.error('Failed to update marketplace balance after payment:', error);
+    }
 
     const populatedTransaction = await Transaction.findById(transactionDoc._id)
       .populate({ path: 'serviceId', select: 'title category price' })

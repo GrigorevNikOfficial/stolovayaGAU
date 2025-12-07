@@ -2,6 +2,7 @@ import { useUnit } from 'effector-react';
 import React from 'react';
 import { marketplaceApi } from '../../api/services';
 import { serviceRequestsApi } from '../../api/service-requests';
+import { settingsApi } from '../../api/settings';
 import Button from '../../components/layout/Button/Button';
 import Footer from '../../components/layout/Footer/Footer';
 import Input from '../../components/layout/Input/Input';
@@ -20,6 +21,7 @@ import type {
   ServiceSort,
   UpdateServiceRequestStatusPayload,
 } from '../../types/services';
+import type { MarketplaceSettings } from '../../types/settings';
 import type { User } from '../../types/user';
 
 type FiltersState = {
@@ -61,6 +63,13 @@ const priceFormatter = new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 });
 
+const balanceFormatter = new Intl.NumberFormat('ru-RU', {
+  style: 'currency',
+  currency: 'RUB',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const mapFiltersToQuery = (filters: FiltersState): ServiceListQuery => {
   const query: ServiceListQuery = {
     page: filters.page,
@@ -98,7 +107,7 @@ const mapFiltersToQuery = (filters: FiltersState): ServiceListQuery => {
 type MarketplaceRole = 'guest' | User['role'];
 
 type MarketplaceTab = {
-  id: 'catalog' | 'manage' | 'requests';
+  id: 'catalog' | 'manage' | 'requests' | 'platform';
   label: string;
   icon: string;
   roles: MarketplaceRole[];
@@ -123,6 +132,12 @@ const MARKETPLACE_TABS: MarketplaceTab[] = [
     label: 'Заявки',
     icon: '💬',
     roles: ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
+  },
+  {
+    id: 'platform',
+    label: 'Платформа',
+    icon: '⚙️',
+    roles: ['admin'],
   },
 ];
 
@@ -557,7 +572,7 @@ const RequestCard: React.FC<{
   const canAccept = scope === 'customer' && request.status === 'pending';
   const canDecline = canAccept;
   const canCancel = scope === 'provider' && request.status === 'pending';
-  const canComplete = ['accepted', 'in_progress'].includes(request.status);
+  const canComplete = scope === 'customer' && ['accepted', 'in_progress'].includes(request.status);
   const canOpenChat = Boolean(request.chatId);
 
   const handleChatOpen = () => {
@@ -650,6 +665,7 @@ export const MarketplacePage: React.FC = () => {
     currentUser: $currentUser,
     handleLogout: logout,
   });
+  const isAdmin = currentUser?.role === 'admin';
   const [activeTab, setActiveTab] = React.useState(0);
   const [filters, setFilters] = React.useState<FiltersState>(() => ({ ...DEFAULT_FILTERS }));
   const [services, setServices] = React.useState<ServiceListing[]>([]);
@@ -675,6 +691,10 @@ export const MarketplacePage: React.FC = () => {
   const [isTopUpModalOpen, setIsTopUpModalOpen] = React.useState(false);
   const [incomingRequests, setIncomingRequests] = React.useState<ServiceRequest[]>([]);
   const [isLoadingIncomingRequests, setIsLoadingIncomingRequests] = React.useState(false);
+  const [marketplaceSettings, setMarketplaceSettings] = React.useState<MarketplaceSettings | null>(null);
+  const [isLoadingMarketplaceSettings, setIsLoadingMarketplaceSettings] = React.useState(false);
+  const [isSavingMarketplaceSettings, setIsSavingMarketplaceSettings] = React.useState(false);
+  const [commissionInput, setCommissionInput] = React.useState('');
 
   const availableTabs = React.useMemo(() => getMarketplaceTabs(currentUser), [currentUser]);
   React.useEffect(() => {
@@ -869,6 +889,42 @@ export const MarketplacePage: React.FC = () => {
     };
   }, [currentUser, requestsReloadKey]);
 
+  React.useEffect(() => {
+    if (!isAdmin) {
+      setMarketplaceSettings(null);
+      setCommissionInput('');
+      return;
+    }
+
+    let isActive = true;
+    setIsLoadingMarketplaceSettings(true);
+
+    settingsApi
+      .getMarketplaceSettings()
+      .then(response => {
+        if (!isActive) {
+          return;
+        }
+        setMarketplaceSettings(response);
+        setCommissionInput(response.marketplaceCommissionPercent.toString());
+      })
+      .catch(error => {
+        if (!isActive) {
+          return;
+        }
+        showToast({ message: error.message || 'Не удалось загрузить настройки маркетплейса', type: 'error' });
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingMarketplaceSettings(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isAdmin]);
+
   const refreshListings = React.useCallback(() => setListReloadKey(prev => prev + 1), []);
   const refreshMyServices = React.useCallback(() => setMyServicesReloadKey(prev => prev + 1), []);
   const refreshRequests = React.useCallback(() => setRequestsReloadKey(prev => prev + 1), []);
@@ -902,6 +958,26 @@ export const MarketplacePage: React.FC = () => {
       }),
       onSocketEvent('marketplace:requests:deleted', () => {
         refreshRequests();
+      }),
+      onSocketEvent('marketplace:settings:updated', (payload: Partial<MarketplaceSettings>) => {
+        setMarketplaceSettings(prev => {
+          if (!prev) {
+            return {
+              marketplaceCommissionPercent: payload.marketplaceCommissionPercent ?? 0,
+              marketplaceBalance: payload.marketplaceBalance ?? 0,
+            };
+          }
+
+          return {
+            marketplaceCommissionPercent:
+              payload.marketplaceCommissionPercent ?? prev.marketplaceCommissionPercent,
+            marketplaceBalance: payload.marketplaceBalance ?? prev.marketplaceBalance,
+          };
+        });
+
+        if (typeof payload?.marketplaceCommissionPercent === 'number') {
+          setCommissionInput(payload.marketplaceCommissionPercent.toString());
+        }
       }),
     ];
 
@@ -1064,6 +1140,41 @@ export const MarketplacePage: React.FC = () => {
       setPendingRequestActionId(null);
     }
   };
+
+  const handleMarketplaceSettingsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!isAdmin) {
+      return;
+    }
+
+    const parsedValue = Number(commissionInput);
+
+    if (Number.isNaN(parsedValue) || parsedValue < 0 || parsedValue > 100) {
+      showToast({ message: 'Комиссия должна быть числом от 0 до 100%', type: 'error' });
+      return;
+    }
+
+    try {
+      setIsSavingMarketplaceSettings(true);
+      const updated = await settingsApi.updateMarketplaceSettings({
+        marketplaceCommissionPercent: parsedValue,
+      });
+      setMarketplaceSettings(updated);
+      setCommissionInput(updated.marketplaceCommissionPercent.toString());
+      showToast({ message: 'Комиссия обновлена', type: 'success' });
+    } catch (error: any) {
+      showToast({ message: error.message || 'Не удалось обновить комиссию', type: 'error' });
+    } finally {
+      setIsSavingMarketplaceSettings(false);
+    }
+  };
+
+  const commissionValue = Number(commissionInput);
+  const isCommissionValid = !Number.isNaN(commissionValue) && commissionValue >= 0 && commissionValue <= 100;
+  const isCommissionDirty = marketplaceSettings
+    ? commissionValue !== marketplaceSettings.marketplaceCommissionPercent
+    : commissionInput.trim().length > 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
@@ -1518,6 +1629,125 @@ export const MarketplacePage: React.FC = () => {
                   </ol>
                   <div className="rounded-2xl border border-brand-indigo/30 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
                     Комиссия платформы управляется администратором и автоматически списывается при оплате.
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {activeTabId === 'platform' && isAdmin && (
+            <div className="space-y-8">
+              <section className="rounded-[36px] border border-brand-indigo/20 bg-gradient-to-br from-brand-indigo/5 via-white to-brand-grape/10 p-6 shadow-brand-card">
+                <div className="flex flex-wrap items-center justify-between gap-6">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">баланс платформы</p>
+                    <h3 className="mt-3 text-4xl font-semibold text-brand-indigo">
+                      {balanceFormatter.format(marketplaceSettings?.marketplaceBalance ?? 0)}
+                    </h3>
+                    <p className="mt-2 text-sm text-brand-indigo/80">
+                      Текущая комиссия: {marketplaceSettings?.marketplaceCommissionPercent ?? 0}%
+                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.3em] text-brand-indigo/60">
+                      обновляется автоматически при каждом платеже
+                    </p>
+                  </div>
+                  <div className="grid gap-3 text-sm text-brand-indigo">
+                    <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
+                      <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">автообновление</p>
+                      <p className="mt-1 font-semibold text-brand-indigo">
+                        Подписка на событие marketplace:settings:updated уже активна
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
+                      <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">контроль комиссий</p>
+                      <p className="mt-1 font-semibold text-brand-indigo">
+                        Любое изменение мгновенно синхронизируется между администраторами
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.4em] text-text-muted">комиссия платформы</p>
+                      <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">Настройка удержаний</h3>
+                    </div>
+                    <span className="rounded-full border border-brand-indigo/30 px-3 py-1 text-xs font-semibold text-brand-indigo">
+                      Только админ
+                    </span>
+                  </div>
+
+                  {isLoadingMarketplaceSettings ? (
+                    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border-soft px-4 py-3 text-sm text-text-secondary">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo"></div>
+                      Загружаем настройки...
+                    </div>
+                  ) : !marketplaceSettings ? (
+                    <EmptyState
+                      title="Настройки недоступны"
+                      description="Перезагрузите страницу или попробуйте позже."
+                    />
+                  ) : (
+                    <form className="mt-6 space-y-5" onSubmit={handleMarketplaceSettingsSubmit}>
+                      <label className="block text-sm font-medium text-text-primary">
+                        Комиссия, %
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={commissionInput}
+                          onChange={event => setCommissionInput(event.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-base text-text-primary focus:border-brand-indigo focus:outline-none focus:ring-2 focus:ring-brand-indigo/20"
+                          placeholder="15"
+                        />
+                      </label>
+                      <p className="text-sm text-text-secondary">
+                        Комиссия удерживается при создании заявки и автоматически зачисляется на баланс платформы.
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          size="md"
+                          disabled={!isCommissionValid || !isCommissionDirty || isSavingMarketplaceSettings}
+                        >
+                          {isSavingMarketplaceSettings ? 'Сохраняем...' : 'Сохранить' }
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="md"
+                          onClick={() =>
+                            setCommissionInput(marketplaceSettings.marketplaceCommissionPercent.toString())
+                          }
+                          disabled={isSavingMarketplaceSettings}
+                        >
+                          Сбросить изменения
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                <div className="space-y-5 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">как работает баланс</p>
+                  <ul className="space-y-4 text-sm text-text-secondary">
+                    <li className="rounded-2xl border border-border-soft px-4 py-3">
+                      <strong className="text-text-primary">1. Создание заявки</strong> — комиссия удерживается сразу и попадает на баланс.
+                    </li>
+                    <li className="rounded-2xl border border-border-soft px-4 py-3">
+                      <strong className="text-text-primary">2. Отмена</strong> — при возврате средств комиссия автоматически списывается с баланса платформы.
+                    </li>
+                    <li className="rounded-2xl border border-border-soft px-4 py-3">
+                      <strong className="text-text-primary">3. Мониторинг</strong> — данные синхронизируются между всеми открытыми админскими окнами без перезагрузки.
+                    </li>
+                  </ul>
+                  <div className="rounded-2xl border border-brand-indigo/30 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
+                    Если баланс изменивается неожиданно, проверьте историю заявок: каждая операция оставляет запись в Transaction.
                   </div>
                 </div>
               </section>

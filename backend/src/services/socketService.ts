@@ -251,6 +251,10 @@ export const emitMarketplaceRequestDeleted = (request: AnyPayload & { id?: strin
   emitRequestEvent('marketplace:requests:deleted', request);
 };
 
+export const emitMarketplaceSettingsUpdated = (settings: AnyPayload) => {
+  broadcastListing('marketplace:settings:updated', settings);
+};
+
 export const emitOrderCreated = (order: unknown & { user_id?: string }) => {
   emitToAudiences('orders:created', order, { staffRoom: 'orders:staff' });
 };

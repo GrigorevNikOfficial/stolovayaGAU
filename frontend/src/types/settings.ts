@@ -13,4 +13,5 @@ export interface DeliverySettings {
 
 export interface MarketplaceSettings {
   marketplaceCommissionPercent: number;
+  marketplaceBalance: number;
 }

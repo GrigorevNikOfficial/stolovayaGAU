@@ -1,5 +1,6 @@
 import { ServiceListing } from '../models/ServiceListing.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
+import { User } from '../models/User.js';
 import {
   emitMarketplaceListingCreated,
   emitMarketplaceListingDeleted,
@@ -12,6 +13,7 @@ const mapListingResponse = (listing) => ({
   description: listing.description,
   category: listing.category,
   price: listing.price,
+  paymentHold: listing.paymentHold,
   pricingType: listing.pricingType,
   tags: listing.tags,
   skills: listing.skills,
@@ -67,20 +69,38 @@ export const createServiceListing = async (req, res) => {
       return res.status(400).json({ error: 'Цена должна быть неотрицательным числом' });
     }
 
-    const listing = await ServiceListing.create({
-      userId: req.user._id,
-      title: title.trim(),
-      description: description.trim(),
-      category: category.trim(),
-      price: numericPrice,
-      pricingType,
-      tags,
-      skills,
-      location,
-      availability,
-      portfolio,
-      attachments,
-    });
+    const debitedUser = await User.findOneAndUpdate(
+      { _id: req.user._id, balance: { $gte: numericPrice } },
+      { $inc: { balance: -numericPrice } },
+      { new: true }
+    );
+
+    if (!debitedUser) {
+      return res.status(400).json({ error: 'Недостаточно средств для публикации объявления' });
+    }
+
+    let listing;
+
+    try {
+      listing = await ServiceListing.create({
+        userId: req.user._id,
+        title: title.trim(),
+        description: description.trim(),
+        category: category.trim(),
+        price: numericPrice,
+        paymentHold: numericPrice,
+        pricingType,
+        tags,
+        skills,
+        location,
+        availability,
+        portfolio,
+        attachments,
+      });
+    } catch (creationError) {
+      await User.findByIdAndUpdate(req.user._id, { $inc: { balance: numericPrice } });
+      throw creationError;
+    }
 
     const populatedListing = await listing.populate('userId', 'first_name last_name role avatar');
     const responsePayload = mapListingResponse(populatedListing);
@@ -326,7 +346,13 @@ export const deleteServiceListing = async (req, res) => {
     const listingId = listing._id.toString();
     const ownerId = listing.userId.toString();
 
+    const holdAmount = listing.paymentHold || 0;
+
     await ServiceListing.deleteOne({ _id: listing._id });
+
+    if (holdAmount > 0) {
+      await User.findByIdAndUpdate(listing.userId, { $inc: { balance: holdAmount } });
+    }
 
     res.json({ success: true });
     emitMarketplaceListingDeleted({ id: listingId, ownerId });

@@ -2,6 +2,10 @@
 import express from 'express';
 import { authenticateToken, requireAdmin } from '../controllers/auth.js';
 import { Settings } from '../models/Settings.js';
+import {
+    getMarketplaceSettings,
+    updateMarketplaceCommissionPercent,
+} from '../utils/commission.js';
 
 const router = express.Router();
 
@@ -15,10 +19,6 @@ const serializeSettings = (settings) => ({
     dineInTimeEnd: settings.dineInTimeEnd,
     serviceFeeType: settings.serviceFeeType,
     serviceFeeValue: settings.serviceFeeValue,
-    marketplaceCommissionPercent: settings.marketplaceCommissionPercent,
-});
-
-const serializeServiceSettings = (settings) => ({
     marketplaceCommissionPercent: settings.marketplaceCommissionPercent,
 });
 
@@ -102,22 +102,19 @@ router.put('/delivery', async (req, res) => {
     }
 });
 
-// GET /api/settings/services - получить настройки маркетплейса
-router.get('/services', async (req, res) => {
+// GET /api/settings/marketplace - получить настройки маркетплейса (только админ)
+router.get('/marketplace', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const settings = await ensureSettingsDocument('services', {
-            marketplaceCommissionPercent: 15,
-        });
-
-        res.json(serializeServiceSettings(settings));
+        const settings = await getMarketplaceSettings();
+        res.json(settings);
     } catch (error) {
         console.error('Ошибка получения настроек маркетплейса:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// PUT /api/settings/services - обновить настройки маркетплейса (только админ)
-router.put('/services', authenticateToken, requireAdmin, async (req, res) => {
+// PUT /api/settings/marketplace - обновить комиссию маркетплейса (только админ)
+router.put('/marketplace', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const { marketplaceCommissionPercent } = req.body;
 
@@ -131,16 +128,9 @@ router.put('/services', authenticateToken, requireAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Комиссия должна быть числом от 0 до 100' });
         }
 
-        const settings = await Settings.findOneAndUpdate(
-            { name: 'services' },
-            {
-                $set: { marketplaceCommissionPercent: parsedValue },
-                $setOnInsert: { name: 'services' },
-            },
-            { new: true, upsert: true }
-        );
+        const settings = await updateMarketplaceCommissionPercent(parsedValue);
 
-        res.json(serializeServiceSettings(settings));
+        res.json(settings);
     } catch (error) {
         console.error('Ошибка обновления настроек маркетплейса:', error);
         res.status(400).json({ error: error.message });

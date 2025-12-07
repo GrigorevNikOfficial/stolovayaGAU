@@ -48,6 +48,11 @@ const serviceListingSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    paymentHold: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     pricingType: {
       type: String,
       enum: ['fixed', 'hourly', 'package'],

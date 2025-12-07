@@ -21,7 +21,7 @@ export const settingsApi = {
 
   getMarketplaceSettings: async (): Promise<MarketplaceSettings> => {
     const response = await httpClient.get<MarketplaceSettings>(
-      '/settings/services'
+      '/settings/marketplace'
     );
     return response;
   },
@@ -30,7 +30,7 @@ export const settingsApi = {
     data: Partial<MarketplaceSettings>
   ): Promise<MarketplaceSettings> => {
     const response = await httpClient.put<MarketplaceSettings>(
-      '/settings/services',
+      '/settings/marketplace',
       data
     );
     return response;

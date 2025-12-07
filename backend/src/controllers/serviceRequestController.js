@@ -10,7 +10,7 @@ import {
   emitMarketplaceRequestDeleted,
   emitMarketplaceRequestUpdated,
 } from '../services/socketService.js';
-import { getMarketplaceCommissionPercent } from '../utils/commission.js';
+import { adjustMarketplaceBalance, getMarketplaceCommissionPercent } from '../utils/commission.js';
 
 const mapServiceRequestResponse = (request) => ({
   id: request._id,
@@ -109,6 +109,15 @@ const refundRequestPayment = async (request, reason) => {
   request.isPaid = false;
   request.paidAt = null;
   request.transactionId = null;
+
+  const commissionToRevert = Number(transaction.commissionAmount || 0);
+  if (commissionToRevert > 0) {
+    try {
+      await adjustMarketplaceBalance(-commissionToRevert);
+    } catch (error) {
+      console.error('Failed to rollback marketplace balance after refund:', error);
+    }
+  }
 };
 
 const payoutProviderForRequest = async (request) => {
@@ -209,16 +218,16 @@ export const createServiceRequest = async (req, res) => {
     const customerId = service.userId;
     const providerId = req.user._id;
 
-    const updatedCustomer = await User.findOneAndUpdate(
-      { _id: customerId, balance: { $gte: finalPrice } },
-      { $inc: { balance: -finalPrice } },
+    const updatedListing = await ServiceListing.findOneAndUpdate(
+      { _id: service._id, paymentHold: { $gte: finalPrice } },
+      { $inc: { paymentHold: -finalPrice } },
       { new: true }
     );
 
-    if (!updatedCustomer) {
+    if (!updatedListing) {
       return res
         .status(400)
-        .json({ error: 'Недостаточно средств у автора объявления для резерва оплаты' });
+        .json({ error: 'Недостаточно зарезервированных средств для оплаты заявки' });
     }
 
     let createdRequest;
@@ -256,9 +265,11 @@ export const createServiceRequest = async (req, res) => {
       );
 
       createdRequest.transactionId = transactionDoc._id;
+
+      await adjustMarketplaceBalance(commissionAmount);
     } catch (creationError) {
       await Promise.allSettled([
-        User.findByIdAndUpdate(customerId, { $inc: { balance: finalPrice } }),
+        ServiceListing.findByIdAndUpdate(service._id, { $inc: { paymentHold: finalPrice } }),
         ServiceRequest.deleteOne({ _id: requestId }),
         Transaction.deleteOne({ requestId }),
       ]);

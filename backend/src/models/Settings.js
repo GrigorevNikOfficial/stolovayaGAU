@@ -51,6 +51,11 @@ const settingsSchema = new mongoose.Schema({
         default: 15,
         min: 0,
         max: 100
+    },
+    marketplaceBalance: {
+        type: Number,
+        default: 0,
+        min: 0
     }
 }, {
     timestamps: true
