@@ -10,6 +10,7 @@ import {
 } from '../../models/users';
 import Input from '../layout/Input/Input.tsx';
 import Button from '../layout/Button/Button.tsx';
+import { formatBalance } from '../../utils/formatBalance';
 
 export const UserBalances: React.FC = () => {
   const {
@@ -116,8 +117,8 @@ export const UserBalances: React.FC = () => {
 
               <div className="flex flex-col md:items-end gap-2 w-full md:w-auto">
                     <div className="text-xs text-text-muted uppercase tracking-wide">Текущий баланс</div>
-                    <div className="text-2xl font-bold text-brand-indigo">
-                  {(user.balance ?? 0).toLocaleString('ru-RU')} ₽
+                <div className="text-2xl font-bold text-brand-indigo">
+                  {formatBalance(user.balance)}
                 </div>
               </div>
 

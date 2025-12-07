@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
 import Select from '../layout/Select/Select.tsx';
+import { ForkKnifeIcon } from '../icons/ServiceIcons';
 
 interface ItemFormModalProps {
   item?: any;
@@ -148,8 +149,8 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                     {imagePreview ? (
                       <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-4xl text-gray-500">
-                        <span>🍽️</span>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-500">
+                        <ForkKnifeIcon className="w-10 h-10" />
                         <p className="text-xs text-gray-400">Нажмите чтобы загрузить</p>
                       </div>
                     )}

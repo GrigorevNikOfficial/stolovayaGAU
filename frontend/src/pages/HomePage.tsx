@@ -8,7 +8,7 @@ import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
 import CartModal from '../components/Modal/CardModal.tsx';
 import { OrdersList } from '../components/Orders/OrdersList.tsx';
 import { Settings } from '../components/Settings/Settings.tsx';
-import LogoSAU from '../images/LogoSAU.svg';
+import LogoSAU from '../images/logo.jpg';
 import { $cart } from '../models/cart';
 import {
   $currentUser,
@@ -19,6 +19,8 @@ import {
 import { $orders, loadOrders } from '../models/orders';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal.tsx';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
+import { formatBalance } from '../utils/formatBalance';
+import { CartIcon, BellIcon } from '../components/icons/ServiceIcons';
 
 // Функция для проверки ролей
 const hasRole = (user: any, roles: string | string[]): boolean => {
@@ -72,9 +74,8 @@ export const HomePage: React.FC = () => {
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
-    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() ||
-      'U'
-    : '';
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+    : 'U';
 
   const handleNavigation = (path: string) => {
     window.history.pushState({}, '', path);
@@ -87,19 +88,16 @@ export const HomePage: React.FC = () => {
       {
         id: 'menu',
         label: 'Меню',
-        icon: '🛍️',
         roles: ['admin', 'canteenManager', 'cateenManager', 'user', 'guest'],
       },
       {
         id: 'categories',
         label: 'Категории',
-        icon: '📂',
         roles: ['admin', 'canteenManager', 'cateenManager'],
       },
       {
         id: 'orders',
         label: 'Заказы',
-        icon: '📦',
         roles: [
           'admin',
           'canteenManager',
@@ -108,14 +106,17 @@ export const HomePage: React.FC = () => {
           'user',
         ],
       },
-      { id: 'settings', label: 'Настройки', icon: '⚙️', roles: ['admin'] },
+      {
+        id: 'settings',
+        label: 'Настройки',
+        roles: ['admin'],
+      },
     ];
 
     if (user) {
       allTabs.push({
         id: 'profile',
         label: 'Профиль',
-        icon: '👤',
         roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
       });
     }
@@ -233,29 +234,44 @@ export const HomePage: React.FC = () => {
     });
   };
 
+  const NotificationBell = () => (
+    <button
+      type="button"
+      aria-label="Уведомления"
+      className="w-11 h-11 flex items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 transition-colors bg-surface-base"
+    >
+      <BellIcon className="w-5 h-5" />
+    </button>
+  );
+
   return (
     <div className="min-h-screen text-text-primary flex flex-col overflow-x-hidden">
         {/* Шапка */}
-        <header className="bg-white/95 border-b border-border-subtle shadow-sm sticky top-0 z-40 backdrop-blur">
+        <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
         <div className="px-3 sm:px-4 lg:px-6">
           {/* Вся навигация в одной строке */}
-          <div className="flex items-center justify-between py-3 sm:py-4 gap-4">
+          <div className="flex items-center justify-between py-3 sm:py-4 gap-4 min-h-[72px]">
             {/* Левая часть: логотип и название */}
-            <div className="flex items-center gap-3 shrink-0 mr-6">
+            <button
+              type="button"
+              onClick={() => handleNavigation('/')}
+              className="group flex items-center gap-3 shrink-0 mr-6 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-brand-indigo/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
+              aria-label="Перейти в навигацию сервисов"
+            >
               <img
                 src={LogoSAU}
                 alt="Логотип столовой ГАУ"
-                className="w-8 h-8 sm:w-10 sm:h-10"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
               />
               <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-brand-indigo whitespace-nowrap">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-brand-indigo whitespace-nowrap transition-colors duration-200 group-hover:text-brand-almond">
                   Столовая ГАУ
                 </h1>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-brand-almond/15 text-brand-indigo border border-brand-almond/40">
                   тестовая версия
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Центральная часть: табы */}
             <div className="hidden lg:flex flex-1 justify-center">
@@ -276,24 +292,23 @@ export const HomePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-grape/40 bg-brand-grape/10 text-brand-indigo font-semibold text-sm shadow-inner hover:bg-brand-grape/20 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 text-emerald-700 font-semibold text-sm shadow-inner transition-colors hover:bg-emerald-100"
                     aria-label="Пополнить баланс"
                   >
-                    <span className="text-base sm:text-lg">
-                      {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
-                    </span>
-                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-brand-grape text-white text-base leading-none">
+                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-500 text-white text-base leading-none shadow-sm">
                       +
                     </span>
                   </button>
+                  <NotificationBell />
                   {profileTabIndex !== -1 && (
                     <button
                       type="button"
                       onClick={handleProfileTabOpen}
                       aria-pressed={profileTabActive}
-                      className={`w-11 h-11 rounded-full border transition-all duration-200 flex items-center justify-center ${profileTabActive ? 'bg-brand-grape text-white border-brand-grape shadow-sm' : 'border-border-subtle text-text-secondary hover:text-brand-grape hover:border-brand-grape/60 bg-surface-base'}`}
+                      className={`w-11 h-11 rounded-full border transition-all duration-200 flex items-center justify-center ${profileTabActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-brand-card' : 'border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 bg-white'}`}
                     >
-                      <span className="w-10 h-10 rounded-full bg-brand-indigo border border-white/30 shadow flex items-center justify-center text-base font-semibold text-white overflow-hidden">
+                      <span className="w-10 h-10 rounded-full bg-white border border-emerald-200 shadow-sm flex items-center justify-center text-base font-semibold text-emerald-700 overflow-hidden">
                         {avatarUrl ? (
                           <img
                             src={avatarUrl}
@@ -310,7 +325,7 @@ export const HomePage: React.FC = () => {
                     type="button"
                     onClick={handleLogoutClick}
                     aria-label="Выйти из аккаунта"
-                    className="w-11 h-11 flex items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-brand-indigo hover:border-brand-indigo/40 transition-colors bg-surface-base"
+                    className="w-11 h-11 flex items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 transition-colors bg-surface-base"
                   >
                     <svg
                       className="w-5 h-5"
@@ -384,7 +399,7 @@ export const HomePage: React.FC = () => {
                           <button
                             type="button"
                             onClick={handleActiveOrderClick}
-                            className="text-sm font-semibold text-brand-grape hover:text-brand-indigo transition-colors"
+                            className="text-sm font-semibold text-brand-almond hover:text-brand-indigo transition-colors"
                           >
                             Все заказы →
                           </button>
@@ -404,7 +419,7 @@ export const HomePage: React.FC = () => {
                                   key={order._id}
                                   type="button"
                                   onClick={handleActiveOrderClick}
-                                  className="flex-shrink-0 w-64 rounded-2xl border border-border-subtle bg-surface-elevated px-4 py-3 text-left shadow-md hover:border-brand-grape/60 hover:bg-surface-base transition-colors"
+                                  className="flex-shrink-0 w-64 rounded-2xl border border-border-subtle bg-surface-elevated px-4 py-3 text-left shadow-md hover:border-brand-almond/60 hover:bg-white transition-colors"
                                 >
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
@@ -514,11 +529,12 @@ export const HomePage: React.FC = () => {
             onClick={() => setIsCartModalOpen(true)}
             variant="primary"
             size="lg"
-            className="shadow-2xl shadow-brand-grape/30 hover:shadow-brand-grape/50 transition-all duration-300 ease-out hover:scale-105"
+            className="shadow-2xl shadow-emerald-200/60 hover:shadow-emerald-300 transition-all duration-300 ease-out hover:scale-105"
           >
             <span className="flex items-center gap-2">
-              🛒 Корзина
-              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full min-w-6">
+              <CartIcon className="w-5 h-5" />
+              Корзина
+              <span className="bg-brand-seashell text-brand-indigo text-xs font-semibold px-2 py-1 rounded-full min-w-6">
                 {cart.reduce((total, item) => total + item.quantity, 0)}
               </span>
             </span>
@@ -547,14 +563,14 @@ export const HomePage: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => selectTabById(tab.id)}
-                className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] relative ${
+                className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] border ${
                   isActive
-                    ? 'text-white bg-brand-grape shadow-lg'
-                    : 'text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
+                    ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
+                    : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
                 }`}
               >
                 {tab.id === 'orders' && ordersBadge && (
-                  <span className="absolute -top-1 -right-1 bg-brand-indigo text-white text-xs font-bold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1">
+                  <span className="absolute -top-1 -right-1 bg-brand-almond text-brand-indigo text-xs font-semibold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1">
                     {ordersBadge}
                   </span>
                 )}
@@ -570,18 +586,20 @@ export const HomePage: React.FC = () => {
           {showCart && (
             <button
               onClick={() => setIsCartModalOpen(true)}
-              className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] relative ${
+              className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] border ${
                 isCartModalOpen
-                  ? 'text-white bg-brand-grape shadow-lg'
-                  : 'text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
+                  ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
+                  : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
               }`}
             >
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-brand-indigo text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-brand-almond text-brand-indigo text-xs font-semibold w-5 h-5 rounded-full flex items-center justify-center">
                   {cart.reduce((total, item) => total + item.quantity, 0)}
                 </span>
               )}
-              <span className="text-lg mb-1">🛒</span>
+              <span className="mb-1">
+                <CartIcon className="w-5 h-5" />
+              </span>
               <span className="text-xs font-medium">Корзина</span>
             </button>
           )}

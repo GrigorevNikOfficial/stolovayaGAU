@@ -24,7 +24,7 @@ export const Button: React.FC<ButtonProps> = ({
   initials,
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-indigo/30 focus:ring-offset-brand-seashell';
+    'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-almond/35 focus:ring-offset-brand-seashell';
 
   const sizeClasses = {
     sm: 'h-8 px-4 text-sm rounded-xl',
@@ -35,11 +35,11 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      'bg-brand-indigo border border-brand-indigo text-white shadow-brand-card hover:bg-brand-grape hover:border-brand-grape',
+      'bg-brand-almond border border-brand-almond text-white shadow-brand-card hover:bg-emerald-500 hover:border-emerald-500',
     secondary:
-      'bg-brand-almond border border-brand-almond text-brand-indigo shadow-sm hover:bg-brand-seashell',
+      'bg-brand-seashell border border-brand-almond/60 text-brand-indigo shadow-sm hover:text-brand-grape hover:border-brand-almond hover:bg-white',
     outline:
-      'bg-transparent border border-border-soft text-brand-indigo hover:border-brand-indigo hover:bg-brand-seashell',
+      'bg-transparent border border-border-soft text-brand-indigo hover:border-brand-almond hover:bg-brand-seashell/60',
     icon: 'bg-white border border-border-soft text-brand-indigo hover:bg-brand-seashell rounded-full shadow-sm',
   };
 
@@ -66,7 +66,7 @@ export const Button: React.FC<ButtonProps> = ({
         className={classes}
       >
         {avatarUrl || initials ? (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-light to-green-medium overflow-hidden flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 overflow-hidden flex items-center justify-center">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -74,7 +74,7 @@ export const Button: React.FC<ButtonProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-xs font-bold text-green-darker">
+              <span className="text-xs font-bold text-emerald-950">
                 {initials}
               </span>
             )}

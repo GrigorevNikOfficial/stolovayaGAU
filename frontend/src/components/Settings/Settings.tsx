@@ -8,6 +8,16 @@ import { EmployeeManagement } from './EmployeeManagement.tsx';
 import { OrderSettings } from './OrderSettings.tsx';
 import { UserBalances } from './UserBalances.tsx';
 import { TopUpRequestsAdmin } from '../TopUpRequests/TopUpRequestsAdmin.tsx';
+import {
+  BellIcon,
+  CreditCardIcon,
+  GearIcon,
+  LockIcon,
+  PackageIcon,
+  PieChartIcon,
+  UsersIcon,
+  WalletIcon,
+} from '../icons/ServiceIcons';
 
 export const Settings: React.FC = () => {
   const [currentUser] = useUnit([$currentUser]);
@@ -18,43 +28,43 @@ export const Settings: React.FC = () => {
     {
       id: 'delivery',
       label: 'Заказы',
-      icon: '📦',
+      icon: <PackageIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
     {
       id: 'orders',
       label: 'Сервисный сбор',
-      icon: '💵',
+      icon: <PieChartIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
     {
       id: 'employees',
       label: 'Сотрудники',
-      icon: '👥',
+      icon: <UsersIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
     {
       id: 'balances',
       label: 'Баланс пользователей',
-      icon: '💰',
+      icon: <WalletIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
     {
       id: 'topups',
       label: 'Заявки на пополнение',
-      icon: '💳',
+      icon: <CreditCardIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
     {
       id: 'notifications',
       label: 'Уведомления',
-      icon: '🔔',
+      icon: <BellIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
     {
       id: 'general',
       label: 'Основные',
-      icon: '⚙️',
+      icon: <GearIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
   ];
@@ -67,7 +77,9 @@ export const Settings: React.FC = () => {
   if (!currentUser || currentUser.role !== 'admin') {
     return (
       <div className="text-center py-16 fade-in text-text-secondary">
-        <div className="text-6xl text-text-muted mb-4">🚫</div>
+        <div className="flex items-center justify-center text-text-muted mb-4">
+          <LockIcon className="w-14 h-14" />
+        </div>
         <p className="text-text-primary text-xl font-medium mb-3">
           Доступ запрещен
         </p>
@@ -114,7 +126,9 @@ export const Settings: React.FC = () => {
 
           {visibleTabs[activeTab].id === 'notifications' && (
             <div className="text-center py-12 text-text-secondary">
-              <div className="text-6xl text-text-muted mb-4">🔔</div>
+              <div className="flex items-center justify-center text-text-muted mb-4">
+                <BellIcon className="w-12 h-12" />
+              </div>
               <p className="text-text-primary text-xl font-medium mb-3">
                 Настройки уведомлений
               </p>
@@ -124,7 +138,9 @@ export const Settings: React.FC = () => {
 
           {visibleTabs[activeTab].id === 'general' && (
             <div className="text-center py-12 text-text-secondary">
-              <div className="text-6xl text-text-muted mb-4">⚙️</div>
+              <div className="flex items-center justify-center text-text-muted mb-4">
+                <GearIcon className="w-12 h-12" />
+              </div>
               <p className="text-text-primary text-xl font-medium mb-3">
                 Основные настройки
               </p>

@@ -10,6 +10,7 @@ import {
 import { $currentUser } from '../../models/users';
 import Button from '../layout/Button/Button.tsx';
 import { showToast } from '../layout/Toast/stores/toastStore.ts';
+import { ClockIcon, FlameIcon, ForkKnifeIcon } from '../icons/ServiceIcons';
 
 interface ItemModalProps {
   item: any;
@@ -238,8 +239,8 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-6xl text-gray-600">
-                    🍽️
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+                    <ForkKnifeIcon className="w-16 h-16" />
                   </div>
                 )}
               </div>
@@ -282,19 +283,19 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
                   {item.calories && (
                     <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
-                      <span className="text-gray-500">🔥</span>
+                      <FlameIcon className="w-4 h-4 text-gray-500" />
                       <span>{item.calories} ккал</span>
                     </div>
                   )}
                   {item.preparation_time && (
                     <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
-                      <span className="text-gray-500">⏱️</span>
+                      <ClockIcon className="w-4 h-4 text-gray-500" />
                       <span>{item.preparation_time} мин</span>
                     </div>
                   )}
                   {item.number_pribors && (
                     <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
-                      <span className="text-gray-500">🍴</span>
+                      <ForkKnifeIcon className="w-4 h-4 text-gray-500" />
                       <span>{item.number_pribors} приборов</span>
                     </div>
                   )}

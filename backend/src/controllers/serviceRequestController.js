@@ -12,16 +12,23 @@ import {
 } from '../services/socketService.js';
 import { adjustMarketplaceBalance, getMarketplaceCommissionPercent } from '../utils/commission.js';
 
-const mapServiceRequestResponse = (request) => ({
-  id: request._id,
-  service: request.serviceId
-    ? {
-        id: request.serviceId._id || request.serviceId,
-        title: request.serviceId.title,
-        price: request.serviceId.price,
-        category: request.serviceId.category,
-      }
-    : undefined,
+const REQUEST_TYPES = ['request', 'offer'];
+
+const mapServiceRequestResponse = (request) => {
+  const normalizedType = REQUEST_TYPES.includes(request.type) ? request.type : 'request';
+
+  return {
+    id: request._id,
+    type: normalizedType,
+    service: request.serviceId
+      ? {
+          id: request.serviceId._id || request.serviceId,
+          title: request.serviceId.title,
+          price: request.serviceId.price,
+          category: request.serviceId.category,
+          mode: request.serviceId.mode || normalizedType,
+        }
+      : undefined,
   customer: request.customerId
     ? {
         id: request.customerId._id || request.customerId,
@@ -53,7 +60,8 @@ const mapServiceRequestResponse = (request) => ({
   cancellationReason: request.cancellationReason,
   createdAt: request.createdAt,
   updatedAt: request.updatedAt,
-});
+  };
+};
 
 const calculateCommission = (amount, percent) => {
   const commissionAmount = Number(((amount * percent) / 100).toFixed(2));
@@ -210,24 +218,46 @@ export const createServiceRequest = async (req, res) => {
       return res.status(400).json({ error: 'Некорректная стоимость заявки' });
     }
 
+    const listingMode = REQUEST_TYPES.includes(service.mode) ? service.mode : 'request';
+
     const commissionPercent = await getMarketplaceCommissionPercent();
     const { commissionAmount, payoutAmount } = calculateCommission(finalPrice, commissionPercent);
     const timestamp = new Date();
     const amount = finalPrice;
     const requestId = new mongoose.Types.ObjectId();
-    const customerId = service.userId;
-    const providerId = req.user._id;
+    const isRequestMode = listingMode === 'request';
+    const customerId = isRequestMode ? service.userId : req.user._id;
+    const providerId = isRequestMode ? req.user._id : service.userId;
+    const rollbackOperations = [];
 
-    const updatedListing = await ServiceListing.findOneAndUpdate(
-      { _id: service._id, paymentHold: { $gte: finalPrice } },
-      { $inc: { paymentHold: -finalPrice } },
-      { new: true }
-    );
+    if (isRequestMode) {
+      const updatedListing = await ServiceListing.findOneAndUpdate(
+        { _id: service._id, paymentHold: { $gte: finalPrice } },
+        { $inc: { paymentHold: -finalPrice } },
+        { new: true }
+      );
 
-    if (!updatedListing) {
-      return res
-        .status(400)
-        .json({ error: 'Недостаточно зарезервированных средств для оплаты заявки' });
+      if (!updatedListing) {
+        return res
+          .status(400)
+          .json({ error: 'Недостаточно зарезервированных средств для оплаты заявки' });
+      }
+
+      rollbackOperations.push(() =>
+        ServiceListing.findByIdAndUpdate(service._id, { $inc: { paymentHold: finalPrice } })
+      );
+    } else {
+      const chargedCustomer = await User.findOneAndUpdate(
+        { _id: customerId, balance: { $gte: finalPrice } },
+        { $inc: { balance: -finalPrice } },
+        { new: true }
+      );
+
+      if (!chargedCustomer) {
+        return res.status(400).json({ error: 'Недостаточно средств для оформления заказа' });
+      }
+
+      rollbackOperations.push(() => User.findByIdAndUpdate(customerId, { $inc: { balance: finalPrice } }));
     }
 
     let createdRequest;
@@ -235,6 +265,7 @@ export const createServiceRequest = async (req, res) => {
     try {
       createdRequest = await ServiceRequest.create({
         _id: requestId,
+        type: listingMode,
         serviceId: service._id,
         customerId,
         providerId,
@@ -269,7 +300,7 @@ export const createServiceRequest = async (req, res) => {
       await adjustMarketplaceBalance(commissionAmount);
     } catch (creationError) {
       await Promise.allSettled([
-        ServiceListing.findByIdAndUpdate(service._id, { $inc: { paymentHold: finalPrice } }),
+        ...rollbackOperations.map((operation) => operation()),
         ServiceRequest.deleteOne({ _id: requestId }),
         Transaction.deleteOne({ requestId }),
       ]);
@@ -294,7 +325,7 @@ export const createServiceRequest = async (req, res) => {
     }
 
     const populated = await ServiceRequest.findById(createdRequest._id).populate([
-      { path: 'serviceId', select: 'title price category' },
+      { path: 'serviceId', select: 'title price category mode' },
       { path: 'customerId', select: 'first_name last_name role' },
       { path: 'providerId', select: 'first_name last_name role' },
     ]);
@@ -310,7 +341,7 @@ export const createServiceRequest = async (req, res) => {
 
 export const getServiceRequests = async (req, res) => {
   try {
-    const { scope = 'customer', status, serviceId } = req.query;
+    const { scope = 'customer', status, serviceId, type } = req.query;
     const filter = {};
 
     if (scope === 'provider') {
@@ -327,10 +358,14 @@ export const getServiceRequests = async (req, res) => {
       filter.serviceId = serviceId;
     }
 
+    if (type && REQUEST_TYPES.includes(type)) {
+      filter.type = type;
+    }
+
     const requests = await ServiceRequest.find(filter)
       .sort({ createdAt: -1 })
       .populate([
-        { path: 'serviceId', select: 'title price category' },
+        { path: 'serviceId', select: 'title price category mode' },
         { path: 'customerId', select: 'first_name last_name role' },
         { path: 'providerId', select: 'first_name last_name role' },
       ]);
@@ -347,7 +382,7 @@ export const getServiceRequestById = async (req, res) => {
     const { id } = req.params;
 
     const request = await ServiceRequest.findById(id).populate([
-      { path: 'serviceId', select: 'title price category' },
+      { path: 'serviceId', select: 'title price category mode' },
       { path: 'customerId', select: 'first_name last_name role' },
       { path: 'providerId', select: 'first_name last_name role' },
     ]);
@@ -391,16 +426,18 @@ export const updateServiceRequestStatus = async (req, res) => {
       return res.status(404).json({ error: 'Заявка не найдена' });
     }
 
+    const requestType = REQUEST_TYPES.includes(request.type) ? request.type : 'request';
     const isCustomer = request.customerId.toString() === req.user._id.toString();
     const isProvider = request.providerId.toString() === req.user._id.toString();
+    const isListingOwner = requestType === 'request' ? isCustomer : isProvider;
 
     if (!isCustomer && !isProvider && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Недостаточно прав для изменения заявки' });
     }
 
     if (status === 'accepted') {
-      if (!isCustomer) {
-        return res.status(403).json({ error: 'Только автор объявления может принять заявку' });
+      if (!isListingOwner) {
+        return res.status(403).json({ error: 'Только владелец объявления может принять заявку' });
       }
       if (request.status !== 'pending') {
         return res.status(400).json({ error: 'Можно принять только новую заявку' });
@@ -410,8 +447,8 @@ export const updateServiceRequestStatus = async (req, res) => {
     }
 
     if (status === 'declined') {
-      if (!isCustomer) {
-        return res.status(403).json({ error: 'Только автор объявления может отклонить заявку' });
+      if (!isListingOwner) {
+        return res.status(403).json({ error: 'Только владелец объявления может отклонить заявку' });
       }
       if (request.status !== 'pending') {
         return res.status(400).json({ error: 'Можно отклонить только новую заявку' });
@@ -446,7 +483,7 @@ export const updateServiceRequestStatus = async (req, res) => {
       }
 
       const populatedCancellation = await request.populate([
-        { path: 'serviceId', select: 'title price category' },
+        { path: 'serviceId', select: 'title price category mode' },
         { path: 'customerId', select: 'first_name last_name role' },
         { path: 'providerId', select: 'first_name last_name role' },
       ]);
@@ -460,7 +497,7 @@ export const updateServiceRequestStatus = async (req, res) => {
 
     if (status === 'completed') {
       if (!isCustomer) {
-        return res.status(403).json({ error: 'Только автор объявления может завершить заявку' });
+        return res.status(403).json({ error: 'Завершить заявку может только заказчик' });
       }
       if (!['in_progress', 'accepted'].includes(request.status)) {
         return res.status(400).json({ error: 'Заявку можно завершить только после принятия' });
@@ -486,7 +523,7 @@ export const updateServiceRequestStatus = async (req, res) => {
     await request.save();
 
     const populated = await request.populate([
-      { path: 'serviceId', select: 'title price category' },
+      { path: 'serviceId', select: 'title price category mode' },
       { path: 'customerId', select: 'first_name last_name role' },
       { path: 'providerId', select: 'first_name last_name role' },
     ]);

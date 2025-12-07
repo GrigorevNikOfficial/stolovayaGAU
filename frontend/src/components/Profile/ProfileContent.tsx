@@ -1,5 +1,6 @@
 import React from 'react';
 import type { User } from '../../types/user';
+import { formatBalance } from '../../utils/formatBalance';
 
 interface ProfileContentProps {
   currentUser: User;
@@ -123,7 +124,7 @@ export const ProfileContent: React.FC<ProfileContentProps> = ({
             Баланс
           </label>
           <p className="text-2xl sm:text-3xl font-bold text-brand-indigo">
-            {(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽
+            {formatBalance(currentUser.balance)}
           </p>
           <p className="text-xs text-text-muted mt-1">
             Пополнить баланс может администратор системы

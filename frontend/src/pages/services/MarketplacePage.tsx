@@ -7,13 +7,27 @@ import Button from '../../components/layout/Button/Button';
 import Footer from '../../components/layout/Footer/Footer';
 import Input from '../../components/layout/Input/Input';
 import Select from '../../components/layout/Select/Select';
-import { Tabs } from '../../components/layout/Tabs/Tabs';
 import TopUpRequestModal from '../../components/Modal/TopUpRequestModal';
+import {
+  BookIcon,
+  CheckIcon,
+  EyeIcon,
+  LeafIcon,
+  LaptopIcon,
+  PenIcon,
+  PieChartIcon,
+  SparklesIcon,
+  TargetIcon,
+  ToolkitIcon,
+} from '../../components/icons/ServiceIcons.tsx';
 import { showToast } from '../../components/layout/Toast/stores/toastStore';
-import LogoSAU from '../../images/LogoSAU.svg';
+import LogoSAU from '../../images/logo.jpg';
 import { $currentUser, logout } from '../../models/users';
 import { onSocketEvent } from '../../lib/socket';
+import { formatBalance } from '../../utils/formatBalance';
+import { BellIcon } from '../../components/icons/ServiceIcons';
 import type {
+  MarketplaceListingMode,
   ServiceListing,
   ServiceListPagination,
   ServiceListQuery,
@@ -33,6 +47,7 @@ type FiltersState = {
   maxPrice: string;
   includeInactive: boolean;
   page: number;
+  mode: MarketplaceListingMode;
 };
 
 type CreateServiceFormValues = {
@@ -55,6 +70,7 @@ const DEFAULT_FILTERS: FiltersState = {
   maxPrice: '',
   includeInactive: false,
   page: 1,
+  mode: 'request',
 };
 
 const priceFormatter = new Intl.NumberFormat('ru-RU', {
@@ -63,12 +79,70 @@ const priceFormatter = new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 });
 
-const balanceFormatter = new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'RUB',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const sortRequestsByDateDesc = (list: ServiceRequest[]) =>
+  [...list].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+const upsertRequestInList = (list: ServiceRequest[], request: ServiceRequest) => {
+  const next = [...list];
+  const index = next.findIndex(item => item.id === request.id);
+
+  if (index === -1) {
+    next.unshift(request);
+  } else {
+    next[index] = request;
+  }
+
+  return sortRequestsByDateDesc(next);
+};
+
+const removeRequestById = (list: ServiceRequest[], id: string) =>
+  list.filter(request => request.id !== id);
+
+const resolveRequestMode = (request: ServiceRequest): MarketplaceListingMode =>
+  request.type ?? request.service?.mode ?? 'request';
+
+const isListingOwnerForRequest = (request: ServiceRequest, userId?: string) => {
+  if (!userId) {
+    return false;
+  }
+  const mode = resolveRequestMode(request);
+  return mode === 'request'
+    ? request.customer?.id === userId
+    : request.provider?.id === userId;
+};
+
+const isRequestRelevantForScope = (
+  request: ServiceRequest,
+  scope: 'customer' | 'provider',
+  userId?: string
+) => {
+  if (!userId) {
+    return false;
+  }
+
+  return scope === 'customer'
+    ? request.customer?.id === userId
+    : request.provider?.id === userId;
+};
+
+const isPendingIncomingForUser = (request: ServiceRequest, userId?: string) =>
+  Boolean(userId && request.status === 'pending' && isListingOwnerForRequest(request, userId));
+
+type SocketRequestPayload = Partial<ServiceRequest> & { id?: string };
+
+const sanitizeSocketRequest = (payload?: SocketRequestPayload | null): ServiceRequest | null => {
+  if (!payload || typeof payload.id !== 'string' || !payload.status || payload.price === undefined) {
+    return null;
+  }
+
+  // Socket payload already mirrors API response; fill safe defaults for strict fields.
+  return {
+    files: payload.files ?? [],
+    ...payload,
+  } as ServiceRequest;
+};
 
 const mapFiltersToQuery = (filters: FiltersState): ServiceListQuery => {
   const query: ServiceListQuery = {
@@ -100,43 +174,56 @@ const mapFiltersToQuery = (filters: FiltersState): ServiceListQuery => {
   if (filters.includeInactive) {
     query.includeInactive = true;
   }
+  if (filters.mode) {
+    query.mode = filters.mode;
+  }
 
   return query;
 };
 
 type MarketplaceRole = 'guest' | User['role'];
 
+type MarketplaceTabId = 'catalog_request' | 'catalog_offer' | 'manage' | 'requests' | 'platform';
+
 type MarketplaceTab = {
-  id: 'catalog' | 'manage' | 'requests' | 'platform';
+  id: MarketplaceTabId;
   label: string;
-  icon: string;
+  icon?: React.ReactNode;
   roles: MarketplaceRole[];
   badge?: number;
+  mode?: MarketplaceListingMode;
+  description?: string;
+  disabled?: boolean;
 };
 
 const MARKETPLACE_TABS: MarketplaceTab[] = [
   {
-    id: 'catalog',
-    label: 'Каталог',
-    icon: '🛍️',
+    id: 'catalog_request',
+    label: 'Заказ',
+    mode: 'request',
+    description: 'Формируйте задачу и замораживайте бюджет сразу — оплата перейдёт исполнителю после завершения.',
+    roles: ['guest', 'user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
+  },
+  {
+    id: 'catalog_offer',
+    label: 'Услуги',
+    mode: 'offer',
+    description: 'Публикуйте навыки, получайте запросы от коллег и подтверждайте подходящие проекты.',
     roles: ['guest', 'user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
   },
   {
     id: 'manage',
     label: 'Мои услуги',
-    icon: '🧰',
     roles: ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
   },
   {
     id: 'requests',
     label: 'Заявки',
-    icon: '💬',
     roles: ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
   },
   {
     id: 'platform',
     label: 'Платформа',
-    icon: '⚙️',
     roles: ['admin'],
   },
 ];
@@ -209,6 +296,44 @@ const SORT_OPTIONS = [
   { label: 'По рейтингу', value: 'rating' },
 ];
 
+const MODE_BADGE_STYLES: Record<MarketplaceListingMode, string> = {
+  request: 'bg-amber-50 text-amber-700 border-amber-200',
+  offer: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+};
+
+const MODE_OWNER_LABEL: Record<MarketplaceListingMode, string> = {
+  request: 'Автор задачи',
+  offer: 'Исполнитель',
+};
+
+const MODE_PRIMARY_ACTION: Record<MarketplaceListingMode, string> = {
+  request: 'Откликнуться',
+  offer: 'Заказать услугу',
+};
+
+const CategoryIcon: React.FC<{ category: string }> = ({ category }) => {
+  const iconClass = 'w-5 h-5';
+  if (category === 'education') {
+    return <BookIcon className={iconClass} aria-hidden="true" />;
+  }
+  if (category === 'it') {
+    return <LaptopIcon className={iconClass} aria-hidden="true" />;
+  }
+  if (category === 'design') {
+    return <PenIcon className={iconClass} aria-hidden="true" />;
+  }
+  if (category === 'events') {
+    return <TargetIcon className={iconClass} aria-hidden="true" />;
+  }
+  if (category === 'lifestyle') {
+    return <SparklesIcon className={iconClass} aria-hidden="true" />;
+  }
+  if (category === 'consulting') {
+    return <PieChartIcon className={iconClass} aria-hidden="true" />;
+  }
+  return <ToolkitIcon className={iconClass} aria-hidden="true" />;
+};
+
 const createInitialServiceFormValues = (): CreateServiceFormValues => ({
   title: '',
   description: '',
@@ -223,7 +348,8 @@ const CreateServiceModal: React.FC<{
   onClose: () => void;
   onSubmit: (payload: CreateServiceFormValues) => void | Promise<void>;
   isSubmitting: boolean;
-}> = ({ isOpen, onClose, onSubmit, isSubmitting }) => {
+  mode: MarketplaceListingMode;
+}> = ({ isOpen, onClose, onSubmit, isSubmitting, mode }) => {
   const [formState, setFormState] = React.useState<CreateServiceFormValues>(() => createInitialServiceFormValues());
 
   React.useEffect(() => {
@@ -243,8 +369,23 @@ const CreateServiceModal: React.FC<{
 
   const categoryOptions = CATEGORY_OPTIONS.filter(option => option.value);
 
+  const modeCopy =
+    mode === 'request'
+      ? {
+          title: 'Создать заказ',
+          info:
+            'Мы спишем стоимость объявления с вашего баланса и заморозим её до завершения работ. Деньги перейдут исполнителю после подтверждения результата.',
+          submit: 'Опубликовать заказ',
+        }
+      : {
+          title: 'Опубликовать услугу',
+          info:
+            'Коллеги будут оставлять заявки на вашу услугу. Средства спишутся с заказчика и перейдут вам после завершения проекта.',
+          submit: 'Опубликовать услугу',
+        };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Новое объявление">
+    <Modal isOpen={isOpen} onClose={onClose} title={modeCopy.title}>
       <form className="space-y-5" onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-2">
           <Input
@@ -264,6 +405,10 @@ const CreateServiceModal: React.FC<{
           placeholder="Опишите задачу, сроки и формат сотрудничества"
           className="min-h-[140px] w-full rounded-2xl border border-border-soft bg-surface-muted px-5 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-indigo"
         />
+        <div className="rounded-3xl border border-border-soft bg-surface-muted px-5 py-4 text-sm text-text-secondary">
+          {modeCopy.info}
+        </div>
+
         <div className="grid gap-4 md:grid-cols-3">
           <Select
             value={formState.pricingType}
@@ -288,7 +433,7 @@ const CreateServiceModal: React.FC<{
             Отмена
           </Button>
           <Button variant="primary" size="md" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Публикуем...' : 'Опубликовать'}
+            {isSubmitting ? 'Публикуем...' : modeCopy.submit}
           </Button>
         </div>
       </form>
@@ -326,29 +471,39 @@ const RequestModal: React.FC<{
     });
   };
 
+  const requestMode: MarketplaceListingMode = service?.mode ?? 'request';
+  const ownerLabel = MODE_OWNER_LABEL[requestMode];
+  const modalTitle = requestMode === 'offer' ? 'Заказ услуги' : 'Отклик на задачу';
+  const paymentTitle = requestMode === 'offer' ? 'спишем при отправке' : 'оплата зарезервирована';
+  const paymentDescription =
+    requestMode === 'offer'
+      ? 'Мы спишем средства с вашего баланса и переведём исполнителю после завершения.'
+      : 'Бюджет удерживается на депозите заказчика, вы получите выплату после завершения.';
+  const messagePlaceholder = requestMode === 'offer' ? 'Комментарий исполнителю' : 'Сообщение заказчику';
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Новая заявка">
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
       {service ? (
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-sm text-text-secondary">
             <p className="text-text-primary font-semibold">{service.title}</p>
-            <p>Заказчик: {service.owner?.firstName} {service.owner?.lastName}</p>
+            <p>
+              {ownerLabel}: {service.owner?.firstName} {service.owner?.lastName}
+            </p>
           </div>
           <textarea
             value={formState.message}
             onChange={event => updateField('message', event.target.value)}
-            placeholder="Сообщение исполнителю"
+            placeholder={messagePlaceholder}
             className="min-h-[120px] w-full rounded-2xl border border-border-soft bg-surface-muted px-5 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-indigo"
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2 rounded-2xl border border-border-soft bg-surface-muted px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">спишем при отправке</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">{paymentTitle}</p>
               <p className="mt-1 text-lg font-semibold text-brand-indigo">
                 {service ? priceFormatter.format(service.price) : '—'}
               </p>
-              <p className="mt-2 text-xs text-text-secondary">
-                Оплата резервируется с баланса автора объявления сразу и переводится исполнителю после завершения.
-              </p>
+              <p className="mt-2 text-xs text-text-secondary">{paymentDescription}</p>
             </div>
           </div>
           <div className="flex justify-end gap-3">
@@ -356,7 +511,7 @@ const RequestModal: React.FC<{
               Отмена
             </Button>
             <Button variant="primary" size="md" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Отправляем...' : 'Отправить'}
+              {isSubmitting ? 'Отправляем...' : MODE_PRIMARY_ACTION[requestMode]}
             </Button>
           </div>
         </form>
@@ -377,12 +532,25 @@ const ServiceDetailsModal: React.FC<{
     return null;
   }
 
+  const ownerLabel = MODE_OWNER_LABEL[service.mode];
+  const ctaLabel = MODE_PRIMARY_ACTION[service.mode];
+  const flowHint =
+    service.mode === 'request'
+      ? 'Вы откликаетесь как исполнитель: оплата уже зарезервирована у автора объявления.'
+      : 'Вы бронируете готовое предложение: средства спишутся с вашего баланса при подтверждении.';
+  const modeBadgeText = service.mode === 'request' ? 'Запрос исполнителя' : 'Предложение специалиста';
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Вы выбрали услугу">
       <div className="space-y-5">
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-brand-lilac">подробности</p>
           <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">{service.title}</h3>
+          <span
+            className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${MODE_BADGE_STYLES[service.mode]}`}
+          >
+            {modeBadgeText}
+          </span>
           <p className="mt-2 text-sm text-text-secondary">{service.description}</p>
         </div>
 
@@ -422,6 +590,10 @@ const ServiceDetailsModal: React.FC<{
           </div>
         )}
 
+        <div className="rounded-2xl border border-dashed border-border-soft bg-surface-muted/70 px-4 py-3 text-sm text-text-secondary">
+          {flowHint}
+        </div>
+
         {service.owner && (
           <div className="flex items-center gap-4 rounded-2xl border border-border-soft bg-surface-muted px-5 py-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-indigo/10 text-xl">
@@ -429,7 +601,7 @@ const ServiceDetailsModal: React.FC<{
               {service.owner.lastName?.[0]}
             </div>
             <div>
-              <p className="text-sm text-text-secondary">Заказчик</p>
+              <p className="text-sm text-text-secondary">{ownerLabel}</p>
               <p className="text-base font-semibold text-text-primary">
                 {service.owner.firstName} {service.owner.lastName}
               </p>
@@ -448,7 +620,7 @@ const ServiceDetailsModal: React.FC<{
               onClose();
             }}
           >
-            Оставить заявку
+            {ctaLabel}
           </Button>
           <Button variant="outline" size="md" className="flex-1" disabled>
             Добавить в избранное
@@ -463,7 +635,11 @@ const ServiceCard: React.FC<{
   service: ServiceListing;
   isActive: boolean;
   onSelect: (service: ServiceListing) => void;
-}> = ({ service, isActive, onSelect }) => (
+}> = ({ service, isActive, onSelect }) => {
+  const modeBadgeText = service.mode === 'request' ? 'Нужен исполнитель' : 'Исполнитель готов';
+  const ownerLabel = MODE_OWNER_LABEL[service.mode];
+
+  return (
   <button
     type="button"
     onClick={() => onSelect(service)}
@@ -471,20 +647,19 @@ const ServiceCard: React.FC<{
       isActive ? 'border-brand-indigo shadow-brand-card' : 'border-border-soft'
     }`}
   >
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-3">
-        <span className="text-2xl" aria-hidden>
-          {service.category === 'education' && '📚'}
-          {service.category === 'it' && '💻'}
-          {service.category === 'design' && '🎨'}
-          {service.category === 'events' && '🎯'}
-          {service.category === 'lifestyle' && '🧽'}
-          {service.category === 'consulting' && '📊'}
-          {!['education', 'it', 'design', 'events', 'lifestyle', 'consulting'].includes(service.category) && '🛠️'}
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-seashell text-brand-indigo shadow-inner" aria-hidden>
+          <CategoryIcon category={service.category} />
         </span>
         <div>
           <h3 className="text-lg font-semibold text-text-primary">{service.title}</h3>
           <p className="line-clamp-2 text-sm text-text-secondary">{service.description}</p>
+          {service.owner ? (
+            <p className="mt-1 text-xs text-text-muted">
+              {ownerLabel}: {service.owner.firstName} {service.owner.lastName}
+            </p>
+          ) : null}
         </div>
       </div>
       <span className="text-base font-semibold text-brand-indigo">
@@ -492,6 +667,9 @@ const ServiceCard: React.FC<{
       </span>
     </div>
     <div className="mt-4 flex flex-wrap gap-2 text-xs text-text-muted">
+      <span className={`rounded-full border px-3 py-1 ${MODE_BADGE_STYLES[service.mode]}`}>
+        {modeBadgeText}
+      </span>
       <span className="rounded-full border border-border-soft px-3 py-1">
         {service.pricingType === 'fixed' && 'Фиксированная стоимость'}
         {service.pricingType === 'hourly' && 'Почасовая ставка'}
@@ -502,15 +680,18 @@ const ServiceCard: React.FC<{
           #{tag}
         </span>
       ))}
-      <span className="rounded-full border border-border-soft px-3 py-1">
-        👁 {service.views}
+      <span className="rounded-full border border-border-soft px-3 py-1 inline-flex items-center gap-2">
+        <EyeIcon className="w-4 h-4" />
+        {service.views}
       </span>
-      <span className="rounded-full border border-border-soft px-3 py-1">
-        ✅ {service.completedOrders}
+      <span className="rounded-full border border-border-soft px-3 py-1 inline-flex items-center gap-2">
+        <CheckIcon className="w-4 h-4" />
+        {service.completedOrders}
       </span>
     </div>
   </button>
-);
+  );
+};
 
 const DetailStat: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
   <div className="rounded-2xl border border-border-soft bg-white/60 px-4 py-3">
@@ -521,8 +702,8 @@ const DetailStat: React.FC<{ label: string; value: string | number }> = ({ label
 
 const EmptyState: React.FC<{ title: string; description: string }> = ({ title, description }) => (
   <div className="rounded-3xl border border-dashed border-border-soft bg-surface-muted px-6 py-12 text-center">
-    <p className="text-2xl" aria-hidden>
-      🌿
+    <p className="flex justify-center" aria-hidden>
+      <LeafIcon className="w-8 h-8 text-brand-indigo" />
     </p>
     <h3 className="mt-4 text-xl font-semibold text-text-primary">{title}</h3>
     <p className="mt-2 text-sm text-text-secondary">{description}</p>
@@ -565,15 +746,25 @@ const RequestCard: React.FC<{
   onUpdateStatus: (requestId: string, status: RequestStatusAction) => void;
   onOpenChat: (chatId: string) => void;
   pendingActionId: string | null;
-}> = ({ request, scope, onUpdateStatus, onOpenChat, pendingActionId }) => {
+  currentUserId?: string;
+}> = ({ request, scope, onUpdateStatus, onOpenChat, pendingActionId, currentUserId }) => {
+  const requestMode = resolveRequestMode(request);
   const counterpart = scope === 'customer' ? request.provider : request.customer;
   const counterpartName = counterpart ? `${counterpart.firstName} ${counterpart.lastName}` : '—';
+  const counterpartLabel = scope === 'customer' ? 'Исполнитель' : 'Заказчик';
   const isActionPending = pendingActionId === request.id;
-  const canAccept = scope === 'customer' && request.status === 'pending';
+  const isListingOwner = currentUserId ? isListingOwnerForRequest(request, currentUserId) : false;
+  const isCollaborator = currentUserId
+    ? requestMode === 'request'
+      ? request.provider?.id === currentUserId
+      : request.customer?.id === currentUserId
+    : false;
+  const canAccept = isListingOwner && request.status === 'pending';
   const canDecline = canAccept;
-  const canCancel = scope === 'provider' && request.status === 'pending';
-  const canComplete = scope === 'customer' && ['accepted', 'in_progress'].includes(request.status);
+  const canCancel = isCollaborator && request.status === 'pending';
+  const canComplete = currentUserId === request.customer?.id && ['accepted', 'in_progress'].includes(request.status);
   const canOpenChat = Boolean(request.chatId);
+  const modeBadgeText = requestMode === 'request' ? 'Отклик на заказ' : 'Бронь услуги';
 
   const handleChatOpen = () => {
     if (request.chatId) {
@@ -589,10 +780,17 @@ const RequestCard: React.FC<{
           <h4 className="mt-1 text-lg font-semibold text-text-primary">
             {request.service?.title ?? 'Без названия'}
           </h4>
-          <p className="text-sm text-text-secondary">Собеседник: {counterpartName}</p>
+          <p className="text-sm text-text-secondary">
+            {counterpartLabel}: {counterpartName}
+          </p>
           <p className="text-xs text-text-muted">Создана {formatRequestDate(request.createdAt)}</p>
         </div>
         <div className="text-right">
+          <span
+            className={`mb-2 inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold ${MODE_BADGE_STYLES[requestMode]}`}
+          >
+            {modeBadgeText}
+          </span>
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${REQUEST_STATUS_STYLES[request.status]}`}
           >
@@ -666,6 +864,7 @@ export const MarketplacePage: React.FC = () => {
     handleLogout: logout,
   });
   const isAdmin = currentUser?.role === 'admin';
+  const currentUserId = currentUser?._id;
   const [activeTab, setActiveTab] = React.useState(0);
   const [filters, setFilters] = React.useState<FiltersState>(() => ({ ...DEFAULT_FILTERS }));
   const [services, setServices] = React.useState<ServiceListing[]>([]);
@@ -680,10 +879,12 @@ export const MarketplacePage: React.FC = () => {
   const [requestScope, setRequestScope] = React.useState<'customer' | 'provider'>('customer');
   const [pendingRequestActionId, setPendingRequestActionId] = React.useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
+  const [isCreateRequestModalOpen, setIsCreateRequestModalOpen] = React.useState(false);
+  const [isCreateOfferModalOpen, setIsCreateOfferModalOpen] = React.useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = React.useState(false);
   const [requestModalService, setRequestModalService] = React.useState<ServiceListing | null>(null);
-  const [isSubmittingService, setIsSubmittingService] = React.useState(false);
+  const [isSubmittingRequestListing, setIsSubmittingRequestListing] = React.useState(false);
+  const [isSubmittingOfferListing, setIsSubmittingOfferListing] = React.useState(false);
   const [isSubmittingRequest, setIsSubmittingRequest] = React.useState(false);
   const [listReloadKey, setListReloadKey] = React.useState(0);
   const [myServicesReloadKey, setMyServicesReloadKey] = React.useState(0);
@@ -696,6 +897,39 @@ export const MarketplacePage: React.FC = () => {
   const [isSavingMarketplaceSettings, setIsSavingMarketplaceSettings] = React.useState(false);
   const [commissionInput, setCommissionInput] = React.useState('');
 
+  const handleRealtimeRequestUpsert = React.useCallback(
+    (payload: ServiceRequest | null) => {
+      if (!payload || !currentUserId) {
+        return;
+      }
+
+      setRequests(prev => {
+        if (!isRequestRelevantForScope(payload, requestScope, currentUserId)) {
+          return prev;
+        }
+        return upsertRequestInList(prev, payload);
+      });
+
+      setIncomingRequests(prev => {
+        const filtered = removeRequestById(prev, payload.id);
+        if (isPendingIncomingForUser(payload, currentUserId)) {
+          return upsertRequestInList(filtered, payload);
+        }
+        return filtered;
+      });
+    },
+    [currentUserId, requestScope]
+  );
+
+  const handleRealtimeRequestRemoval = React.useCallback((requestId?: string) => {
+    if (!requestId) {
+      return;
+    }
+
+    setRequests(prev => removeRequestById(prev, requestId));
+    setIncomingRequests(prev => removeRequestById(prev, requestId));
+  }, []);
+
   const availableTabs = React.useMemo(() => getMarketplaceTabs(currentUser), [currentUser]);
   React.useEffect(() => {
     if (availableTabs.length === 0) {
@@ -707,7 +941,8 @@ export const MarketplacePage: React.FC = () => {
   }, [activeTab, availableTabs.length]);
 
   const safeActiveTabIndex = availableTabs.length === 0 ? 0 : Math.min(activeTab, availableTabs.length - 1);
-  const activeTabId = availableTabs[safeActiveTabIndex]?.id ?? 'catalog';
+  const activeTabId = availableTabs[safeActiveTabIndex]?.id ?? 'catalog_request';
+  const isCatalogTab = activeTabId === 'catalog_request' || activeTabId === 'catalog_offer';
 
   const openRequestsInbox = React.useCallback(() => {
     const targetIndex = availableTabs.findIndex(tab => tab.id === 'requests');
@@ -728,6 +963,22 @@ export const MarketplacePage: React.FC = () => {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }, []);
 
+  const handleHeaderTabChange = React.useCallback(
+    (index: number) => {
+      setActiveTab(index);
+      const tab = availableTabs[index];
+      if (tab?.mode && tab.mode !== filters.mode) {
+        setFilters(prev => ({
+          ...prev,
+          mode: tab.mode,
+          page: 1,
+        }));
+      }
+    },
+    [availableTabs, filters.mode, setFilters]
+  );
+
+
   const handleLogoutClick = React.useCallback(() => {
     handleLogout();
     setTimeout(() => {
@@ -738,6 +989,16 @@ export const MarketplacePage: React.FC = () => {
   const handleProfileNavigate = React.useCallback(() => {
     handleNavigate('/profile');
   }, [handleNavigate]);
+
+  const NotificationBell = () => (
+    <button
+      type="button"
+      aria-label="Уведомления"
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+    >
+      <BellIcon className="h-5 w-5" />
+    </button>
+  );
 
   const handleOpenChat = React.useCallback(
     (chatId: string) => {
@@ -866,12 +1127,20 @@ export const MarketplacePage: React.FC = () => {
     let isActive = true;
     setIsLoadingIncomingRequests(true);
 
-    serviceRequestsApi
-      .getRequests({ scope: 'customer', status: 'pending' })
-      .then(response => {
-        if (isActive) {
-          setIncomingRequests(response.data);
+    Promise.all([
+      serviceRequestsApi.getRequests({ scope: 'customer', status: 'pending', type: 'request' }),
+      serviceRequestsApi.getRequests({ scope: 'provider', status: 'pending', type: 'offer' }),
+    ])
+      .then(([asCustomer, asProvider]) => {
+        if (!isActive) {
+          return;
         }
+        const owningRequests = [
+          ...asCustomer.data.filter(item => resolveRequestMode(item) === 'request'),
+          ...asProvider.data.filter(item => resolveRequestMode(item) === 'offer'),
+        ];
+        const deduped = Array.from(new Map(owningRequests.map(item => [item.id, item])).values());
+        setIncomingRequests(sortRequestsByDateDesc(deduped));
       })
       .catch(error => {
         if (isActive) {
@@ -950,14 +1219,28 @@ export const MarketplacePage: React.FC = () => {
         refreshListings();
         refreshMyServices();
       }),
-      onSocketEvent('marketplace:requests:created', () => {
-        refreshRequests();
+      onSocketEvent('marketplace:requests:created', (payload: SocketRequestPayload) => {
+        const normalized = sanitizeSocketRequest(payload);
+        if (normalized) {
+          handleRealtimeRequestUpsert(normalized);
+        } else {
+          refreshRequests();
+        }
       }),
-      onSocketEvent('marketplace:requests:updated', () => {
-        refreshRequests();
+      onSocketEvent('marketplace:requests:updated', (payload: SocketRequestPayload) => {
+        const normalized = sanitizeSocketRequest(payload);
+        if (normalized) {
+          handleRealtimeRequestUpsert(normalized);
+        } else {
+          refreshRequests();
+        }
       }),
-      onSocketEvent('marketplace:requests:deleted', () => {
-        refreshRequests();
+      onSocketEvent('marketplace:requests:deleted', (payload: { id?: string }) => {
+        if (payload?.id) {
+          handleRealtimeRequestRemoval(payload.id);
+        } else {
+          refreshRequests();
+        }
       }),
       onSocketEvent('marketplace:settings:updated', (payload: Partial<MarketplaceSettings>) => {
         setMarketplaceSettings(prev => {
@@ -988,28 +1271,123 @@ export const MarketplacePage: React.FC = () => {
         }
       });
     };
-  }, [refreshListings, refreshMyServices, refreshRequests]);
+  }, [
+    refreshListings,
+    refreshMyServices,
+    refreshRequests,
+    handleRealtimeRequestUpsert,
+    handleRealtimeRequestRemoval,
+  ]);
 
   const uniqueCategories = React.useMemo(() => new Set(services.map(service => service.category)).size, [services]);
   const uniqueProviders = React.useMemo(
     () => new Set(services.map(service => service.owner?.id).filter(Boolean)).size,
     [services]
   );
-  const activeMyServicesCount = React.useMemo(
-    () => myServices.filter(service => service.isActive).length,
-    [myServices]
-  );
   const hiddenMyServicesCount = React.useMemo(
     () => myServices.filter(service => !service.isActive).length,
     [myServices]
   );
+  const activeRequestsCount = React.useMemo(
+    () => myServices.filter(service => service.mode === 'request' && service.isActive).length,
+    [myServices]
+  );
+  const activeOffersCount = React.useMemo(
+    () => myServices.filter(service => service.mode === 'offer' && service.isActive).length,
+    [myServices]
+  );
 
-  const openCreateModal = () => {
+  const headerTabs = React.useMemo(
+    () =>
+      availableTabs.map(tab => {
+        if (tab.mode === 'request') {
+          return { ...tab, badge: activeRequestsCount };
+        }
+        if (tab.mode === 'offer') {
+          return { ...tab, badge: activeOffersCount };
+        }
+        return tab;
+      }),
+    [availableTabs, activeOffersCount, activeRequestsCount]
+  );
+
+  const renderHeaderTabs = React.useCallback(
+    (className = '') => (
+      <div className={`flex w-full gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`} role="tablist">
+        {headerTabs.map((tab, index) => {
+          const isActive = safeActiveTabIndex === index;
+          const isDisabled = Boolean(tab.disabled);
+          const badgeContent = tab.badge;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-disabled={isDisabled}
+              disabled={isDisabled}
+              onClick={() => {
+                if (!isDisabled) {
+                  handleHeaderTabChange(index);
+                }
+              }}
+              className={`group relative flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all duration-300 ${
+                isActive
+                  ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
+                  : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
+              } ${
+                isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-0.5'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
+            >
+              <span className="flex items-center gap-2 whitespace-nowrap">
+                {tab.label}
+                {badgeContent ? (
+                  <span className={`inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                    isActive
+                      ? 'border-emerald-400 bg-white/70 text-emerald-700'
+                      : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  }`}>
+                    {badgeContent}
+                  </span>
+                ) : null}
+              </span>
+              <span
+                className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
+                  isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+    ),
+    [headerTabs, handleHeaderTabChange, safeActiveTabIndex]
+  );
+
+  const currentModeTab = React.useMemo(() => {
+    const active = availableTabs[safeActiveTabIndex];
+    if (active?.mode) {
+      return active;
+    }
+    return availableTabs.find(tab => tab.mode === filters.mode) ?? null;
+  }, [availableTabs, filters.mode, safeActiveTabIndex]);
+  const currentMode: MarketplaceListingMode = currentModeTab?.mode ?? filters.mode ?? 'request';
+  const currentModeDescription = currentModeTab?.description;
+
+  const openCreateRequestListingModal = () => {
     if (!currentUser) {
       showToast({ message: 'Авторизуйтесь, чтобы размещать услуги', type: 'error' });
       return;
     }
-    setIsCreateModalOpen(true);
+    setIsCreateRequestModalOpen(true);
+  };
+
+  const openCreateOfferListingModal = () => {
+    if (!currentUser) {
+      showToast({ message: 'Авторизуйтесь, чтобы размещать услуги', type: 'error' });
+      return;
+    }
+    setIsCreateOfferModalOpen(true);
   };
 
   const handleServiceSelect = React.useCallback((service: ServiceListing) => {
@@ -1035,7 +1413,7 @@ export const MarketplacePage: React.FC = () => {
     setIsRequestModalOpen(true);
   };
 
-  const handleCreateService = async (payload: CreateServiceFormValues) => {
+  const handleCreateService = async (payload: CreateServiceFormValues, mode: MarketplaceListingMode) => {
     if (!currentUser) {
       showToast({ message: 'Авторизуйтесь, чтобы размещать услуги', type: 'error' });
       return;
@@ -1046,32 +1424,64 @@ export const MarketplacePage: React.FC = () => {
       .map(tag => tag.trim())
       .filter(Boolean);
 
-    const formattedPayload = {
-      title: payload.title.trim(),
-      description: payload.description.trim(),
-      category: payload.category,
-      price: Number(payload.price),
-      pricingType: payload.pricingType,
-      tags,
-      skills: tags,
-    } as const;
+    const title = payload.title.trim();
+    const description = payload.description.trim();
+    const category = payload.category.trim();
+    const price = Number(payload.price);
 
-    if (!formattedPayload.title || !formattedPayload.description || Number.isNaN(formattedPayload.price)) {
-      showToast({ message: 'Заполните обязательные поля и корректную цену', type: 'error' });
+    if (!title || !description || !category) {
+      showToast({ message: 'Заполните заголовок, описание и выберите категорию', type: 'error' });
       return;
     }
 
+    if (Number.isNaN(price) || price <= 0) {
+      showToast({ message: 'Укажите стоимость больше 0 ₽', type: 'error' });
+      return;
+    }
+
+    const formattedPayload = {
+      title,
+      description,
+      category,
+      price,
+      pricingType: payload.pricingType,
+      tags,
+      skills: tags,
+      mode,
+    } as const;
+
     try {
-      setIsSubmittingService(true);
       await marketplaceApi.createService(formattedPayload);
       showToast({ message: 'Услуга опубликована', type: 'success' });
-      setIsCreateModalOpen(false);
       refreshListings();
       refreshMyServices();
     } catch (error: any) {
       showToast({ message: error.message || 'Ошибка при создании услуги', type: 'error' });
+      throw error;
+    }
+  };
+
+  const handleCreateRequestListing = async (payload: CreateServiceFormValues) => {
+    try {
+      setIsSubmittingRequestListing(true);
+      await handleCreateService(payload, 'request');
+      setIsCreateRequestModalOpen(false);
+    } catch {
+      // Ошибка уже показана в toast
     } finally {
-      setIsSubmittingService(false);
+      setIsSubmittingRequestListing(false);
+    }
+  };
+
+  const handleCreateOfferListing = async (payload: CreateServiceFormValues) => {
+    try {
+      setIsSubmittingOfferListing(true);
+      await handleCreateService(payload, 'offer');
+      setIsCreateOfferModalOpen(false);
+    } catch {
+      // Ошибка уже показана в toast
+    } finally {
+      setIsSubmittingOfferListing(false);
     }
   };
 
@@ -1113,7 +1523,11 @@ export const MarketplacePage: React.FC = () => {
         serviceId: requestModalService.id,
         message: payload.message,
       });
-      showToast({ message: 'Заявка отправлена исполнителю', type: 'success' });
+      const successMessage =
+        requestModalService.mode === 'offer'
+          ? 'Заказ создан, средства зарезервированы.'
+          : 'Отклик отправлен автору задачи.';
+      showToast({ message: successMessage, type: 'success' });
       setIsRequestModalOpen(false);
       refreshRequests();
     } catch (error: any) {
@@ -1180,7 +1594,7 @@ export const MarketplacePage: React.FC = () => {
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
         <div className="px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -1191,31 +1605,17 @@ export const MarketplacePage: React.FC = () => {
                 <img
                   src={LogoSAU}
                   alt="Логотип сервиса"
-                  className="h-9 w-9 rounded-2xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:h-10 sm:w-10"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
                 />
-                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted transition-colors duration-200 group-hover:text-brand-indigo">
-                      сервис
-                    </p>
-                    <h1 className="text-lg font-semibold text-brand-indigo transition-colors duration-200 group-hover:text-brand-grape sm:text-xl lg:text-2xl">
-                      Маркетплейс услуг
-                    </h1>
-                  </div>
-                  <span className="inline-flex items-center px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-brand-indigo">
-                    тестируется
-                  </span>
-                </div>
+                <h1 className="text-lg font-semibold text-brand-indigo transition-colors duration-200 group-hover:text-brand-grape sm:text-xl lg:text-2xl">
+                  Маркетплейс услуг
+                </h1>
               </button>
             </div>
             <div className="hidden lg:flex flex-1 justify-center">
-              <Tabs
-                tabs={availableTabs}
-                activeTab={safeActiveTabIndex}
-                onTabChange={setActiveTab}
-                justify="center"
-                className="max-w-3xl"
-              />
+              <div className="max-w-3xl">
+                {renderHeaderTabs()}
+              </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               {currentUser ? (
@@ -1223,15 +1623,16 @@ export const MarketplacePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex items-center gap-2 rounded-full border border-brand-grape/40 bg-brand-grape/10 px-3 py-1.5 text-sm font-semibold text-brand-indigo shadow-inner hover:bg-brand-grape/20"
+                    className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
                   >
-                    <span className="text-base sm:text-lg">{(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽</span>
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-grape text-white">+</span>
+                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
                   </button>
+                  <NotificationBell />
                   <button
                     type="button"
                     onClick={handleProfileNavigate}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-brand-indigo/40 hover:text-brand-indigo"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
                     aria-label="Профиль"
                   >
                     <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
@@ -1241,7 +1642,7 @@ export const MarketplacePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleLogoutClick}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-brand-indigo/40 hover:text-brand-indigo"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
                     aria-label="Выйти"
                   >
                     <svg
@@ -1267,41 +1668,38 @@ export const MarketplacePage: React.FC = () => {
             </div>
           </div>
           <div className="pb-3 lg:hidden">
-            <Tabs tabs={availableTabs} activeTab={safeActiveTabIndex} onTabChange={setActiveTab} className="w-full" />
+            {renderHeaderTabs()}
           </div>
         </div>
       </header>
 
       <main className="w-full flex-1">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-          {activeTabId === 'catalog' && (
+          {isCatalogTab && (
             <div className="space-y-10">
               <section className="rounded-[36px] border border-border-soft bg-white p-8 shadow-brand-card">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-brand-lilac">новый сервис</p>
                     <h2 className="mt-3 text-4xl font-semibold text-brand-indigo">Маркетплейс услуг</h2>
                     <p className="mt-4 max-w-2xl text-lg text-text-secondary">
-                      Находите проверенных исполнителей внутри университета, оставляйте заявки и управляйте балансом без перехода в другие приложения.
+                      Два сценария в одном окне: создавайте задачи с заморозкой бюджета или предлагайте собственные услуги коллегам. Все платежи проходят внутри баланса.
                     </p>
                     <div className="mt-6 flex flex-wrap gap-4 text-sm text-text-secondary">
                       <div className="rounded-2xl border border-border-soft px-4 py-2">
-                        {pagination?.total ?? 0} активных предложений
+                        {pagination?.total ?? 0}{' '}
+                        {filters.mode === 'request' ? 'активных заказов' : 'активных предложений'}
                       </div>
                       <div className="rounded-2xl border border-border-soft px-4 py-2">{uniqueCategories} категорий</div>
-                      <div className="rounded-2xl border border-border-soft px-4 py-2">{uniqueProviders} исполнителей</div>
+                      <div className="rounded-2xl border border-border-soft px-4 py-2">
+                        {uniqueProviders} {filters.mode === 'request' ? 'заказчиков' : 'исполнителей'}
+                      </div>
                     </div>
                     <div className="mt-6 flex flex-wrap gap-3">
-                      <Button variant="primary" size="md" onClick={openCreateModal}>
-                        Разместить услугу
+                      <Button variant="primary" size="md" onClick={openCreateRequestListingModal}>
+                        Создать заказ
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="md"
-                        onClick={() => handleNavigate('/')}
-                        className="border-border-soft"
-                      >
-                        Вернуться к сервисам
+                      <Button variant="secondary" size="md" onClick={openCreateOfferListingModal}>
+                        Предложить услуги
                       </Button>
                     </div>
                   </div>
@@ -1317,6 +1715,17 @@ export const MarketplacePage: React.FC = () => {
               <section className="grid gap-8">
                 <div className="space-y-6">
                   <div className="rounded-[28px] border border-border-soft bg-white p-6 shadow-sm">
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary">
+                      <span className="font-semibold text-text-primary">
+                        {currentMode === 'request' ? 'Сценарий: заказчик' : 'Сценарий: исполнитель'}
+                      </span>
+                      <span className="rounded-full border border-border-subtle px-3 py-1 text-xs uppercase tracking-[0.3em] text-text-muted">
+                        {currentMode === 'request' ? 'Бюджет заморожен' : 'Ждём запросов'}
+                      </span>
+                      {currentModeDescription ? (
+                        <p className="w-full text-xs text-text-secondary">{currentModeDescription}</p>
+                      ) : null}
+                    </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <Input
                         value={filters.search}
@@ -1424,8 +1833,10 @@ export const MarketplacePage: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.4em] text-text-muted">отклики на объявления</p>
-                    <h3 className="mt-2 text-xl font-semibold text-brand-indigo">Выбирайте исполнителей</h3>
-                    <p className="text-sm text-text-secondary">После подтверждения заказ сразу переходит в работу.</p>
+                    <h3 className="mt-2 text-xl font-semibold text-brand-indigo">Заявки на заказы и предложения</h3>
+                    <p className="text-sm text-text-secondary">
+                      Здесь появляются отклики на ваши задачи и брони на ваши предложения. Подтвердите исполнителя или клиента в пару кликов.
+                    </p>
                   </div>
                   <Button variant="primary" size="sm" onClick={openRequestsInbox}>
                     Ко всем заявкам
@@ -1443,21 +1854,26 @@ export const MarketplacePage: React.FC = () => {
                   </div>
                 ) : incomingRequests.length === 0 ? (
                   <EmptyState
-                    title="Новых заявок пока нет"
-                    description="Как только коллеги откликнутся на объявление, мы покажем их здесь."
+                    title="Новых обращений пока нет"
+                    description="Как только коллеги откликнутся на заказ или забронируют предложение, заявка появится в этом блоке."
                   />
                 ) : (
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {incomingRequests.slice(0, 4).map(request => (
-                      <RequestCard
-                        key={request.id}
-                        request={request}
-                        scope="customer"
-                        onUpdateStatus={handleUpdateRequestStatus}
-                        onOpenChat={handleOpenChat}
-                        pendingActionId={pendingRequestActionId}
-                      />
-                    ))}
+                    {incomingRequests.slice(0, 4).map(request => {
+                      const inboxScope: 'customer' | 'provider' =
+                        resolveRequestMode(request) === 'offer' ? 'provider' : 'customer';
+                      return (
+                        <RequestCard
+                          key={request.id}
+                          request={request}
+                          scope={inboxScope}
+                          onUpdateStatus={handleUpdateRequestStatus}
+                          onOpenChat={handleOpenChat}
+                          pendingActionId={pendingRequestActionId}
+                          currentUserId={currentUserId}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -1473,9 +1889,14 @@ export const MarketplacePage: React.FC = () => {
                       <p className="text-xs uppercase tracking-[0.4em] text-text-muted">мои размещения</p>
                       <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">Управляйте своими услугами</h3>
                     </div>
-                    <Button variant="primary" size="sm" onClick={openCreateModal}>
-                      Разместить услугу
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="primary" size="sm" onClick={openCreateOfferListingModal}>
+                        Предложить услуги
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={openCreateRequestListingModal}>
+                        Создать заказ
+                      </Button>
+                    </div>
                   </div>
                   {currentUser ? (
                     <div className="mt-5 space-y-3">
@@ -1500,13 +1921,18 @@ export const MarketplacePage: React.FC = () => {
                                 </p>
                               </div>
                               <span
-                                className={`rounded-full px-3 py-1 text-xs uppercase tracking-[0.35em] ${
+                                className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] ${
                                   service.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-border-soft text-text-muted'
                                 }`}
                               >
                                 {service.isActive ? 'активно' : 'скрыто'}
                               </span>
                             </div>
+                            <span
+                              className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${MODE_BADGE_STYLES[service.mode]}`}
+                            >
+                              {service.mode === 'request' ? 'заказ с предоплатой' : 'предложение исполнителя'}
+                            </span>
                             <div className="mt-3 flex flex-wrap gap-4 text-xs text-text-secondary">
                               <span>{priceFormatter.format(service.price)}</span>
                               <span>Просмотров {service.views}</span>
@@ -1546,9 +1972,10 @@ export const MarketplacePage: React.FC = () => {
                     <li>Скрывайте услуги, когда заняты: клиенты увидят статус в карточке.</li>
                   </ul>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <DetailStat label="Активные" value={activeMyServicesCount} />
-                    <DetailStat label="Скрытые" value={hiddenMyServicesCount} />
+                    <DetailStat label="Активные заказы" value={activeRequestsCount} />
+                    <DetailStat label="Активные предложения" value={activeOffersCount} />
                   </div>
+                  <p className="text-xs text-text-muted">Скрытые позиции: {hiddenMyServicesCount}</p>
                   <div className="rounded-2xl border border-brand-indigo/20 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
                     Создавайте разные форматы (фикс, почасово, пакеты) — клиенты видят это в фильтрах.
                   </div>
@@ -1603,6 +2030,7 @@ export const MarketplacePage: React.FC = () => {
                                 onUpdateStatus={handleUpdateRequestStatus}
                                 onOpenChat={handleOpenChat}
                                 pendingActionId={pendingRequestActionId}
+                                currentUserId={currentUserId}
                               />
                             ))
                       )}
@@ -1618,13 +2046,13 @@ export const MarketplacePage: React.FC = () => {
                   <p className="text-xs uppercase tracking-[0.4em] text-text-muted">как это работает</p>
                   <ol className="space-y-4 text-sm text-text-secondary">
                     <li>
-                      <strong className="text-text-primary">1. Разместите объявление.</strong> Опишите задачу, цену и навыки, которые нужны.
+                      <strong className="text-text-primary">1. Разместите заказ или предложение.</strong> Выберите режим — «Мне нужен исполнитель» или «Я оказываю услугу».
                     </li>
                     <li>
-                      <strong className="text-text-primary">2. Получайте отклики.</strong> Исполнители оставляют заявки, а вы подтверждаете подходящих.
+                      <strong className="text-text-primary">2. Получайте отклики.</strong> Исполнители отвечают на заказы, а заказчики бронируют предложения.
                     </li>
                     <li>
-                      <strong className="text-text-primary">3. Средства резервируются.</strong> Баланс автора объявления списывается сразу и переводится исполнителю после завершения.
+                      <strong className="text-text-primary">3. Средства резервируются автоматически.</strong> Для заказов бюджет замораживается у автора, для предложений — у покупателя при подтверждении.
                     </li>
                   </ol>
                   <div className="rounded-2xl border border-brand-indigo/30 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
@@ -1642,7 +2070,7 @@ export const MarketplacePage: React.FC = () => {
                   <div>
                     <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">баланс платформы</p>
                     <h3 className="mt-3 text-4xl font-semibold text-brand-indigo">
-                      {balanceFormatter.format(marketplaceSettings?.marketplaceBalance ?? 0)}
+                      {formatBalance(marketplaceSettings?.marketplaceBalance ?? 0, { withDecimals: true })}
                     </h3>
                     <p className="mt-2 text-sm text-brand-indigo/80">
                       Текущая комиссия: {marketplaceSettings?.marketplaceCommissionPercent ?? 0}%
@@ -1759,10 +2187,18 @@ export const MarketplacePage: React.FC = () => {
       <Footer />
 
       <CreateServiceModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateService}
-        isSubmitting={isSubmittingService}
+        isOpen={isCreateRequestModalOpen}
+        onClose={() => setIsCreateRequestModalOpen(false)}
+        onSubmit={handleCreateRequestListing}
+        isSubmitting={isSubmittingRequestListing}
+        mode="request"
+      />
+      <CreateServiceModal
+        isOpen={isCreateOfferModalOpen}
+        onClose={() => setIsCreateOfferModalOpen(false)}
+        onSubmit={handleCreateOfferListing}
+        isSubmitting={isSubmittingOfferListing}
+        mode="offer"
       />
       <ServiceDetailsModal
         service={selectedService}

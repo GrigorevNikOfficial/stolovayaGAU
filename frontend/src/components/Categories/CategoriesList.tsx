@@ -15,6 +15,7 @@ import type {
   UpdateCategoryRequest,
 } from '../../types/category.ts';
 import Button from '../layout/Button/Button.tsx';
+import { BookIcon, CheckIcon, CloseIcon } from '../icons/ServiceIcons';
 
 export const CategoriesList: React.FC = () => {
   const [categories, isLoading, error, currentUser] = useUnit([
@@ -214,13 +215,23 @@ export const CategoriesList: React.FC = () => {
                     {category.slug}
                   </span>
                   <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${
                       category.is_active
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : 'bg-surface-muted text-text-muted border-border-soft'
                     }`}
                   >
-                    {category.is_active ? '✅ Активна' : '❌ Неактивна'}
+                    {category.is_active ? (
+                      <>
+                        <CheckIcon className="w-4 h-4" />
+                        Активна
+                      </>
+                    ) : (
+                      <>
+                        <CloseIcon className="w-4 h-4" />
+                        Неактивна
+                      </>
+                    )}
                   </span>
                 </div>
                 {category.sort_order !== undefined && (
@@ -236,7 +247,9 @@ export const CategoriesList: React.FC = () => {
 
       {categories.length === 0 && !isLoading && !isLoadingState && (
         <div className="text-center py-16 fade-in">
-          <div className="text-6xl text-text-muted mb-4">📂</div>
+          <div className="flex items-center justify-center text-text-muted mb-4">
+            <BookIcon className="w-16 h-16" />
+          </div>
           <p className="text-text-secondary text-xl font-medium mb-3">
             Категории не найдены
           </p>

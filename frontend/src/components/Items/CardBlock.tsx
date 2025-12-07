@@ -17,6 +17,7 @@ import {
 import { $currentUser } from '../../models/users.ts';
 import Button from '../layout/Button/Button.tsx';
 import Select from '../layout/Select/Select.tsx';
+import { CartIcon, ClockIcon } from '../icons/ServiceIcons';
 
 const formatCurrency = (value: number) =>
   Number.isInteger(value) ? value.toString() : value.toFixed(2);
@@ -286,28 +287,34 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
           {/* Сообщения о времени работы */}
           {!pickupAvailability.available && deliveryMethod === 'pickup' && (
             <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-xs text-yellow-200">
-                ⏰ {pickupAvailability.message}
+              <p className="text-xs text-yellow-200 flex items-center gap-2">
+                <ClockIcon className="w-3.5 h-3.5" />
+                {pickupAvailability.message}
               </p>
             </div>
           )}
           {!dineInAvailability.available && deliveryMethod === 'dine_in' && (
             <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-xs text-yellow-200">
-                ⏰ {dineInAvailability.message}
+              <p className="text-xs text-yellow-200 flex items-center gap-2">
+                <ClockIcon className="w-3.5 h-3.5" />
+                {dineInAvailability.message}
               </p>
             </div>
           )}
           {!deliveryAvailability.available && settings.deliveryEnabled && (
             <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-xs text-yellow-200">
-                ⏰ {deliveryAvailability.message}
+              <p className="text-xs text-yellow-200 flex items-center gap-2">
+                <ClockIcon className="w-3.5 h-3.5" />
+                {deliveryAvailability.message}
               </p>
             </div>
           )}
           {deliveryMethod === 'delivery' && settings.deliveryEnabled && deliveryAvailability.available && (
             <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg text-xs text-emerald-200">
-              ⏰ Доставка активна с {settings.deliveryTimeStart || '00:00'} до {settings.deliveryTimeEnd || '23:59'}
+              <span className="inline-flex items-center gap-2">
+                <ClockIcon className="w-3.5 h-3.5" />
+                Доставка активна с {settings.deliveryTimeStart || '00:00'} до {settings.deliveryTimeEnd || '23:59'}
+              </span>
             </div>
           )}
           {settings.deliveryEnabled && deliveryMethod === 'delivery' && (
@@ -355,7 +362,9 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
         {cart.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            <div className="text-gray-500 text-6xl mb-4">🛒</div>
+            <div className="text-gray-500 mb-4 flex items-center justify-center">
+              <CartIcon className="w-14 h-14" />
+            </div>
             <p className="text-gray-300 text-lg font-medium mb-2">
               Корзина пуста
             </p>

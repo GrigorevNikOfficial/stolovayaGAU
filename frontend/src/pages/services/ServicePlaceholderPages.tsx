@@ -1,5 +1,6 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import Button from '../../components/layout/Button/Button.tsx';
+import { BellIcon, CalendarIcon, ChatBubblesIcon } from '../../components/icons/ServiceIcons';
 
 const goToNavigation = () => {
   window.history.pushState({}, '', '/');
@@ -7,7 +8,7 @@ const goToNavigation = () => {
 };
 
 type PlaceholderProps = {
-  emoji: string;
+  icon: ReactNode;
   title: string;
   tagline: string;
   description: string;
@@ -15,14 +16,14 @@ type PlaceholderProps = {
   status: string;
 };
 
-const ServicePlaceholder: FC<PlaceholderProps> = ({ emoji, title, tagline, description, highlights, status }) => {
+const ServicePlaceholder: FC<PlaceholderProps> = ({ icon, title, tagline, description, highlights, status }) => {
   return (
     <div className="min-h-screen text-text-primary">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex flex-col gap-8 rounded-3xl border border-border-subtle bg-white p-8 shadow-brand-card">
           <div className="flex items-center gap-4 text-text-secondary">
-            <span className="text-4xl" aria-hidden>
-              {emoji}
+            <span className="text-brand-indigo" aria-hidden>
+              {icon}
             </span>
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-text-muted">Сервис готовится</p>
@@ -68,7 +69,7 @@ const ServicePlaceholder: FC<PlaceholderProps> = ({ emoji, title, tagline, descr
 
 export const ChatServicePage: FC = () => (
   <ServicePlaceholder
-    emoji="💬"
+    icon={<ChatBubblesIcon className="w-10 h-10" />}
     title="Корпоративный чат"
     tagline="Общайтесь с командами, создавайте проектные каналы и получайте поддержку без переключения между приложениями."
     description="Мы строим чат на той же платформе авторизации, что и столовая. Вы сможете использовать единый профиль, видеть статусы коллег и мгновенно обсуждать оперативные вопросы."
@@ -84,7 +85,7 @@ export const ChatServicePage: FC = () => (
 
 export const NotificationsServicePage: FC = () => (
   <ServicePlaceholder
-    emoji="🔔"
+    icon={<BellIcon className="w-10 h-10" />}
     title="Центр уведомлений"
     tagline="Все события в одном канале: заказы, поставки, внутренние объявления и персональные задачи."
     description="Новый центр уведомлений объединит push, email и in-app сообщения. Алгоритм приоритизирует важное и хранит историю событий, связанную с вашим аккаунтом."
@@ -100,7 +101,7 @@ export const NotificationsServicePage: FC = () => (
 
 export const EventsServicePage: FC = () => (
   <ServicePlaceholder
-    emoji="🎭"
+    icon={<CalendarIcon className="w-10 h-10" />}
     title="Афиша событий"
     tagline="Освежённый календарь жизни университета: лекции, концерты, спортивные активности и внутренние митапы."
     description="Сервис позволит отмечаться на события, получать пропуска и напоминания, а также синхронизировать расписание с календарями."

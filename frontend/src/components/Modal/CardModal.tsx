@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useUnit } from 'effector-react';
 import { CartBlock } from '../Items/CardBlock.tsx';
 import { $currentUser } from '../../models/users.ts';
+import { formatBalance } from '../../utils/formatBalance';
 
 interface CartModalProps {
   isOpen: boolean;
@@ -58,7 +59,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, onOrderCr
                 <p className="text-sm text-gray-400 mt-1">
                   Баланс:{' '}
                   <span className="font-semibold text-[#69e7b6]">
-                    {(currentUser.balance ?? 0).toFixed(2)} ₽
+                    {formatBalance(currentUser.balance, { withDecimals: true })}
                   </span>
                 </p>
               )}

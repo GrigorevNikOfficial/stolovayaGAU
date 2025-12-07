@@ -8,6 +8,15 @@ import {
 } from '../../models/settings';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
+import {
+  CheckIcon,
+  ClockIcon,
+  CloseIcon,
+  ForkKnifeIcon,
+  PackageIcon,
+  SaveIcon,
+  TruckIcon,
+} from '../icons/ServiceIcons';
 
 export const DeliverySettings: React.FC = () => {
   const [settings, handleFetchSettings, handleUpdateSettings] = useUnit([
@@ -110,7 +119,10 @@ export const DeliverySettings: React.FC = () => {
               className="flex-1"
               disabled={isLoading}
             >
-              <span className="flex items-center gap-2">✅ Включена</span>
+              <span className="flex items-center justify-center gap-2">
+                <CheckIcon className="w-4 h-4" />
+                Включена
+              </span>
             </Button>
             <Button
               onClick={() => toggleDelivery(false)}
@@ -119,7 +131,10 @@ export const DeliverySettings: React.FC = () => {
               className="flex-1"
               disabled={isLoading}
             >
-              <span className="flex items-center gap-2">❌ Выключена</span>
+              <span className="flex items-center justify-center gap-2">
+                <CloseIcon className="w-4 h-4" />
+                Выключена
+              </span>
             </Button>
           </div>
 
@@ -132,13 +147,21 @@ export const DeliverySettings: React.FC = () => {
             }`}
           >
             <p
-              className={`font-medium ${
+              className={`font-medium flex items-center gap-2 ${
                 settings.deliveryEnabled ? 'text-emerald-200' : 'text-red-200'
               }`}
             >
-              {settings.deliveryEnabled
-                ? '✅ Доставка активна - пользователи могут выбирать доставку'
-                : '❌ Доставка отключена - пользователи не смогут выбирать доставку'}
+              {settings.deliveryEnabled ? (
+                <>
+                  <CheckIcon className="w-4 h-4" />
+                  Доставка активна — пользователи могут выбирать доставку
+                </>
+              ) : (
+                <>
+                  <CloseIcon className="w-4 h-4" />
+                  Доставка отключена — пользователи не смогут выбирать доставку
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -146,13 +169,17 @@ export const DeliverySettings: React.FC = () => {
 
       {/* Время работы доставки */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-100 mb-4">
-          ⏰ Время работы
+        <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
+          <ClockIcon className="w-4 h-4 text-emerald-300" />
+          Время работы
         </h3>
         
         {/* Доставка */}
         <div className="mb-6 p-4 rounded-xl border border-blue-500/30 bg-blue-500/10">
-          <h4 className="font-semibold text-gray-100 mb-3">🚚 Доставка</h4>
+          <h4 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
+            <TruckIcon className="w-4 h-4 text-blue-200" />
+            Доставка
+          </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -189,7 +216,10 @@ export const DeliverySettings: React.FC = () => {
 
         {/* Самовывоз */}
         <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-          <h4 className="font-semibold text-gray-100 mb-3">📦 Самовывоз</h4>
+          <h4 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
+            <PackageIcon className="w-4 h-4 text-emerald-200" />
+            Самовывоз
+          </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -226,7 +256,10 @@ export const DeliverySettings: React.FC = () => {
 
         {/* В зале */}
         <div className="mb-6 p-4 rounded-xl border border-purple-500/30 bg-purple-500/10">
-          <h4 className="font-semibold text-gray-100 mb-3">🍽️ В зале</h4>
+          <h4 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
+            <ForkKnifeIcon className="w-4 h-4 text-emerald-300" />
+            В зале
+          </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -268,7 +301,14 @@ export const DeliverySettings: React.FC = () => {
           size="md"
           className="w-full"
         >
-          {isLoading ? 'Сохранение...' : '💾 Сохранить все настройки времени'}
+          {isLoading ? (
+            'Сохранение...'
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              <SaveIcon className="w-4 h-4" />
+              Сохранить все настройки времени
+            </span>
+          )}
         </Button>
       </div>
 
@@ -289,11 +329,21 @@ export const DeliverySettings: React.FC = () => {
           <div>
             <span className="font-medium text-gray-300">Статус доставки:</span>
             <span
-              className={`ml-2 font-medium ${
+              className={`ml-2 font-medium inline-flex items-center gap-2 ${
                 settings.deliveryEnabled ? 'text-emerald-300' : 'text-red-300'
               }`}
             >
-              {settings.deliveryEnabled ? '✅ Включена' : '❌ Выключена'}
+              {settings.deliveryEnabled ? (
+                <>
+                  <CheckIcon className="w-4 h-4" />
+                  Включена
+                </>
+              ) : (
+                <>
+                  <CloseIcon className="w-4 h-4" />
+                  Выключена
+                </>
+              )}
             </span>
           </div>
           <div>

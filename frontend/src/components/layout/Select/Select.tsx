@@ -37,9 +37,10 @@ export const Select: React.FC<SelectProps> = ({
         disabled={disabled}
         required={required}
         className={`
-          w-full px-6 py-4 rounded-2xl border border-[#2d2d2c]
-          focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-[#106157]
-          transition-all duration-300 bg-[#161718] text-gray-100 shadow-sm hover:shadow-md hover:border-[#106157]
+          w-full px-5 py-3.5 rounded-2xl border border-border-soft bg-white/95
+          text-text-primary placeholder:text-text-muted shadow-[0_18px_50px_rgba(15,23,42,0.07)]
+          focus:outline-none focus:ring-2 focus:ring-brand-almond focus:border-brand-almond
+          transition-all duration-200 hover:border-brand-almond/60 hover:bg-white
           disabled:opacity-50 disabled:cursor-not-allowed
           appearance-none cursor-pointer
           ${icon ? 'pr-12' : ''}
@@ -59,7 +60,7 @@ export const Select: React.FC<SelectProps> = ({
       </select>
 
       {/* Кастомная стрелка */}
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
+      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-text-muted">
         <svg
           className="w-4 h-4"
           fill="none"
@@ -76,7 +77,7 @@ export const Select: React.FC<SelectProps> = ({
       </div>
 
       {icon && (
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
+        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-muted text-lg">
           {icon}
         </div>
       )}

@@ -4,8 +4,8 @@ import React from 'react';
 interface Tab {
   id: string;
   label: string;
-  icon: string;
-  roles: string[];
+  icon?: React.ReactNode;
+  roles?: string[];
   badge?: string | number;
   disabled?: boolean;
 }
@@ -77,14 +77,18 @@ export const Tabs: React.FC<TabsProps> = ({
               aria-pressed={isActive}
               aria-disabled={isDisabled}
             >
-              <span className="text-sm sm:text-base mr-2">{tab.icon}</span>
-              <span className="font-medium whitespace-nowrap flex items-center gap-2">
-                {tab.label}
-                {tab.badge && (
-                  <span className="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-semibold rounded-full bg-brand-almond text-brand-indigo border border-brand-almond min-w-[1.75rem]">
-                    {tab.badge}
-                  </span>
-                )}
+              <span className="flex items-center gap-2">
+                {tab.icon ? (
+                  <span className="text-sm sm:text-base text-text-secondary">{tab.icon}</span>
+                ) : null}
+                <span className="font-medium whitespace-nowrap flex items-center gap-2">
+                  {tab.label}
+                  {tab.badge && (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-semibold rounded-full bg-brand-almond text-brand-indigo border border-brand-almond min-w-[1.75rem]">
+                      {tab.badge}
+                    </span>
+                  )}
+                </span>
               </span>
             </button>
           );

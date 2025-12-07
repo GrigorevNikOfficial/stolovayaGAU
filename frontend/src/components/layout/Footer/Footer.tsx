@@ -1,5 +1,6 @@
 // components/layout/Footer/Footer.tsx
 import React from 'react';
+import { ClockIcon, LocationIcon, MailIcon, PhoneIcon } from '../../icons/ServiceIcons';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -24,7 +25,9 @@ export const Footer: React.FC = () => {
               <h4 className="text-lg font-semibold mb-4 text-gray-100">Контакты</h4>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">📞</span>
+                  <span className="text-gray-400 mt-0.5">
+                    <PhoneIcon className="w-4 h-4" />
+                  </span>
                   <div>
                     <p className="text-gray-300">+7 (939) 782-06-57</p>
                     <p className="text-gray-400 text-xs">
@@ -33,7 +36,9 @@ export const Footer: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">📧</span>
+                  <span className="text-gray-400 mt-0.5">
+                    <MailIcon className="w-4 h-4" />
+                  </span>
                   <div>
                     <p className="text-gray-300">4bsolutefleur@gmail.com</p>
                     <p className="text-gray-400 text-xs">
@@ -49,7 +54,9 @@ export const Footer: React.FC = () => {
               <h4 className="text-lg font-semibold mb-4 text-gray-100">Адрес</h4>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">📍</span>
+                  <span className="text-gray-400 mt-0.5">
+                    <LocationIcon className="w-4 h-4" />
+                  </span>
                   <div>
                     <p className="text-gray-300">ул. Студенческая, 15</p>
                     <p className="text-gray-400 text-xs">
@@ -58,7 +65,9 @@ export const Footer: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <span className="text-gray-400 mt-0.5">⏰</span>
+                  <span className="text-gray-400 mt-0.5">
+                    <ClockIcon className="w-4 h-4" />
+                  </span>
                   <div>
                     <p className="text-gray-300">Пн-Пт: 8:00-18:00</p>
                     <p className="text-gray-400 text-xs">Сб-Вс: 9:00-16:00</p>

@@ -1,3 +1,5 @@
+export type MarketplaceListingMode = 'request' | 'offer';
+
 export interface ServiceAvailability {
   days: string[];
   timeSlots: Array<{ start: string; end: string }>;
@@ -16,6 +18,7 @@ export interface ServiceListing {
   title: string;
   description: string;
   category: string;
+  mode: MarketplaceListingMode;
   price: number;
   pricingType: 'fixed' | 'hourly' | 'package';
   tags: string[];
@@ -59,6 +62,7 @@ export interface ServiceListQuery {
   limit?: number;
   includeInactive?: boolean;
   userId?: string;
+  mode?: MarketplaceListingMode;
 }
 
 export interface CreateServicePayload {
@@ -73,13 +77,15 @@ export interface CreateServicePayload {
   availability?: ServiceAvailability;
   portfolio?: string[];
   attachments?: string[];
+  mode: MarketplaceListingMode;
 }
 
 export type UpdateServicePayload = Partial<CreateServicePayload>;
 
 export interface ServiceRequest {
   id: string;
-  service?: Pick<ServiceListing, 'id' | 'title' | 'price' | 'category'>;
+  type: MarketplaceListingMode;
+  service?: Pick<ServiceListing, 'id' | 'title' | 'price' | 'category' | 'mode'>;
   customer?: Pick<ServiceListingOwner, 'id' | 'firstName' | 'lastName' | 'role'>;
   provider?: Pick<ServiceListingOwner, 'id' | 'firstName' | 'lastName' | 'role'>;
   price: number;
@@ -109,6 +115,7 @@ export interface ServiceRequestQuery {
   scope?: ServiceRequestScope;
   status?: ServiceRequest['status'];
   serviceId?: string;
+  type?: MarketplaceListingMode;
 }
 
 export interface CreateServiceRequestPayload {

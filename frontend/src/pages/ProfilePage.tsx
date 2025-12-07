@@ -7,9 +7,11 @@ import { loadOrders } from '../models/orders';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs';
+import { BellIcon } from '../components/icons/ServiceIcons';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal';
-import LogoSAU from '../images/LogoSAU.svg';
+import LogoSAU from '../images/logo.jpg';
+import { formatBalance } from '../utils/formatBalance';
 
 type ProfileTabId = 'data' | 'stats' | 'achievements';
 
@@ -80,6 +82,16 @@ export const ProfilePage: React.FC = () => {
   const [statsError, setStatsError] = React.useState<string | null>(null);
   const [hasLoadedStats, setHasLoadedStats] = React.useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = React.useState(false);
+
+  const NotificationBell = () => (
+    <button
+      type="button"
+      aria-label="Уведомления"
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+    >
+      <BellIcon className="h-5 w-5" />
+    </button>
+  );
 
   const headerTabs = React.useMemo(
     () =>
@@ -228,7 +240,7 @@ export const ProfilePage: React.FC = () => {
                 <img
                   src={LogoSAU}
                   alt="Логотип сервиса"
-                  className="h-9 w-9 rounded-2xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:h-10 sm:w-10"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
                 />
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-text-muted transition-colors duration-200 group-hover:text-brand-indigo">
@@ -249,11 +261,12 @@ export const ProfilePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsTopUpModalOpen(true)}
-                className="flex items-center gap-2 rounded-full border border-brand-grape/40 bg-brand-grape/10 px-3 py-1.5 text-sm font-semibold text-brand-indigo shadow-inner transition-colors hover:bg-brand-grape/20"
+                className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
               >
-                <span className="text-base sm:text-lg">{(currentUser.balance ?? 0).toLocaleString('ru-RU')} ₽</span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-grape text-white">+</span>
+                <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
               </button>
+              <NotificationBell />
               <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
                   {avatarUrl ? (

@@ -7,11 +7,14 @@ import {
   emitMarketplaceListingUpdated,
 } from '../services/socketService.js';
 
+const LISTING_MODES = ['request', 'offer'];
+
 const mapListingResponse = (listing) => ({
   id: listing._id,
   title: listing.title,
   description: listing.description,
   category: listing.category,
+  mode: listing.mode || 'request',
   price: listing.price,
   paymentHold: listing.paymentHold,
   pricingType: listing.pricingType,
@@ -58,6 +61,7 @@ export const createServiceListing = async (req, res) => {
       availability,
       portfolio = [],
       attachments = [],
+      mode = 'request',
     } = req.body;
 
     if (!title || !description || !category || price === undefined) {
@@ -69,14 +73,20 @@ export const createServiceListing = async (req, res) => {
       return res.status(400).json({ error: 'Цена должна быть неотрицательным числом' });
     }
 
-    const debitedUser = await User.findOneAndUpdate(
-      { _id: req.user._id, balance: { $gte: numericPrice } },
-      { $inc: { balance: -numericPrice } },
-      { new: true }
-    );
+    const normalizedMode = LISTING_MODES.includes(mode) ? mode : 'request';
 
-    if (!debitedUser) {
-      return res.status(400).json({ error: 'Недостаточно средств для публикации объявления' });
+    let debitedUser = null;
+
+    if (normalizedMode === 'request') {
+      debitedUser = await User.findOneAndUpdate(
+        { _id: req.user._id, balance: { $gte: numericPrice } },
+        { $inc: { balance: -numericPrice } },
+        { new: true }
+      );
+
+      if (!debitedUser) {
+        return res.status(400).json({ error: 'Недостаточно средств для публикации объявления-заказа' });
+      }
     }
 
     let listing;
@@ -84,11 +94,12 @@ export const createServiceListing = async (req, res) => {
     try {
       listing = await ServiceListing.create({
         userId: req.user._id,
+        mode: normalizedMode,
         title: title.trim(),
         description: description.trim(),
         category: category.trim(),
         price: numericPrice,
-        paymentHold: numericPrice,
+        paymentHold: normalizedMode === 'request' ? numericPrice : 0,
         pricingType,
         tags,
         skills,
@@ -98,7 +109,9 @@ export const createServiceListing = async (req, res) => {
         attachments,
       });
     } catch (creationError) {
-      await User.findByIdAndUpdate(req.user._id, { $inc: { balance: numericPrice } });
+      if (normalizedMode === 'request') {
+        await User.findByIdAndUpdate(req.user._id, { $inc: { balance: numericPrice } });
+      }
       throw creationError;
     }
 
@@ -126,6 +139,7 @@ export const getServiceListings = async (req, res) => {
       limit = 12,
       includeInactive,
       userId,
+      mode,
     } = req.query;
 
     const filter = {};
@@ -138,6 +152,14 @@ export const getServiceListings = async (req, res) => {
 
     if (userId) {
       filter.userId = userId;
+    }
+
+    if (mode && LISTING_MODES.includes(mode)) {
+      if (mode === 'request') {
+        filter.$or = [{ mode }, { mode: { $exists: false } }];
+      } else {
+        filter.mode = mode;
+      }
     }
 
     const priceFilter = {};

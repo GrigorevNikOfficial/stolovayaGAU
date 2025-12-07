@@ -12,11 +12,11 @@ export default {
     extend: {
       colors: {
         brand: {
-          indigo: withOpacityValue('--space-indigo'),
-          grape: withOpacityValue('--dusty-grape'),
-          lilac: withOpacityValue('--lilac-ash'),
-          almond: withOpacityValue('--almond-silk'),
-          seashell: withOpacityValue('--seashell'),
+          indigo: withOpacityValue('--color-ink'),
+          grape: withOpacityValue('--color-charcoal'),
+          lilac: withOpacityValue('--color-graphite'),
+          almond: withOpacityValue('--color-mint'),
+          seashell: withOpacityValue('--color-shell'),
         },
         surface: {
           base: withOpacityValue('--surface-base'),
@@ -33,31 +33,31 @@ export default {
           muted: withOpacityValue('--text-muted'),
         },
         accent: {
-          blush: withOpacityValue('--almond-silk'),
+          blush: withOpacityValue('--color-mint-soft'),
         },
         gray: {
-          50: '#f8f6f4',
-          100: '#f2e9e4',
-          200: '#e6dcd7',
-          300: '#d7c8c3',
-          400: '#c9ada7',
-          500: '#b497a1',
-          600: '#9a8c98',
-          700: '#706375',
-          800: '#4a4e69',
-          900: '#22223b',
-          950: '#151320',
+          50: '#f9fafb',
+          100: '#f4f7f5',
+          200: '#e5ece7',
+          300: '#cfd9d2',
+          400: '#9ca7a0',
+          500: '#6d756f',
+          600: '#4f5650',
+          700: '#2f332f',
+          800: '#1c1f1d',
+          900: '#121312',
+          950: '#060707',
         },
       },
       fontFamily: {
         sans: ['"Space Grotesk"', '"Segoe UI"', 'sans-serif'],
       },
       boxShadow: {
-        'brand-card': '0 18px 45px rgba(34, 34, 59, 0.12)',
+        'brand-card': '0 20px 45px rgba(16, 185, 129, 0.18)',
       },
       backgroundImage: {
         'brand-overlay':
-          'linear-gradient(135deg, rgba(34,34,59,0.92), rgba(74,78,105,0.8))',
+          'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(15,118,110,0.85))',
       },
     },
     screens: {

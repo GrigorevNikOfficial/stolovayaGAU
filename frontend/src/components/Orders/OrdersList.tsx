@@ -15,6 +15,15 @@ import type { UpdateOrderRequest } from '../../types/order.ts';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
 import StatusBadge from '../Settings/StatusBadge.tsx';
+import {
+  CalendarIcon,
+  ClockIcon,
+  DocumentIcon,
+  ForkKnifeIcon,
+  LocationIcon,
+  PenIcon,
+  TruckIcon,
+} from '../icons/ServiceIcons';
 
 export const OrdersList: React.FC = () => {
   console.log('OrdersList: компонент рендерится');
@@ -275,11 +284,12 @@ export const OrdersList: React.FC = () => {
                   <StatusBadge status={order.status} />
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm text-text-secondary">
-                  <span>
-                    📅 {new Date(order.created_at).toLocaleString('ru-RU')}
+                  <span className="flex items-center gap-1">
+                    <CalendarIcon className="w-4 h-4" />
+                    {new Date(order.created_at).toLocaleString('ru-RU')}
                   </span>
-                  <span>
-                    🚚{' '}
+                  <span className="flex items-center gap-1">
+                    <TruckIcon className="w-4 h-4" />
                     {order.delivery_method === 'delivery'
                       ? 'Доставка'
                       : order.delivery_method === 'dine_in'
@@ -287,7 +297,9 @@ export const OrdersList: React.FC = () => {
                         : 'Самовывоз'}
                   </span>
                   {order.table_number && (
-                    <span>🍽️ Стол: {order.table_number}</span>
+                    <span className="flex items-center gap-1">
+                      <ForkKnifeIcon className="w-4 h-4" /> Стол: {order.table_number}
+                    </span>
                   )}
                 </div>
                 {(currentUser?.role === 'admin' ||
@@ -297,15 +309,17 @@ export const OrdersList: React.FC = () => {
                   </p>
                 )}
                 {order.delivery_address && (
-                  <p className="text-sm text-text-secondary">
-                    📍 Адрес: {order.delivery_address}
+                  <p className="text-sm text-text-secondary flex items-center gap-2">
+                    <LocationIcon className="w-4 h-4" />
+                    Адрес: {order.delivery_address}
                   </p>
                 )}
                 {isStaffUser && readyTimeLabel && (
                   <p
                     className={`text-sm font-semibold flex items-center gap-2 ${isOrderOverdue ? 'text-red-500' : 'text-emerald-600'}`}
                   >
-                    ⏱️ Готовность: {readyTimeLabel}
+                    <ClockIcon className="w-4 h-4" />
+                    Готовность: {readyTimeLabel}
                     {isOrderOverdue && <span className="text-xs">(не успеваем)</span>}
                   </p>
                 )}
@@ -414,7 +428,10 @@ export const OrdersList: React.FC = () => {
                           variant="outline"
                           size="sm"
                         >
-                          ✏️ Редактировать
+                          <span className="flex items-center gap-2">
+                            <PenIcon className="w-4 h-4" />
+                            Редактировать
+                          </span>
                         </Button>
                       )}
                       {order.status !== 'completed' &&
@@ -440,7 +457,9 @@ export const OrdersList: React.FC = () => {
 
       {orders.length === 0 && (
         <div className="text-center py-16 fade-in text-text-secondary">
-          <div className="text-6xl text-text-muted mb-4">📦</div>
+          <div className="flex items-center justify-center text-text-muted mb-4">
+            <DocumentIcon className="w-16 h-16" />
+          </div>
           <p className="text-text-primary text-xl font-medium mb-3">
             Заказы не найдены
           </p>

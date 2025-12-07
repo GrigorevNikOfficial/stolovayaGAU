@@ -8,6 +8,12 @@ const serviceRequestSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    type: {
+      type: String,
+      enum: ['request', 'offer'],
+      default: 'request',
+      index: true,
+    },
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

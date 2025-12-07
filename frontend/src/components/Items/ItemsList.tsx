@@ -26,6 +26,7 @@ import Select from '../layout/Select/Select.tsx';
 import ItemFormModal from '../Modal/ItemFormModal.tsx';
 import ItemModal from '../Modal/ItemModal.tsx';
 import { showToast } from '../layout/Toast/stores/toastStore.ts';
+import { CartIcon, ForkKnifeIcon } from '../icons/ServiceIcons';
 
 export const ItemsList: React.FC = () => {
   console.log('ItemsList: компонент рендерится');
@@ -570,8 +571,8 @@ export const ItemsList: React.FC = () => {
                               className="absolute inset-0 w-full h-full object-cover shadow-sm group-hover:shadow-md transition-shadow duration-300"
                             />
                           ) : (
-                              <div className="absolute inset-0 bg-gradient-to-br from-surface-muted to-white flex items-center justify-center border border-border-soft">
-                                <span className="text-2xl text-text-muted">🍽️</span>
+                              <div className="absolute inset-0 bg-gradient-to-br from-surface-muted to-white flex items-center justify-center border border-border-soft text-text-muted">
+                                <ForkKnifeIcon className="w-8 h-8" />
                             </div>
                           )}
                         </div>
@@ -601,7 +602,14 @@ export const ItemsList: React.FC = () => {
                                 size="md"
                                 className="w-full text-sm py-2 px-3 truncate"
                               >
-                                {isAvailable ? '🛒 В корзину' : 'Недоступно'}
+                                {isAvailable ? (
+                                  <span className="flex items-center justify-center gap-2">
+                                    <CartIcon className="w-4 h-4" />
+                                    В корзину
+                                  </span>
+                                ) : (
+                                  'Недоступно'
+                                )}
                               </Button>
                             ) : (
                               <div className="flex items-center justify-between bg-brand-seashell border border-brand-indigo/30 rounded-xl p-1.5">
@@ -642,7 +650,9 @@ export const ItemsList: React.FC = () => {
 
       {!isLoading && visibleItems.length === 0 && (
         <div className="text-center py-16 fade-in">
-          <div className="text-6xl text-text-muted mb-4">🍽️</div>
+          <div className="flex items-center justify-center text-text-muted mb-4">
+            <ForkKnifeIcon className="w-16 h-16" />
+          </div>
           <p className="text-text-secondary text-xl font-medium mb-3">Товары не найдены</p>
           <p className="text-text-muted text-sm mb-6">
             {searchQuery ||

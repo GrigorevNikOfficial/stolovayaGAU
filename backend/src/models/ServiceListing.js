@@ -43,6 +43,12 @@ const serviceListingSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    mode: {
+      type: String,
+      enum: ['request', 'offer'],
+      default: 'request',
+      index: true,
+    },
     price: {
       type: Number,
       required: true,
