@@ -94,7 +94,7 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-900/25 backdrop-blur" onClick={onClose} />
       <div className="relative w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-[32px] border border-border-soft bg-white text-text-primary shadow-[0_25px_80px_rgba(15,23,42,0.35)]">
         <div className="flex items-center justify-between border-b border-border-soft px-6 py-5">
           <div>
@@ -133,7 +133,7 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
               <textarea
                 value={note}
                 onChange={event => setNote(event.target.value)}
-                className="w-full rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand-indigo/30"
+                className="w-full rounded-2xl border border-border-soft bg-white/95 px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand-indigo/30"
                 rows={3}
                 placeholder="Укажите дополнительную информацию для администратора"
               />
@@ -161,7 +161,7 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
             {isLoading ? (
               <div className="text-sm text-text-secondary">Загружаем заявки…</div>
             ) : sortedRequests.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border-soft bg-surface-muted px-4 py-4 text-sm text-text-secondary">
+              <div className="rounded-2xl border border-dashed border-border-soft bg-white/90 px-4 py-4 text-sm text-text-secondary">
                 У вас еще нет заявок на пополнение.
               </div>
             ) : (

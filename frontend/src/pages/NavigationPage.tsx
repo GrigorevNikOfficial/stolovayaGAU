@@ -43,7 +43,7 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'cafeteria',
     title: 'Еда',
-    description: 'Полноценный сервис заказа блюд, управление балансом и отслеживание доставки в реальном времени.',
+    description: 'Полноценный сервис заказа блюд и отслеживания доставки в реальном времени.',
     status: 'live',
     Icon: ForkKnifeIcon,
     iconAccent: 'from-emerald-400 to-emerald-600',
@@ -52,7 +52,7 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'chat',
     title: 'Чат',
-    description: 'Создавайте тематические каналы, общайтесь с коллегами и получайте быстрый доступ к поддержке.',
+    description: 'Создавайте тематические каналы, общайтесь с друзьями и коллегами и получайте быстрый доступ к поддержке.',
     status: 'testing',
     Icon: ChatBubblesIcon,
     iconAccent: 'from-sky-400 via-sky-500 to-sky-600',
@@ -70,7 +70,7 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'marketplace',
     title: 'Услуги',
-    description: 'Локальные сервисы сотрудников и партнёров: аренда, обучение, консультации и другие предложения.',
+    description: 'Локальные сервисы услуг студентов: аренда, обучение, консультации и другие предложения.',
     status: 'testing',
     Icon: ToolkitIcon,
     iconAccent: 'from-rose-300 to-rose-500',
@@ -84,6 +84,24 @@ const services: ServiceCardDescriptor[] = [
     Icon: CalendarIcon,
     iconAccent: 'from-purple-300 to-purple-500',
     path: '/services/events',
+  },
+  {
+    id: 'achievements',
+    title: 'Достижения',
+    description: 'Собирайте бейджи активности за заявки, услуги и участие в сервисах.',
+    status: 'testing',
+    Icon: BellIcon,
+    iconAccent: 'from-emerald-300 to-emerald-500',
+    path: '/profile?tab=achievements',
+  },
+  {
+    id: 'work',
+    title: 'Работа',
+    description: 'Раздел подбора подработок и задач от университета, скоро включим доступ.',
+    status: 'soon',
+    Icon: ToolkitIcon,
+    iconAccent: 'from-slate-300 to-slate-500',
+    path: '#',
   },
 ];
 
@@ -192,7 +210,7 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                 <div>
                   <h2 className="mt-3 text-3xl font-semibold text-brand-indigo">Выберите сервис для продолжения</h2>
                   <p className="mt-4 text-text-secondary">
-                    Доступные продукты обновляются автоматически. Новые сервисы появятся в вашей панели без повторной регистрации.
+                    Новые сервисы появятся в вашей панели без повторной регистрации.
                   </p>
                 </div>
                 {currentUser && (
@@ -210,15 +228,24 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
               {services.map(service => {
                 const tone = statusMap[service.status];
                 const Icon = service.Icon;
-                const isDisabled = service.status === 'soon';
+                const isComingSoon = service.status === 'soon';
+                const isCardDisabled = isComingSoon;
+                const cardCtaCopy = isComingSoon ? 'Готовим к запуску' : 'Перейти в сервис';
+
+                const handleServiceClick = () => {
+                  if (isComingSoon) {
+                    return;
+                  }
+                  onNavigate(service.path);
+                };
                 return (
                   <button
                     key={service.id}
                     type="button"
-                    disabled={isDisabled}
-                    onClick={() => !isDisabled && onNavigate(service.path)}
+                    disabled={isCardDisabled}
+                    onClick={handleServiceClick}
                     className={`group relative overflow-hidden rounded-[28px] border border-border-subtle bg-white p-6 text-left text-text-primary shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(16,185,129,0.25)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-almond/30 ${
-                      isDisabled ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                      isCardDisabled ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -234,8 +261,8 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                       {service.description}
                     </p>
                     <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-brand-indigo">
-                      {isDisabled ? 'Готовим к запуску' : 'Перейти в сервис'}
-                      {!isDisabled && (
+                      {cardCtaCopy}
+                      {!isCardDisabled && (
                         <span className="transition-transform duration-300 group-hover:translate-x-1 text-brand-almond">→</span>
                       )}
                     </div>
@@ -253,13 +280,11 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                   <div>
                     <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">Вы уже авторизованы</h3>
                     <p className="mt-3 text-sm text-text-secondary">
-                      Можете сразу перейти в рабочие продукты. Все данные синхронизированы со столовой и будущими сервисами.
+                       Все данные синхронизированы.
                     </p>
                   </div>
                   <div className="space-y-3">
-                    <Button type="button" variant="primary" size="lg" className="w-full" onClick={() => onNavigate('/services/cafeteria')}>
-                      Открыть столовую
-                    </Button>
+                    
                     <Button
                       type="button"
                       variant="primary"
@@ -273,7 +298,6 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                 </div>
               ) : (
                 <>
-                  <p className="text-sm uppercase tracking-[0.4em] text-text-muted mb-4">единый вход</p>
                   <AuthForm variant="embedded" />
                 </>
               )}

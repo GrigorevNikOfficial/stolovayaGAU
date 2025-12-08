@@ -231,8 +231,7 @@ const NotificationSettings: React.FC = () => {
       <section className="rounded-[32px] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 px-6 py-6 shadow-[0_25px_60px_rgba(16,185,129,0.15)]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-emerald-500">центр уведомлений</p>
-            <h2 className="mt-2 text-3xl font-semibold text-emerald-900">Контроль каналов связи</h2>
+            <h2 className="text-3xl font-semibold text-emerald-900">Контроль каналов связи</h2>
             <p className="mt-2 text-sm text-emerald-800/80">{helperText}</p>
             <ul className="mt-4 space-y-2 text-sm text-emerald-900/80">
               {WORKING_TRIGGERS.map(trigger => (
@@ -264,10 +263,7 @@ const NotificationSettings: React.FC = () => {
 
       {activeSettingsTab === 'categories' ? (
         <section className="space-y-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-emerald-500">категории</p>
-            <h3 className="mt-2 text-xl font-semibold text-emerald-900">Выберите события, которые нужны</h3>
-          </div>
+          <div />
           <div className="grid gap-4 md:grid-cols-2">
             {Object.entries(CATEGORY_LABELS).map(([category, meta]) => {
               const isActive = formState.categories[category as NotificationCategory];
@@ -303,10 +299,7 @@ const NotificationSettings: React.FC = () => {
         </section>
       ) : (
         <section className="space-y-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-emerald-500">каналы</p>
-            <h3 className="mt-2 text-xl font-semibold text-emerald-900">Куда доставляем уведомления</h3>
-          </div>
+          <div />
           <div className="grid gap-4 md:grid-cols-3">
             {(Object.keys(CHANNEL_LABELS) as Array<keyof NotificationPreferences['channels']>).map(channel => {
               const meta = CHANNEL_LABELS[channel];

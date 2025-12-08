@@ -10,7 +10,7 @@ import { ChatPage } from './pages/services/chat/ChatPage.tsx';
 import { EventsServicePage } from './pages/services/ServicePlaceholderPages.tsx';
 import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
 
-const PROTECTED_PATHS = new Set(['/profile', '/services/cafeteria', '/services/chat']);
+const PROTECTED_PATHS = new Set(['/profile', '/services/chat']);
 
 const AuthPendingScreen = () => (
   <div className="flex min-h-screen items-center justify-center text-text-primary">
@@ -131,7 +131,7 @@ function App() {
     }
 
     if (currentPath === '/services/cafeteria') {
-      return renderProtectedPage(<HomePage />);
+      return <HomePage />;
     }
 
     if (currentPath === '/services/chat') {

@@ -379,6 +379,27 @@ export const HomePage: React.FC = () => {
                         Меню
                       </h2>
                     </div>
+                    {!currentUser && (
+                      <div className="mb-5 rounded-2xl border border-dashed border-brand-indigo/30 bg-white/80 p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-brand-indigo uppercase tracking-[0.3em]">
+                            режим гостя
+                          </p>
+                          <p className="text-base text-text-secondary">
+                            Вы можете изучить меню, но оформление заказа доступно только после входа.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="md"
+                          className="w-full sm:w-auto"
+                          onClick={() => handleNavigation('/login')}
+                        >
+                          Войти, чтобы заказать
+                        </Button>
+                      </div>
+                    )}
                     {activeOrdersCount > 0 && (
                       <div className="mb-5">
                         <div className="flex items-center justify-between mb-3">

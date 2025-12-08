@@ -616,9 +616,9 @@ export const ChatPage: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid gap-6 lg:grid-cols-[360px_1fr]">
-        <aside className="space-y-6">
+      <main className="flex-1 w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid gap-6 lg:grid-cols-[360px_1fr] min-h-[calc(100vh-200px)]">
+        <aside className="space-y-6 h-full overflow-y-auto pr-1">
           <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-4 shadow-brand-card">
             <div>
               <p className="text-xs uppercase tracking-[0.4em] text-text-muted">диалоги</p>
@@ -720,7 +720,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </aside>
 
-        <section className="rounded-[32px] border border-border-soft bg-white p-6 flex flex-col min-h-[72vh] shadow-brand-card">
+        <section className="rounded-[32px] border border-border-soft bg-white p-6 flex flex-col h-full min-h-0 shadow-brand-card">
           {activeChat ? (
             <>
               <div className="flex items-center justify-between mb-4">
@@ -787,7 +787,7 @@ export const ChatPage: React.FC = () => {
                   )}
                 </div>
               )}
-              <div ref={messageListRef} className="flex-1 mt-6 overflow-y-auto space-y-5 pr-3 styled-scrollbar">
+              <div ref={messageListRef} className="flex-1 min-h-0 mt-6 overflow-y-auto space-y-5 pr-3 styled-scrollbar">
                 {messageGroups.length === 0 && (
                   <div className="text-center text-text-secondary text-sm py-10">
                     Здесь пока пусто. Начните переписку!

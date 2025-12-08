@@ -124,7 +124,7 @@ export const ProfileContent: React.FC<ProfileContentProps> = ({
             Баланс
           </label>
           <p className="text-2xl sm:text-3xl font-bold text-brand-indigo">
-            {formatBalance(currentUser.balance)}
+            {currentUser.balance.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽
           </p>
           <p className="text-xs text-text-muted mt-1">
             Пополнить баланс может администратор системы

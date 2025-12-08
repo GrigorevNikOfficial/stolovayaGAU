@@ -32,12 +32,12 @@ export const Footer: React.FC = () => {
             <div className="space-y-4 text-sm text-gray-300">
               <div>
                 <p className="font-semibold text-white mb-1">Контакты</p>
-                <p>info@studmi.ru</p>
-                <p>+7 (XXX) XXX-XX-XX</p>
+                <p>4bsolutefleur@gmail.com</p>
+                <p>+7 (939) 782-06-57</p>
               </div>
               <div>
                 <p className="font-semibold text-white mb-1">Адрес</p>
-                <p>г. Москва, Университетская ул., 1</p>
+                <p>г. Краснодар, 20 общежитие КУБГАУ, к. 205</p>
               </div>
             </div>
           </div>

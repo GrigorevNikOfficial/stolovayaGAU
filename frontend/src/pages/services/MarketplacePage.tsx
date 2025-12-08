@@ -1561,6 +1561,10 @@ export const MarketplacePage: React.FC = () => {
     ? commissionValue !== marketplaceSettings.marketplaceCommissionPercent
     : commissionInput.trim().length > 0;
 
+  const heroDescription = filters.mode === 'request'
+    ? 'Заказывайте услуги у других студентов: фиксируйте бюджет, выбирайте исполнителя и оплачивайте работу через баланс.'
+    : 'Предлагайте свои услуги студентам: расскажите о навыках, принимайте брони и получайте оплату внутри баланса.';
+
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
@@ -1659,7 +1663,7 @@ export const MarketplacePage: React.FC = () => {
                   <div>
                     <h2 className="mt-3 text-4xl font-semibold text-brand-indigo">Услуги</h2>
                     <p className="mt-4 max-w-2xl text-lg text-text-secondary">
-                      Два сценария в одном окне: создавайте задачи с заморозкой бюджета или предлагайте собственные услуги коллегам. Все платежи проходят внутри баланса.
+                      {heroDescription}
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
                       {filters.mode === 'request' ? (
@@ -1954,15 +1958,13 @@ export const MarketplacePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-6 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">инструменты исполнителя</p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">Как это работает</p>
                   <ul className="space-y-3 text-sm text-text-secondary">
                     <li>Обновляйте описание и стоимость, чтобы чаще попадать в подборки.</li>
                     <li>Добавляйте до пяти тегов — система выделит популярные навыки.</li>
                     <li>Скрывайте услуги, когда заняты: клиенты увидят статус в карточке.</li>
+                    <li>Удалить объявление можно, пока по нему нет активных заявок (принятых или в работе)</li>
                   </ul>
-                  <p className="text-xs text-text-muted">
-                    Удалить объявление можно, пока по нему нет активных заявок (принятых или в работе).
-                  </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <DetailStat label="Активные заказы" value={activeRequestsCount} />
                     <DetailStat label="Активные предложения" value={activeOffersCount} />
@@ -2037,13 +2039,13 @@ export const MarketplacePage: React.FC = () => {
                   <p className="text-xs uppercase tracking-[0.4em] text-text-muted">как это работает</p>
                   <ol className="space-y-4 text-sm text-text-secondary">
                     <li>
-                      <strong className="text-text-primary">1. Разместите заказ или предложение.</strong> Выберите режим — «Мне нужен исполнитель» или «Я оказываю услугу».
+                      <strong className="text-text-primary">1. Создайте заказ или предложение.</strong> Переключитесь в режим «Нужен исполнитель» для задач или «Предлагаю услугу», если готовы выполнять сами.
                     </li>
                     <li>
-                      <strong className="text-text-primary">2. Получайте отклики.</strong> Исполнители отвечают на заказы, а заказчики бронируют предложения.
+                      <strong className="text-text-primary">2. Ждите отклики внутри системы.</strong> Исполнители отвечают на ваши заказы, а студенты-заказчики подтверждают бронь на ваши услуги.
                     </li>
                     <li>
-                      <strong className="text-text-primary">3. Средства резервируются автоматически.</strong> Для заказов бюджет замораживается у автора, для предложений — у покупателя при подтверждении.
+                      <strong className="text-text-primary">3. Бюджет резервируется автоматически.</strong> Для заказов блокируем сумму у автора до завершения, для предложений — списываем с покупателя при подтверждении.
                     </li>
                   </ol>
                   <div className="rounded-2xl border border-brand-indigo/30 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
@@ -2066,22 +2068,13 @@ export const MarketplacePage: React.FC = () => {
                     <p className="mt-2 text-sm text-brand-indigo/80">
                       Текущая комиссия: {marketplaceSettings?.marketplaceCommissionPercent ?? 0}%
                     </p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.3em] text-brand-indigo/60">
-                      обновляется автоматически при каждом платеже
-                    </p>
                   </div>
                   <div className="grid gap-3 text-sm text-brand-indigo">
                     <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
                       <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">автообновление</p>
-                      <p className="mt-1 font-semibold text-brand-indigo">
-                        Подписка на событие marketplace:settings:updated уже активна
-                      </p>
                     </div>
                     <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
                       <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">контроль комиссий</p>
-                      <p className="mt-1 font-semibold text-brand-indigo">
-                        Любое изменение мгновенно синхронизируется между администраторами
-                      </p>
                     </div>
                   </div>
                 </div>
