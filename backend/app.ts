@@ -24,6 +24,7 @@ import { router as topUpRoutes } from './src/routes/topups.js';
 import { router as userRoutes } from './src/routes/users.js';
 import { router as paymentRoutes } from './src/routes/payments.js';
 import { router as notificationRoutes } from './src/routes/notifications.js';
+import { router as eventRoutes } from './src/routes/events.js';
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/service-requests', serviceRequestRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/events', eventRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

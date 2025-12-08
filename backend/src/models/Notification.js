@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const CATEGORY_VALUES = ['orders', 'marketplace', 'system', 'chat', 'balance', 'topups'];
+const CATEGORY_VALUES = ['orders', 'marketplace', 'system', 'chat', 'balance', 'topups', 'events'];
 const SEVERITY_VALUES = ['info', 'success', 'warning', 'danger'];
 
 const notificationSchema = new mongoose.Schema(
