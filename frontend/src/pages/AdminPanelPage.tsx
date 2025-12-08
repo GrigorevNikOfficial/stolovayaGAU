@@ -5,6 +5,8 @@ import Button from '../components/layout/Button/Button';
 import Footer from '../components/layout/Footer/Footer';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import { Settings } from '../components/Settings/Settings';
+import { UserBalances } from '../components/Settings/UserBalances';
+import { TopUpRequestsAdmin } from '../components/TopUpRequests/TopUpRequestsAdmin';
 import { showToast } from '../components/layout/Toast/stores/toastStore';
 import { onSocketEvent } from '../lib/socket';
 import LogoSAU from '../images/logo.jpg';
@@ -17,29 +19,28 @@ type AdminSectionId = 'marketplace' | 'cafeteria' | 'finances';
 type AdminSection = {
   id: AdminSectionId;
   label: string;
-  description: string;
-  status: 'active' | 'soon';
 };
 
 const ADMIN_SECTIONS: AdminSection[] = [
   {
     id: 'marketplace',
     label: 'Маркетплейс',
-    description: 'Комиссии, баланс и живые показатели заказов.',
-    status: 'active',
   },
   {
     id: 'cafeteria',
-    label: 'Столовая',
-    description: 'Меню, сотрудники, лимиты и заявки на пополнение.',
-    status: 'active',
+    label: 'Еда',
   },
   {
     id: 'finances',
     label: 'Финансы',
-    description: 'Мониторинг выводов и история транзакций (скоро).',
-    status: 'soon',
   },
+];
+
+type FinanceTabId = 'balances' | 'topups';
+
+const FINANCE_TABS: Array<{ id: FinanceTabId; label: string }> = [
+  { id: 'balances', label: 'Баланс пользователей' },
+  { id: 'topups', label: 'Заявки на пополнение' },
 ];
 
 const PlaceholderCard: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -61,6 +62,7 @@ export const AdminPanelPage: React.FC = () => {
   const [isLoadingSettings, setIsLoadingSettings] = React.useState(false);
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
   const [commissionInput, setCommissionInput] = React.useState('');
+  const [financeTab, setFinanceTab] = React.useState<FinanceTabId>('balances');
 
   const handleNavigate = React.useCallback((path: string) => {
     const nextUrl = new URL(path, window.location.origin);
@@ -298,25 +300,96 @@ export const AdminPanelPage: React.FC = () => {
   );
 
   const renderCafeteriaSection = () => (
-    <div className="space-y-8">
-      <section className="rounded-[36px] border border-border-soft bg-white p-8 shadow-brand-card">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-text-muted">настройки сервиса еды</p>
-            <h3 className="mt-3 text-3xl font-semibold text-brand-indigo">Столовая ГАУ</h3>
-            <p className="mt-2 text-sm text-text-secondary max-w-2xl">
-              Управляйте меню, сотрудниками, сервисным сбором и заявками на пополнение баланса в одном месте.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-dashed border-border-soft px-4 py-3 text-xs uppercase tracking-[0.3em] text-text-muted">
-            Только администраторы
-          </div>
+    <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-brand-card">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="text-3xl font-semibold text-brand-indigo">Еда</h3>
+          <p className="mt-2 text-sm text-text-secondary">
+            Оперативно управляйте меню, доставкой и служебными уведомлениями в одном модуле.
+          </p>
         </div>
-        <div className="mt-8">
-          <Settings />
+      </div>
+      <Settings />
+    </section>
+  );
+
+  const renderFinancesSection = () => (
+    <div className="space-y-8">
+      <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-brand-card">
+        <div>
+          <h3 className="text-3xl font-semibold text-brand-indigo">Финансы</h3>
+          <p className="mt-2 text-sm text-text-secondary">
+            Контролируйте балансы пользователей и входящие заявки на пополнение без переключения вкладок.
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {FINANCE_TABS.map(tab => {
+            const isActive = financeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFinanceTab(tab.id)}
+                className={`group relative flex items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
+                  isActive
+                    ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.2)]'
+                    : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
+                } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`pointer-events-none absolute inset-x-4 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
+                    isActive
+                      ? 'scale-x-100 opacity-100'
+                      : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                  }`}
+                />
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-6 rounded-[32px] border border-border-soft bg-surface-muted/40 p-4 sm:p-6">
+          {financeTab === 'balances' ? <UserBalances /> : <TopUpRequestsAdmin />}
         </div>
       </section>
     </div>
+  );
+
+  const renderSectionTabs = React.useCallback(
+    (className = '') => (
+      <div
+        className={`flex w-full flex-wrap justify-center gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`}
+        role="tablist"
+      >
+        {ADMIN_SECTIONS.map(section => {
+          const isActive = activeSection === section.id;
+          return (
+            <button
+              key={section.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActiveSection(section.id)}
+              className={`group relative flex items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
+                isActive
+                  ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
+                  : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
+              } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
+            >
+              <span>{section.label}</span>
+              <span
+                className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
+                  isActive
+                    ? 'scale-x-100 opacity-100'
+                    : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+    ),
+    [activeSection]
   );
 
   const renderActiveSection = () => {
@@ -326,12 +399,10 @@ export const AdminPanelPage: React.FC = () => {
     if (activeSection === 'cafeteria') {
       return renderCafeteriaSection();
     }
-    return (
-      <PlaceholderCard
-        title="Финансовый мониторинг"
-        description="Здесь появится отчёт по вводам и выводам средств, журнал ручных операций и алерты."
-      />
-    );
+    if (activeSection === 'finances') {
+      return renderFinancesSection();
+    }
+    return null;
   };
 
   return (
@@ -349,22 +420,36 @@ export const AdminPanelPage: React.FC = () => {
                 <img
                   src={LogoSAU}
                   alt="Логотип сервиса"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
+                  className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
                 />
                 <div className="leading-tight">
-                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">панель администратора</p>
                   <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
-                    <span className="tracking-[-0.04em]">STUDMI</span>
-                    <span className="ml-2 text-base font-semibold text-brand-indigo">Control</span>
+                    <span className="tracking-[-0.04em]">STUD</span>
+                    <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
+                      MI
+                    </span>
                   </h1>
+                  <p className="mt-1 text-xs uppercase tracking-[0.4em] text-text-muted">панель администратора</p>
                 </div>
               </button>
             </div>
+            <div className="hidden flex-1 justify-center px-3 lg:flex">
+              <div className="w-full max-w-3xl">{renderSectionTabs()}</div>
+            </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden lg:flex flex-col text-right">
-                <span className="text-xs uppercase tracking-[0.35em] text-text-muted">баланс аккаунта</span>
-                <span className="text-base font-semibold text-brand-indigo">{balanceLabel}</span>
-              </div>
+              <button
+                type="button"
+                onClick={handleProfileNavigate}
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              >
+                <span
+                  className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
+                  title={balanceLabel}
+                >
+                  {balanceLabel}
+                </span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
+              </button>
               <NotificationBell />
               <button
                 type="button"
@@ -407,48 +492,9 @@ export const AdminPanelPage: React.FC = () => {
 
       <main className="flex-1 pb-28 sm:pb-32 lg:pb-0">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-          <section className="rounded-[36px] border border-border-soft bg-white p-8 shadow-brand-card">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-text-muted">управление платформой</p>
-                <h2 className="mt-3 text-4xl font-semibold text-brand-indigo">Центр администрирования сервисов</h2>
-                <p className="mt-4 max-w-2xl text-lg text-text-secondary">
-                  Настраивайте комиссии, контролируйте баланс маркетплейса и отслеживайте ключевые процессы платформы в одном месте.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Button variant="primary" size="md" onClick={() => handleNavigate('/')}>
-                  Назад к сервисам
-                </Button>
-                <Button variant="outline" size="md" onClick={handleProfileNavigate}>
-                  Профиль администратора
-                </Button>
-              </div>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {ADMIN_SECTIONS.map(section => {
-                const isActive = activeSection === section.id;
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    onClick={() => setActiveSection(section.id)}
-                    className={`flex flex-col items-start rounded-3xl border px-4 py-3 text-left transition-all duration-200 sm:min-w-[220px] ${
-                      isActive
-                        ? 'border-brand-indigo/60 bg-brand-indigo/5 text-brand-indigo shadow-brand-card'
-                        : 'border-border-soft bg-surface-muted text-text-secondary hover:border-brand-indigo/40'
-                    }`}
-                  >
-                    <span className="text-sm font-semibold">{section.label}</span>
-                    <span className="text-xs text-text-muted">{section.description}</span>
-                    {section.status === 'soon' && (
-                      <span className="mt-2 rounded-full border border-dashed border-border-soft px-2 py-0.5 text-[10px] uppercase tracking-[0.35em] text-text-muted">
-                        скоро
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+          <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-brand-card lg:hidden">
+            <div className="flex justify-center">
+              <div className="w-full max-w-xl">{renderSectionTabs()}</div>
             </div>
           </section>
 

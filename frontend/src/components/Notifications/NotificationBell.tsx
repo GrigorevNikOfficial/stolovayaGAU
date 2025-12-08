@@ -194,13 +194,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onRequireAut
 
       {isOpen && (
         <div className="absolute right-0 z-50 mt-3 w-[320px] rounded-3xl border border-border-soft bg-white shadow-[0_25px_80px_rgba(15,23,42,0.15)]">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle/60">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-text-muted">уведомления</p>
-              <p className="text-base font-semibold text-text-primary">
-                {unreadCount > 0 ? `${unreadCount} не прочитано` : 'Всё актуально'}
-              </p>
-            </div>
+          <div className="flex items-center justify-end px-4 py-3 border-b border-border-subtle/60">
             <button
               type="button"
               className="text-xs font-semibold text-emerald-600 hover:text-emerald-500 disabled:text-text-muted"
@@ -273,27 +267,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onRequireAut
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t border-border-subtle/60 px-4 py-3">
-            <button
-              type="button"
-              className="flex items-center gap-2 text-sm font-semibold text-text-secondary hover:text-text-primary"
-              onClick={() => {
-                navigate('/services/notifications');
-                closeDropdown();
-              }}
-            >
-              Открыть центр
-              <span aria-hidden>→</span>
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1 text-xs uppercase tracking-[0.35em] text-text-muted"
-              onClick={() => handleMarkAll()}
-            >
-              <CheckIcon className="w-3 h-3" />
-              Всё прочитано
-            </button>
-          </div>
+          <div className="border-t border-border-subtle/60" />
         </div>
       )}
     </div>

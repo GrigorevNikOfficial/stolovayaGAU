@@ -118,7 +118,7 @@ export const UserBalances: React.FC = () => {
               <div className="flex flex-col md:items-end gap-2 w-full md:w-auto">
                     <div className="text-xs text-text-muted uppercase tracking-wide">Текущий баланс</div>
                 <div className="text-2xl font-bold text-brand-indigo">
-                  {formatBalance(user.balance)}
+                  {formatBalance(user.balance, { compact: true })}
                 </div>
               </div>
 

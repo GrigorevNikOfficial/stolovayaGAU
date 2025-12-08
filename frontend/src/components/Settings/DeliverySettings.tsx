@@ -2,21 +2,13 @@
 import { useUnit } from 'effector-react';
 import React, { useEffect, useState } from 'react';
 import {
-    $deliverySettings,
-    fetchDeliverySettings,
-    updateDeliverySettings,
+  $deliverySettings,
+  fetchDeliverySettings,
+  updateDeliverySettings,
 } from '../../models/settings';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
-import {
-  CheckIcon,
-  ClockIcon,
-  CloseIcon,
-  ForkKnifeIcon,
-  PackageIcon,
-  SaveIcon,
-  TruckIcon,
-} from '../icons/ServiceIcons';
+import { CheckIcon, CloseIcon, ForkKnifeIcon, PackageIcon, TruckIcon } from '../icons/ServiceIcons';
 
 export const DeliverySettings: React.FC = () => {
   const [settings, handleFetchSettings, handleUpdateSettings] = useUnit([
@@ -37,12 +29,10 @@ export const DeliverySettings: React.FC = () => {
     serviceFeeValue: 0,
   });
 
-  // Загружаем настройки из БД при монтировании
   useEffect(() => {
     handleFetchSettings();
   }, [handleFetchSettings]);
 
-  // Когда настройки загрузились из БД - заполняем поля
   useEffect(() => {
     if (settings.deliveryTimeStart) {
       setTimeSettings({
@@ -58,13 +48,61 @@ export const DeliverySettings: React.FC = () => {
     }
   }, [settings]);
 
-  // Переключение доставки
+  const handleTimeChange = (key: keyof typeof timeSettings, value: string) => {
+    setTimeSettings(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const statusOptions = [
+    {
+      id: 'enabled',
+      label: 'Включена',
+      icon: CheckIcon,
+      active: true,
+    },
+    {
+      id: 'disabled',
+      label: 'Выключена',
+      icon: CloseIcon,
+      active: false,
+    },
+  ] as const;
+
+  const scheduleBlocks = [
+    {
+      id: 'delivery',
+      label: 'Доставка',
+      startKey: 'deliveryTimeStart' as const,
+      endKey: 'deliveryTimeEnd' as const,
+      Icon: TruckIcon,
+      tone: 'text-brand-indigo',
+    },
+    {
+      id: 'pickup',
+      label: 'Самовывоз',
+      startKey: 'pickupTimeStart' as const,
+      endKey: 'pickupTimeEnd' as const,
+      Icon: PackageIcon,
+      tone: 'text-emerald-600',
+    },
+    {
+      id: 'dineIn',
+      label: 'В зале',
+      startKey: 'dineInTimeStart' as const,
+      endKey: 'dineInTimeEnd' as const,
+      Icon: ForkKnifeIcon,
+      tone: 'text-amber-600',
+    },
+  ];
+
   const toggleDelivery = async (deliveryEnabled: boolean) => {
     setIsLoading(true);
     try {
-      await handleUpdateSettings({ 
+      await handleUpdateSettings({
         deliveryEnabled,
-        ...timeSettings
+        ...timeSettings,
       });
     } catch (error: any) {
       alert('Ошибка: ' + error.message);
@@ -73,11 +111,18 @@ export const DeliverySettings: React.FC = () => {
     }
   };
 
-  // Сохранение времени
   const saveTimeSettings = async () => {
-    if (!timeSettings.deliveryTimeStart || !timeSettings.deliveryTimeEnd ||
-        !timeSettings.pickupTimeStart || !timeSettings.pickupTimeEnd ||
-        !timeSettings.dineInTimeStart || !timeSettings.dineInTimeEnd) {
+    const requiredKeys: Array<keyof typeof timeSettings> = [
+      'deliveryTimeStart',
+      'deliveryTimeEnd',
+      'pickupTimeStart',
+      'pickupTimeEnd',
+      'dineInTimeStart',
+      'dineInTimeEnd',
+    ];
+
+    const hasEmptyField = requiredKeys.some(key => !timeSettings[key]);
+    if (hasEmptyField) {
       alert('Пожалуйста, заполните все поля времени');
       return;
     }
@@ -85,10 +130,9 @@ export const DeliverySettings: React.FC = () => {
     setIsLoading(true);
     try {
       await handleUpdateSettings({
+        deliveryEnabled: Boolean(settings.deliveryEnabled),
         ...timeSettings,
-        deliveryEnabled: settings.deliveryEnabled,
       });
-      alert('Настройки времени сохранены!');
     } catch (error: any) {
       alert('Ошибка: ' + error.message);
     } finally {
@@ -97,229 +141,110 @@ export const DeliverySettings: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 text-gray-100">
-      {/* Статус доставки */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-100 mb-4">
-          Управление заказами
-        </h2>
-        <p className="text-gray-400 mb-6">
-          Настройка времени работы для разных способов получения заказов
-        </p>
+    <div className="space-y-6 text-text-primary">
+      <section className="rounded-[32px] border border-border-soft bg-white p-6 shadow-brand-card">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-semibold text-brand-indigo">Управление заказами</h2>
+          <p className="text-sm text-text-primary">
+            Настройка времени работы для разных способов получения заказов
+          </p>
+        </div>
 
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-100 mb-4">
-            Статус доставки
-          </h3>
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <Button
-              onClick={() => toggleDelivery(true)}
-              variant={settings.deliveryEnabled ? 'primary' : 'outline'}
-              size="md"
-              className="flex-1"
-              disabled={isLoading}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <CheckIcon className="w-4 h-4" />
-                Включена
-              </span>
-            </Button>
-            <Button
-              onClick={() => toggleDelivery(false)}
-              variant={!settings.deliveryEnabled ? 'secondary' : 'outline'}
-              size="md"
-              className="flex-1"
-              disabled={isLoading}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <CloseIcon className="w-4 h-4" />
-                Выключена
-              </span>
-            </Button>
-          </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {statusOptions.map(option => {
+            const Icon = option.icon;
+            const isActive = settings.deliveryEnabled === option.active;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => toggleDelivery(option.active)}
+                disabled={isLoading}
+                aria-pressed={isActive}
+                className={`group flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                  isActive
+                    ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_15px_35px_rgba(16,185,129,0.2)]'
+                    : 'border-border-subtle bg-surface-muted text-text-secondary hover:border-emerald-200 hover:text-emerald-700'
+                } disabled:opacity-60`}
+              >
+                <Icon className="h-4 w-4" />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Сообщение о статусе */}
-          <div
-            className={`p-4 rounded-xl border ${
-              settings.deliveryEnabled
-                ? 'bg-emerald-500/10 border-emerald-500/40'
-                : 'bg-red-500/10 border-red-500/40'
-            }`}
-          >
-            <p
-              className={`font-medium flex items-center gap-2 ${
-                settings.deliveryEnabled ? 'text-emerald-200' : 'text-red-200'
-              }`}
-            >
-              {settings.deliveryEnabled ? (
-                <>
-                  <CheckIcon className="w-4 h-4" />
-                  Доставка активна — пользователи могут выбирать доставку
-                </>
-              ) : (
-                <>
-                  <CloseIcon className="w-4 h-4" />
-                  Доставка отключена — пользователи не смогут выбирать доставку
-                </>
-              )}
+        <div
+          className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${
+            settings.deliveryEnabled
+              ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+              : 'border-rose-100 bg-rose-50 text-rose-700'
+          }`}
+        >
+          {settings.deliveryEnabled
+            ? 'Доставка включена — пользователи могут выбирать доставку'
+            : 'Доставка отключена — пользователи не смогут выбирать доставку'}
+        </div>
+      </section>
+
+      <section className="rounded-[32px] border border-border-soft bg-white p-6 shadow-brand-card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-xl font-semibold text-brand-indigo">Время работы</h3>
+            <p className="text-sm text-text-primary">
+              Гибко настраивайте расписание для разных способов получения заказа
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Время работы доставки */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
-          <ClockIcon className="w-4 h-4 text-emerald-300" />
-          Время работы
-        </h3>
-        
-        {/* Доставка */}
-        <div className="mb-6 p-4 rounded-xl border border-blue-500/30 bg-blue-500/10">
-          <h4 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
-            <TruckIcon className="w-4 h-4 text-blue-200" />
-            Доставка
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Начало
-              </label>
-              <Input
-                type="time"
-                value={timeSettings.deliveryTimeStart}
-                onChange={value =>
-                  setTimeSettings(prev => ({
-                    ...prev,
-                    deliveryTimeStart: value,
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Конец
-              </label>
-              <Input
-                type="time"
-                value={timeSettings.deliveryTimeEnd}
-                onChange={value =>
-                  setTimeSettings(prev => ({
-                    ...prev,
-                    deliveryTimeEnd: value,
-                  }))
-                }
-              />
-            </div>
-          </div>
+          <Button
+            onClick={saveTimeSettings}
+            disabled={isLoading}
+            variant="primary"
+            size="md"
+            className="min-w-[210px]"
+          >
+            {isLoading ? 'Сохраняем…' : 'Сохранить время'}
+          </Button>
         </div>
 
-        {/* Самовывоз */}
-        <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-          <h4 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
-            <PackageIcon className="w-4 h-4 text-emerald-200" />
-            Самовывоз
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Начало
-              </label>
-              <Input
-                type="time"
-                value={timeSettings.pickupTimeStart}
-                onChange={value =>
-                  setTimeSettings(prev => ({
-                    ...prev,
-                    pickupTimeStart: value,
-                  }))
-                }
-              />
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          {scheduleBlocks.map(({ id, label, startKey, endKey, Icon, tone }) => (
+            <div
+              key={id}
+              className="rounded-2xl border border-border-soft bg-surface-muted/40 p-4 shadow-sm"
+            >
+              <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-primary">
+                <Icon className={`h-4 w-4 ${tone}`} />
+                {label}
+              </div>
+              <div className="grid gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-text-muted">Начало</p>
+                  <Input
+                    type="time"
+                    value={timeSettings[startKey]}
+                    onChange={value => handleTimeChange(startKey, value)}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-text-muted">Конец</p>
+                  <Input
+                    type="time"
+                    value={timeSettings[endKey]}
+                    onChange={value => handleTimeChange(endKey, value)}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Конец
-              </label>
-              <Input
-                type="time"
-                value={timeSettings.pickupTimeEnd}
-                onChange={value =>
-                  setTimeSettings(prev => ({
-                    ...prev,
-                    pickupTimeEnd: value,
-                  }))
-                }
-              />
-            </div>
-          </div>
+          ))}
         </div>
+      </section>
 
-        {/* В зале */}
-        <div className="mb-6 p-4 rounded-xl border border-purple-500/30 bg-purple-500/10">
-          <h4 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
-            <ForkKnifeIcon className="w-4 h-4 text-emerald-300" />
-            В зале
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Начало
-              </label>
-              <Input
-                type="time"
-                value={timeSettings.dineInTimeStart}
-                onChange={value =>
-                  setTimeSettings(prev => ({
-                    ...prev,
-                    dineInTimeStart: value,
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Конец
-              </label>
-              <Input
-                type="time"
-                value={timeSettings.dineInTimeEnd}
-                onChange={value =>
-                  setTimeSettings(prev => ({
-                    ...prev,
-                    dineInTimeEnd: value,
-                  }))
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <Button
-          onClick={saveTimeSettings}
-          disabled={isLoading}
-          variant="primary"
-          size="md"
-          className="w-full"
-        >
-          {isLoading ? (
-            'Сохранение...'
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <SaveIcon className="w-4 h-4" />
-              Сохранить все настройки времени
-            </span>
-          )}
-        </Button>
-      </div>
-
-      {/* Индикатор загрузки */}
       {isLoading && (
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-dark mr-3"></div>
-          <p className="text-sm text-gray-400">Обновление настроек...</p>
+        <div className="flex items-center justify-center gap-3 text-sm text-text-primary">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-border-subtle border-t-brand-indigo" />
+          Обновляем настройки…
         </div>
       )}
-      
     </div>
   );
 };

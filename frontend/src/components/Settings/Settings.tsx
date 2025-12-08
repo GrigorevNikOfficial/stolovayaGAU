@@ -6,17 +6,11 @@ import Tabs from '../layout/Tabs/Tabs.tsx';
 import { DeliverySettings } from './DeliverySettings.tsx';
 import { EmployeeManagement } from './EmployeeManagement.tsx';
 import { OrderSettings } from './OrderSettings.tsx';
-import { UserBalances } from './UserBalances.tsx';
-import { TopUpRequestsAdmin } from '../TopUpRequests/TopUpRequestsAdmin.tsx';
 import {
-  BellIcon,
-  CreditCardIcon,
-  GearIcon,
   LockIcon,
   PackageIcon,
   PieChartIcon,
   UsersIcon,
-  WalletIcon,
 } from '../icons/ServiceIcons';
 
 export const Settings: React.FC = () => {
@@ -43,30 +37,6 @@ export const Settings: React.FC = () => {
       icon: <UsersIcon className="w-4 h-4" />,
       roles: ['admin'],
     },
-    {
-      id: 'balances',
-      label: 'Баланс пользователей',
-      icon: <WalletIcon className="w-4 h-4" />,
-      roles: ['admin'],
-    },
-    {
-      id: 'topups',
-      label: 'Заявки на пополнение',
-      icon: <CreditCardIcon className="w-4 h-4" />,
-      roles: ['admin'],
-    },
-    {
-      id: 'notifications',
-      label: 'Уведомления',
-      icon: <BellIcon className="w-4 h-4" />,
-      roles: ['admin'],
-    },
-    {
-      id: 'general',
-      label: 'Основные',
-      icon: <GearIcon className="w-4 h-4" />,
-      roles: ['admin'],
-    },
   ];
 
   // Фильтруем табы по ролям
@@ -91,62 +61,24 @@ export const Settings: React.FC = () => {
   }
 
   return (
-    <div className="fade-in text-text-primary">
-      {/* Заголовок */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-text-primary mb-2">
-          Настройки системы
-        </h1>
-        <p className="text-text-secondary">Управление параметрами работы столовой</p>
-      </div>
+    <div className="mt-6 fade-in text-text-primary">
+      <Tabs
+        tabs={visibleTabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        orientation="horizontal"
+        variant="marketplace"
+        justify="center"
+        className="flex flex-wrap justify-center"
+      />
 
-      {/* Табы настроек */}
-      <div className="mb-8">
-        <Tabs
-          tabs={visibleTabs}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          orientation="horizontal"
-          className="justify-start"
-        />
-      </div>
-
-      {/* Контент активного таба */}
       {activeTab < visibleTabs.length && (
-        <div className="bg-white border border-border-soft rounded-3xl shadow-brand-card p-6 text-text-primary">
+        <div className="mt-4 rounded-[32px] border border-border-soft bg-white p-6 text-text-primary shadow-brand-card">
           {visibleTabs[activeTab].id === 'delivery' && <DeliverySettings />}
 
           {visibleTabs[activeTab].id === 'orders' && <OrderSettings />}
 
           {visibleTabs[activeTab].id === 'employees' && <EmployeeManagement />}
-
-          {visibleTabs[activeTab].id === 'balances' && <UserBalances />}
-
-          {visibleTabs[activeTab].id === 'topups' && <TopUpRequestsAdmin />}
-
-          {visibleTabs[activeTab].id === 'notifications' && (
-            <div className="text-center py-12 text-text-secondary">
-              <div className="flex items-center justify-center text-text-muted mb-4">
-                <BellIcon className="w-12 h-12" />
-              </div>
-              <p className="text-text-primary text-xl font-medium mb-3">
-                Настройки уведомлений
-              </p>
-              <p className="text-text-secondary text-sm">Раздел в разработке</p>
-            </div>
-          )}
-
-          {visibleTabs[activeTab].id === 'general' && (
-            <div className="text-center py-12 text-text-secondary">
-              <div className="flex items-center justify-center text-text-muted mb-4">
-                <GearIcon className="w-12 h-12" />
-              </div>
-              <p className="text-text-primary text-xl font-medium mb-3">
-                Основные настройки
-              </p>
-              <p className="text-text-secondary text-sm">Раздел в разработке</p>
-            </div>
-          )}
         </div>
       )}
     </div>

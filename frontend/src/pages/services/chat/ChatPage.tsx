@@ -1,5 +1,5 @@
-import { useUnit } from 'effector-react';
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import { useUnit } from 'effector-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../../components/layout/Button/Button.tsx';
 import Footer from '../../../components/layout/Footer/Footer.tsx';
 import Input from '../../../components/layout/Input/Input.tsx';
@@ -7,31 +7,23 @@ import TopUpRequestModal from '../../../components/Modal/TopUpRequestModal.tsx';
 import {
   $activeChatId,
   $chats,
-  $friendRequests,
-  $friendSearchResults,
   $friends,
   $messagesByChat,
-  joinChatByCode,
   leaveChat,
   loadChats,
-  loadFriendRequests,
   loadFriends,
   postMessage,
-  removeFriend,
   requestDirectChat,
   requestGroupChat,
   requestMessages,
-  respondToRequest,
-  searchFriends,
   selectChat,
-  sendFriendRequest,
 } from '../../../models/chat';
 import { $currentUser, logout } from '../../../models/users';
 import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
 import LogoSAU from '../../../images/logo.jpg';
 import { formatBalance } from '../../../utils/formatBalance';
 import type { ChatMessage, ChatSummary } from '../../../types/chat';
-import type { FriendSearchResult, Friendship } from '../../../types/friend';
+import type { Friendship } from '../../../types/friend';
 import type { UserPreview } from '../../../types/user';
 
 const formatTime = (dateString?: string) => {
@@ -135,28 +127,21 @@ const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster })
           key={message._id}
           className={`max-w-[80%] rounded-3xl px-4 py-2 text-sm leading-relaxed shadow-brand-card break-words ${
             cluster.isOwn
-              ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white'
-              : 'bg-white text-text-primary border border-border-soft'
+              ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 text-white'
+              : 'bg-surface-base text-text-primary border border-border-soft'
           }`}
         >
           {renderMessageContent(message.content)}
         </div>
       ))}
     </div>
-    <div className="flex items-center gap-2">
-      <span className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
-        {formatTime(cluster.lastTimestamp)}
-      </span>
-      {cluster.isOwn && (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-brand-indigo">
-          <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
-    </div>
+    <span className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
+      {formatTime(cluster.lastTimestamp)}
+    </span>
   </div>
 );
 
-const ChatListItem: React.FC<{ chat: ChatSummary; active: boolean; onSelect: () => void }> = ({ chat, active, onSelect }) => (
+const ChatPreviewButton: React.FC<{ chat: ChatSummary; active: boolean; onSelect: () => void }> = ({ chat, active, onSelect }) => (
   <button
     type="button"
     onClick={onSelect}
@@ -178,115 +163,20 @@ const ChatListItem: React.FC<{ chat: ChatSummary; active: boolean; onSelect: () 
   </button>
 );
 
-const FriendCard: React.FC<{
-  friendship: Friendship;
-  onMessage: () => void;
-  onRemove: () => void;
-}> = ({ friendship, onMessage, onRemove }) => (
-  <div className="rounded-2xl border border-border-subtle bg-white p-4 flex items-center justify-between gap-3 shadow-brand-card">
-    <div>
-      <p className="text-text-primary font-semibold">
-        {friendship.user.first_name} {friendship.user.last_name}
-      </p>
-      <p className="text-xs uppercase tracking-[0.3em] text-text-muted mt-1">
-        {friendship.status === 'accepted' ? 'в друзьях' : friendship.status}
-      </p>
-    </div>
-    <div className="flex gap-2">
-      <Button size="sm" variant="outline" className="border-border-soft text-text-primary" onClick={onMessage}>
-        Написать
-      </Button>
-      <Button size="sm" variant="outline" className="border-red-200 text-red-600" onClick={onRemove}>
-        Удалить
-      </Button>
-    </div>
-  </div>
-);
-
-const FriendSearchResultCard: React.FC<{
-  user: FriendSearchResult;
-  onAdd: () => void;
-}> = ({ user, onAdd }) => (
-  <div className="rounded-2xl border border-border-subtle bg-white p-3 flex items-center justify-between shadow-brand-card">
-    <div>
-      <p className="text-text-primary font-semibold">
-        {user.first_name} {user.last_name}
-      </p>
-      <p className="text-xs text-text-muted">{user.friendshipStatus || 'не в списке друзей'}</p>
-    </div>
-    {!user.friendshipStatus && (
-      <Button size="sm" variant="outline" className="border-border-soft text-text-primary" onClick={onAdd}>
-        Добавить
-      </Button>
-    )}
-  </div>
-);
-
-const RequestBadge: React.FC<{ label: string; actionLabel: string; onClick: () => void; tone?: 'primary' | 'danger' }>
-  = ({ label, actionLabel, onClick, tone = 'primary' }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold flex justify-between items-center ${
-        tone === 'primary'
-          ? 'border-border-soft bg-white text-text-primary shadow-brand-card'
-          : 'border-red-200 bg-red-50 text-red-600'
-      }`}
-    >
-      <span>{label}</span>
-      <span className="text-xs uppercase tracking-[0.3em] text-text-muted">{actionLabel}</span>
-    </button>
-  );
-
-const useDebouncedValue = (value: string, delay = 350) => {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDebounced(value), delay);
-    return () => window.clearTimeout(timeout);
-  }, [value, delay]);
-  return debounced;
-};
-
-const ChatHeader: React.FC<{ chat: ChatSummary }> = ({ chat }) => (
-  <div className="flex items-center justify-between">
-    <div>
-      <p className="text-2xl font-semibold text-text-primary">{chat.name}</p>
-      <p className="text-sm text-text-secondary">
-        {chat.type === 'direct'
-          ? 'Личное общение'
-          : chat.visibility === 'public'
-          ? 'Публичная группа'
-          : 'Закрытая группа'}
-      </p>
-    </div>
-    <div className="text-right text-xs uppercase tracking-[0.3em] text-text-muted">
-      {chat.participantCount} участников
-    </div>
-  </div>
-);
-
 export const ChatPage: React.FC = () => {
   const {
     chats,
     activeChatId,
     messagesByChat,
     friends,
-    friendRequests,
-    friendSearchResults,
     currentUser,
     handleLoadChats,
+    handleLoadFriends,
     handleSelectChat,
     handleRequestMessages,
-    handlePostMessage,
-    handleJoinByCode,
-    handleLoadFriends,
-    handleLoadFriendRequests,
     handleRequestDirectChat,
     handleRequestGroupChat,
-    handleSearchFriends,
-    handleSendFriendRequest,
-    handleRespond,
-    handleRemoveFriend,
+    handlePostMessage,
     handleLeaveChat,
     handleLogout,
   } = useUnit({
@@ -294,75 +184,93 @@ export const ChatPage: React.FC = () => {
     activeChatId: $activeChatId,
     messagesByChat: $messagesByChat,
     friends: $friends,
-    friendRequests: $friendRequests,
-    friendSearchResults: $friendSearchResults,
     currentUser: $currentUser,
     handleLoadChats: loadChats,
+    handleLoadFriends: loadFriends,
     handleSelectChat: selectChat,
     handleRequestMessages: requestMessages,
-    handlePostMessage: postMessage,
-    handleJoinByCode: joinChatByCode,
-    handleLoadFriends: loadFriends,
-    handleLoadFriendRequests: loadFriendRequests,
     handleRequestDirectChat: requestDirectChat,
     handleRequestGroupChat: requestGroupChat,
-    handleSearchFriends: searchFriends,
-    handleSendFriendRequest: sendFriendRequest,
-    handleRespond: respondToRequest,
-    handleRemoveFriend: removeFriend,
+    handlePostMessage: postMessage,
     handleLeaveChat: leaveChat,
     handleLogout: logout,
   });
 
+  const messageListRef = useRef<HTMLDivElement | null>(null);
   const currentUserId = currentUser?._id ?? '';
   const [messageDraft, setMessageDraft] = useState('');
-  const [joinCode, setJoinCode] = useState('');
   const [chatFilter, setChatFilter] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [groupModalOpen, setGroupModalOpen] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [groupDescription, setGroupDescription] = useState('');
-  const [groupVisibility, setGroupVisibility] = useState<'public' | 'private'>('private');
-  const [groupMembers, setGroupMembers] = useState<Set<string>>(new Set());
-  const [directModalOpen, setDirectModalOpen] = useState(false);
-  const [directFilter, setDirectFilter] = useState('');
-  const [inviteCopied, setInviteCopied] = useState(false);
+  const [copyUserCodeSuccess, setCopyUserCodeSuccess] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
-  const messageListRef = React.useRef<HTMLDivElement | null>(null);
+  const [isCreateChatModalOpen, setIsCreateChatModalOpen] = useState(false);
+  const [chatCreationMode, setChatCreationMode] = useState<'group' | 'direct'>('group');
+  const [newChatName, setNewChatName] = useState('');
+  const [directChatCode, setDirectChatCode] = useState('');
+  const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
+  const [codeParticipantInput, setCodeParticipantInput] = useState('');
+  const [codeParticipants, setCodeParticipants] = useState<string[]>([]);
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [isMobileChatVisible, setIsMobileChatVisible] = useState(false);
+  const showMobileChatList = isMobileLayout && !isMobileChatVisible;
+  const showChatPanel = !isMobileLayout || isMobileChatVisible;
 
-  const debouncedSearch = useDebouncedValue(searchQuery);
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
+    const updateLayout = () => setIsMobileLayout(mediaQuery.matches);
+    updateLayout();
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateLayout);
+    } else if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(updateLayout);
+    }
+    return () => {
+      if (typeof mediaQuery.removeEventListener === 'function') {
+        mediaQuery.removeEventListener('change', updateLayout);
+      } else if (typeof mediaQuery.removeListener === 'function') {
+        mediaQuery.removeListener(updateLayout);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileLayout) {
+      setIsMobileChatVisible(false);
+    }
+  }, [isMobileLayout]);
+
+  useEffect(() => {
+    if (!activeChatId && isMobileLayout) {
+      setIsMobileChatVisible(false);
+    }
+  }, [activeChatId, isMobileLayout]);
 
   useEffect(() => {
     handleLoadChats();
-    handleLoadFriends();
-    handleLoadFriendRequests();
-  }, [handleLoadChats, handleLoadFriends, handleLoadFriendRequests]);
+  }, [handleLoadChats]);
 
   useEffect(() => {
-    if (!activeChatId && chats.length) {
+    handleLoadFriends();
+  }, [handleLoadFriends]);
+
+  useEffect(() => {
+    if (!activeChatId && chats.length && !isMobileLayout) {
       handleSelectChat(chats[0]._id);
     }
-  }, [activeChatId, chats, handleSelectChat]);
+  }, [activeChatId, chats, handleSelectChat, isMobileLayout]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const targetChatId = params.get('chatId');
-
-    if (!targetChatId) {
-      return;
-    }
-
-    const exists = chats.some(chat => chat._id === targetChatId);
-    if (exists) {
+    if (targetChatId && chats.some(chat => chat._id === targetChatId)) {
       handleSelectChat(targetChatId);
+      if (isMobileLayout) {
+        setIsMobileChatVisible(true);
+      }
     }
-  }, [chats, handleSelectChat]);
-
-  const handleAcceptRequest = (requestId: string) =>
-    handleRespond({ requestId, action: 'accept' });
-
-  const handleDeclineRequest = (requestId: string) =>
-    handleRespond({ requestId, action: 'decline' });
+  }, [chats, handleSelectChat, isMobileLayout]);
 
   useEffect(() => {
     if (activeChatId) {
@@ -370,32 +278,11 @@ export const ChatPage: React.FC = () => {
     }
   }, [activeChatId, handleRequestMessages]);
 
-  useEffect(() => {
-    if (debouncedSearch && debouncedSearch.length >= 2) {
-      handleSearchFriends(debouncedSearch);
-    }
-  }, [debouncedSearch, handleSearchFriends]);
-
-  const filteredChats = useMemo(() => {
-    const term = chatFilter.trim().toLowerCase();
-    if (!term) {
-      return chats;
-    }
-    return chats.filter(chat => chat.name.toLowerCase().includes(term));
-  }, [chatFilter, chats]);
-
-  const filteredFriendOptions = useMemo(() => {
-    const term = directFilter.trim().toLowerCase();
-    if (!term) {
-      return friends;
-    }
-    return friends.filter(friendship =>
-      `${friendship.user.first_name} ${friendship.user.last_name}`.toLowerCase().includes(term)
-    );
-  }, [directFilter, friends]);
-
   const activeChat = chats.find(chat => chat._id === activeChatId) || null;
   const activeMessages = (activeChatId && messagesByChat[activeChatId]) || [];
+  const friendList = friends ?? [];
+  const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
+
   const messageGroups = useMemo(() => {
     if (!activeMessages.length) {
       return [] as MessageCluster[];
@@ -427,19 +314,101 @@ export const ChatPage: React.FC = () => {
   }, [activeMessages, currentUserId]);
 
   useEffect(() => {
-    // auto-scroll to bottom on new groups/messages
     const el = messageListRef.current;
     if (el) {
       el.scrollTop = el.scrollHeight;
     }
   }, [messageGroups]);
 
-  const inviteCode = activeChat?.inviteCode ?? '';
-  const isGroupChat = activeChat?.type === 'group';
+  const filteredChats = useMemo(() => {
+    const term = chatFilter.trim().toLowerCase();
+    if (!term) {
+      return chats;
+    }
+    return chats.filter(chat => chat.name.toLowerCase().includes(term));
+  }, [chatFilter, chats]);
 
-  useEffect(() => {
-    setInviteCopied(false);
-  }, [inviteCode]);
+  const handleCopyUserCode = async () => {
+    if (!currentUser?._id || typeof navigator === 'undefined' || !navigator.clipboard) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(currentUser._id);
+      setCopyUserCodeSuccess(true);
+      window.setTimeout(() => setCopyUserCodeSuccess(false), 1500);
+    } catch {
+      setCopyUserCodeSuccess(false);
+    }
+  };
+
+  const closeCreateChatModal = () => {
+    setIsCreateChatModalOpen(false);
+    setChatCreationMode('group');
+    setNewChatName('');
+    setDirectChatCode('');
+    setSelectedFriendIds(new Set());
+    setCodeParticipantInput('');
+    setCodeParticipants([]);
+  };
+
+  const handleToggleFriendParticipant = (friendId: string) => {
+    setSelectedFriendIds(prev => {
+      const next = new Set(prev);
+      if (next.has(friendId)) {
+        next.delete(friendId);
+      } else {
+        next.add(friendId);
+      }
+      return next;
+    });
+  };
+
+  const handleAddCodeParticipant = () => {
+    const code = codeParticipantInput.trim();
+    if (!code) {
+      return;
+    }
+    setCodeParticipants(prev => (prev.includes(code) ? prev : [...prev, code]));
+    setCodeParticipantInput('');
+  };
+
+  const handleRemoveCodeParticipant = (code: string) => {
+    setCodeParticipants(prev => prev.filter(item => item !== code));
+  };
+
+  const handleChatPreviewSelect = React.useCallback(
+    (chatId: string) => {
+      handleSelectChat(chatId);
+      if (isMobileLayout) {
+        setIsMobileChatVisible(true);
+      }
+    },
+    [handleSelectChat, isMobileLayout]
+  );
+
+  const handleBackToChatList = React.useCallback(() => {
+    if (isMobileLayout) {
+      setIsMobileChatVisible(false);
+    }
+  }, [isMobileLayout]);
+
+  const handleCreateGroupChat = () => {
+    if (!newChatName.trim()) {
+      return;
+    }
+    const participantIds = Array.from(new Set([...Array.from(selectedFriendIds), ...codeParticipants]));
+    handleRequestGroupChat({ name: newChatName.trim(), participantIds });
+    closeCreateChatModal();
+  };
+
+  const handleStartDirectChatByCode = () => {
+    const code = directChatCode.trim();
+    if (!code) {
+      return;
+    }
+    handleRequestDirectChat(code);
+    closeCreateChatModal();
+  };
 
   const handleSendMessage = () => {
     if (!activeChatId || !messageDraft.trim()) {
@@ -449,31 +418,6 @@ export const ChatPage: React.FC = () => {
     setMessageDraft('');
   };
 
-  const handleJoin = () => {
-    if (!joinCode.trim()) {
-      return;
-    }
-    handleJoinByCode(joinCode.trim());
-    setJoinCode('');
-  };
-
-  const handleCopyInviteCode = async (code: string) => {
-    if (!code) {
-      return;
-    }
-    if (typeof navigator === 'undefined' || !navigator.clipboard) {
-      setInviteCopied(false);
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(code);
-      setInviteCopied(true);
-      window.setTimeout(() => setInviteCopied(false), 1500);
-    } catch {
-      setInviteCopied(false);
-    }
-  };
-
   const handleLeaveCurrentChat = () => {
     if (!activeChat) {
       return;
@@ -481,61 +425,19 @@ export const ChatPage: React.FC = () => {
     const confirmation = window.confirm('Вы уверены, что хотите покинуть чат?');
     if (confirmation) {
       handleLeaveChat(activeChat._id);
-    }
-  };
-
-  const toggleMember = (userId: string) => {
-    setGroupMembers(prev => {
-      const next = new Set(prev);
-      if (next.has(userId)) {
-        next.delete(userId);
-      } else {
-        next.add(userId);
+      if (isMobileLayout) {
+        setIsMobileChatVisible(false);
       }
-      return next;
-    });
-  };
-
-  const handleCreateGroup = () => {
-    if (!groupName.trim()) {
-      return;
     }
-    handleRequestGroupChat({
-      name: groupName.trim(),
-      description: groupDescription.trim(),
-      visibility: groupVisibility,
-      participantIds: Array.from(groupMembers),
-    });
-    setGroupModalOpen(false);
-    setGroupName('');
-    setGroupDescription('');
-    setGroupMembers(new Set());
   };
 
-  const handleStartDirectChat = (userId: string) => {
-    handleRequestDirectChat(userId);
-    setDirectModalOpen(false);
-    setDirectFilter('');
-  };
-
-  const handleNavigation = React.useCallback((path: string) => {
+  const handleNavigation = (path: string) => {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
-  }, []);
+  };
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = `${currentUser?.first_name?.[0] ?? ''}${currentUser?.last_name?.[0] ?? ''}`.toUpperCase() || 'U';
-
-  const handleProfileNavigate = React.useCallback(() => {
-    handleNavigation('/profile');
-  }, [handleNavigation]);
-
-  const handleLogoutClick = React.useCallback(() => {
-    handleLogout();
-    setTimeout(() => handleNavigation('/'), 120);
-  }, [handleLogout, handleNavigation]);
-
-  
 
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
@@ -551,7 +453,7 @@ export const ChatPage: React.FC = () => {
               <img
                 src={LogoSAU}
                 alt="Логотип сервиса"
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
+                className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
               />
               <div className="leading-tight">
                 <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
@@ -569,15 +471,20 @@ export const ChatPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100"
+                    className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
                   >
-                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
+                    <span
+                      className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
+                      title={balanceLabel}
+                    >
+                      {balanceLabel}
+                    </span>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
                   </button>
                   <NotificationBell />
                   <button
                     type="button"
-                    onClick={handleProfileNavigate}
+                    onClick={() => handleNavigation('/profile')}
                     className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
                     aria-label="Профиль"
                   >
@@ -587,7 +494,7 @@ export const ChatPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={handleLogoutClick}
+                    onClick={() => handleLogout()}
                     className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
                     aria-label="Выйти"
                   >
@@ -616,306 +523,323 @@ export const ChatPage: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 w-full overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid gap-6 lg:grid-cols-[360px_1fr] min-h-[calc(100vh-200px)]">
-        <aside className="space-y-6 h-full overflow-y-auto pr-1">
-          <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-4 shadow-brand-card">
-            <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">диалоги</p>
-              <h2 className="text-2xl font-semibold text-text-primary">Ваши чаты</h2>
-            </div>
-            <Input
-              placeholder="Поиск диалога"
-              value={chatFilter}
-              onChange={setChatFilter}
-            />
-            <div className="flex gap-2">
-              <Button className="flex-1" size="md" variant="primary" onClick={() => setDirectModalOpen(true)}>
-                Новый диалог
-              </Button>
-              <Button className="flex-1 text-text-primary border-border-soft" size="md" variant="outline" onClick={() => setGroupModalOpen(true)}>
-                Группа
-              </Button>
-            </div>
-            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-              {filteredChats.map(chat => (
-                <ChatListItem
-                  key={chat._id}
-                  chat={chat}
-                  active={chat._id === activeChatId}
-                  onSelect={() => handleSelectChat(chat._id)}
-                />
-              ))}
-              {!filteredChats.length && (
-                <p className="text-sm text-text-secondary">Пока нет чатов — начните с создания диалога.</p>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-3 shadow-brand-card">
-            <p className="text-xs uppercase tracking-[0.4em] text-text-muted">доступ по ссылке</p>
-            <Input
-              placeholder="Вставьте код приглашения"
-              value={joinCode}
-              onChange={setJoinCode}
-            />
-            <Button variant="outline" className="border-border-soft text-text-primary" onClick={handleJoin}>
-              Присоединиться
-            </Button>
-          </div>
-
-          <div className="rounded-3xl border border-border-soft bg-white/80 backdrop-blur-xl p-5 space-y-4 shadow-brand-card">
-            <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">друзья</p>
-              <h3 className="text-xl font-semibold text-text-primary">Список контактов</h3>
-            </div>
-            <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
-              {friends.length === 0 && (
-                <p className="text-sm text-text-secondary">Добавляйте коллег, чтобы быстрее находить их в чатах.</p>
-              )}
-              {friends.map(friendship => (
-                <FriendCard
-                  key={friendship._id}
-                  friendship={friendship}
-                  onMessage={() => handleRequestDirectChat(friendship.user._id)}
-                  onRemove={() => handleRemoveFriend(friendship._id)}
-                />
-              ))}
-            </div>
-            <div className="space-y-2">
-              {friendRequests.incoming.map(request => (
-                <RequestBadge
-                  key={request._id}
-                  label={`Запрос от ${request.user.first_name}`}
-                  actionLabel="принять"
-                  onClick={() => handleAcceptRequest(request._id)}
-                />
-              ))}
-              {friendRequests.outgoing.map(request => (
-                <RequestBadge
-                  key={request._id}
-                  label={`Ожидает ${request.user.first_name}`}
-                  actionLabel="отменить"
-                  tone="danger"
-                  onClick={() => handleDeclineRequest(request._id)}
-                />
-              ))}
-            </div>
-            <div className="space-y-3">
-              <Input
-                placeholder="Поиск коллег"
-                value={searchQuery}
-                onChange={setSearchQuery}
-              />
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {friendSearchResults.map(result => (
-                  <FriendSearchResultCard
-                    key={result._id}
-                    user={result}
-                    onAdd={() => handleSendFriendRequest(result._id)}
-                  />
-                ))}
+      <main className="flex-1 w-full overflow-hidden min-h-0">
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:py-8 lg:px-8 min-h-0">
+          {showMobileChatList && (
+            <div className="lg:hidden rounded-3xl border border-border-soft bg-white p-5 shadow-brand-card">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">ваши беседы</p>
+                  <h2 className="text-2xl font-semibold text-text-primary">Чаты</h2>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => setIsCreateChatModalOpen(true)}>
+                  Новый чат
+                </Button>
+              </div>
+              <div className="mt-4">
+                <Input placeholder="Поиск чата" value={chatFilter} onChange={setChatFilter} />
+              </div>
+              <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto pr-1 styled-scrollbar">
+                {filteredChats.length ? (
+                  filteredChats.map(chat => (
+                    <ChatPreviewButton
+                      key={chat._id}
+                      chat={chat}
+                      active={chat._id === activeChatId}
+                      onSelect={() => handleChatPreviewSelect(chat._id)}
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
+                )}
               </div>
             </div>
-          </div>
-        </aside>
+          )}
 
-        <section className="rounded-[32px] border border-border-soft bg-white p-6 flex flex-col h-full min-h-0 shadow-brand-card">
-          {activeChat ? (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => { window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}
-                    className="rounded-full p-2 border border-border-subtle bg-white hover:bg-brand-almond/40 transition-colors"
-                    aria-label="Назад"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-text-primary">
-                      <path d="M15 18l-6-6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  <div>
-                    <p className="text-xs text-text-muted">Сервис</p>
-                    <h3 className="text-lg font-semibold">Чат</h3>
-                  </div>
+          <div className="flex flex-1 min-h-0 flex-col gap-6 lg:h-[72vh] lg:flex-row lg:overflow-hidden">
+            <aside className="hidden w-[320px] min-h-[200px] flex-shrink-0 rounded-3xl border border-border-soft bg-white p-5 shadow-brand-card lg:flex lg:h-[72vh] lg:max-h-[72vh] lg:flex-col lg:items-center lg:overflow-hidden">
+              <div className="flex h-full w-full max-w-[300px] flex-1 flex-col items-center text-center min-h-0">
+                <div>
+                  <h2 className="text-2xl font-semibold text-text-primary">Чат</h2>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="min-w-[120px] h-11 px-6"
-                  >
-                    Поиск
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="min-w-[140px] h-11 px-6"
-                    onClick={() => handleRequestGroupChat({ name: 'Новая группа (через шапку)' })}
-                  >
-                    Создать
-                  </Button>
+                <div className="mt-4 w-full max-w-[280px]">
+                  <Input placeholder="Поиск чата" value={chatFilter} onChange={setChatFilter} />
                 </div>
+                <div className="mt-4 flex-1 w-full max-w-[280px] space-y-2 overflow-y-auto pr-1 styled-scrollbar mx-auto">
+                  {filteredChats.length ? (
+                    filteredChats.map(chat => (
+                      <ChatPreviewButton
+                        key={chat._id}
+                        chat={chat}
+                        active={chat._id === activeChatId}
+                        onSelect={() => handleChatPreviewSelect(chat._id)}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="mt-4 w-full max-w-[280px]"
+                  onClick={() => setIsCreateChatModalOpen(true)}
+                >
+                  Создать новый чат
+                </Button>
               </div>
-              <ChatHeader chat={activeChat} />
-              {inviteCode && (
-                <div className="mt-4 flex flex-wrap gap-3 items-center">
-                  <div className="flex-1 min-w-[240px] rounded-2xl border border-border-soft bg-surface-muted p-4">
-                    <p className="text-xs uppercase tracking-[0.4em] text-text-muted">код доступа</p>
-                    <div className="mt-2 flex items-center gap-3">
-                      <p className="flex-1 break-all font-mono text-text-primary text-sm">{inviteCode}</p>
+            </aside>
+
+            {showChatPanel && (
+              <section className="flex h-full min-h-[60vh] flex-1 flex-col rounded-3xl border border-border-soft bg-white shadow-brand-card overflow-hidden max-h-[85vh] md:max-h-[78vh] lg:h-[72vh] lg:max-h-[72vh] lg:min-h-0">
+              {activeChat ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle px-6 py-4 flex-none">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-text-primary">{activeChat.name}</h2>
+                      <p className="text-sm text-text-secondary">{activeChat.participantCount} участников</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {isMobileLayout && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-border-soft text-text-primary"
+                          onClick={handleBackToChatList}
+                        >
+                          Назад к чатам
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-border-soft text-text-primary text-xs h-9"
-                        onClick={() => handleCopyInviteCode(inviteCode)}
+                        className="border-border-soft text-text-primary"
+                        onClick={handleLeaveCurrentChat}
                       >
-                        {inviteCopied ? 'Скопировано' : 'Копировать'}
+                        Покинуть чат
                       </Button>
                     </div>
                   </div>
-                  {isGroupChat && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-red-200 text-red-600 h-11"
-                      onClick={handleLeaveCurrentChat}
-                    >
-                      Покинуть чат
-                    </Button>
-                  )}
+
+                  <div ref={messageListRef} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-4 py-6 styled-scrollbar">
+                    {messageGroups.length === 0 && (
+                      <div className="text-center text-text-secondary text-sm py-10">
+                        Здесь пока пусто. Начните переписку!
+                      </div>
+                    )}
+                    {messageGroups.map(group => (
+                      <div key={group.id} className="py-1">
+                        <MessageClusterBlock cluster={group} />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-border-subtle px-4 py-4 flex-none">
+                    <div className="flex items-end gap-2 sm:gap-3">
+                      <textarea
+                        placeholder="Сообщение"
+                        value={messageDraft}
+                        onChange={event => setMessageDraft(event.target.value)}
+                        onKeyDown={event => {
+                          if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        rows={1}
+                        className="flex-1 rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo resize-none min-h-[52px] max-h-32"
+                      />
+                      <Button
+                        variant="primary"
+                        onClick={handleSendMessage}
+                        disabled={!messageDraft.trim()}
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl p-0 sm:h-14 sm:w-14"
+                        aria-label="Отправить сообщение"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                        <span className="sr-only">Отправить</span>
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-1 items-center justify-center p-10 text-center text-text-secondary">
+                  <p>Выберите чат в списке, чтобы начать общение.</p>
                 </div>
               )}
-              <div ref={messageListRef} className="flex-1 min-h-0 mt-6 overflow-y-auto space-y-5 pr-3 styled-scrollbar">
-                {messageGroups.length === 0 && (
-                  <div className="text-center text-text-secondary text-sm py-10">
-                    Здесь пока пусто. Начните переписку!
-                  </div>
-                )}
-                          {messageGroups.map(group => (
-                            <div key={group.id} className="py-1">
-                              <MessageClusterBlock cluster={group} />
-                            </div>
-                          ))}
-              </div>
-              <div className="mt-4 flex gap-3">
-                <textarea
-                  placeholder="Сообщение"
-                  value={messageDraft}
-                  onChange={event => setMessageDraft(event.target.value)}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  rows={1}
-                  className="flex-1 rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo resize-none min-h-[56px] max-h-32"
-                />
-                <Button variant="primary" onClick={handleSendMessage} disabled={!messageDraft.trim()} className="min-w-[120px]">
-                  Отправить
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center flex-1 text-center text-text-secondary">
-              <p>Выберите чат слева или создайте новый, чтобы начать общение.</p>
-            </div>
-          )}
-        </section>
-      </div>
+              </section>
+            )}
+          </div>
+        </div>
       </main>
 
       <Footer />
       <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
-
-      {directModalOpen && (
-        <div className="fixed inset-0 bg-brand-indigo/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-white border border-border-soft rounded-3xl p-6 w-full max-w-xl space-y-4 shadow-brand-card">
-            <h3 className="text-2xl font-semibold text-text-primary">Новый диалог</h3>
-            <Input placeholder="Поиск по имени" value={directFilter} onChange={setDirectFilter} />
-            <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-              {filteredFriendOptions.length === 0 && (
-                <p className="text-sm text-text-secondary">Нет друзей, соответствующих запросу</p>
-              )}
-              {filteredFriendOptions.map(friendship => (
+      {isCreateChatModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={closeCreateChatModal} />
+          <div className="relative z-10 w-full max-w-lg rounded-3xl border border-border-soft bg-white p-6 shadow-brand-card">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-text-muted">создание</p>
+                <h3 className="text-2xl font-semibold text-text-primary">Новый чат</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeCreateChatModal}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-brand-indigo"
+                aria-label="Закрыть"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-6 flex gap-3">
+              {(
+                [
+                  { key: 'group', label: 'Общий чат' },
+                  { key: 'direct', label: 'Личная переписка' },
+                ] as const
+              ).map(option => (
                 <button
-                  key={friendship._id}
+                  key={option.key}
                   type="button"
-                  onClick={() => handleStartDirectChat(friendship.user._id)}
-                  className="w-full text-left rounded-2xl border border-border-subtle bg-surface-muted p-3 hover:border-brand-indigo/40 transition-colors"
+                  onClick={() => setChatCreationMode(option.key)}
+                  className={`flex-1 rounded-2xl border px-4 py-2 text-sm font-semibold transition-colors ${
+                    chatCreationMode === option.key
+                      ? 'border-emerald-400 bg-emerald-50 text-emerald-700 shadow-brand-card'
+                      : 'border-border-subtle text-text-secondary'
+                  }`}
                 >
-                  {friendship.user.first_name} {friendship.user.last_name}
+                  {option.label}
                 </button>
               ))}
             </div>
-            <Button variant="outline" className="w-full border-border-soft text-text-primary" onClick={() => setDirectModalOpen(false)}>
-              Закрыть
+            {chatCreationMode === 'group' ? (
+              <div className="mt-5 space-y-4">
+                <Input value={newChatName} onChange={setNewChatName} placeholder="Название общего чата" />
+                <div className="rounded-2xl border border-border-soft bg-white/70 p-4 space-y-3">
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">добавить по коду</p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input value={codeParticipantInput} onChange={setCodeParticipantInput} placeholder="Код участника" />
+                    <Button
+                      variant="outline"
+                      className="sm:min-w-[130px]"
+                      onClick={handleAddCodeParticipant}
+                      disabled={!codeParticipantInput.trim()}
+                    >
+                      Добавить
+                    </Button>
+                  </div>
+                  {codeParticipants.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {codeParticipants.map(code => (
+                        <span
+                          key={code}
+                          className="inline-flex items-center gap-2 rounded-full border border-border-soft bg-surface-muted px-3 py-1 text-xs font-mono"
+                        >
+                          {code}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCodeParticipant(code)}
+                            className="text-text-secondary hover:text-brand-indigo"
+                            aria-label="Удалить код участника"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-2xl border border-border-soft bg-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">выбрать из друзей</p>
+                  <div className="mt-3 max-h-48 overflow-y-auto space-y-2 pr-1 styled-scrollbar">
+                    {friendList.length ? (
+                      friendList.map((friendship: Friendship) => {
+                        const user = friendship.user;
+                        if (!user) {
+                          return null;
+                        }
+                        const isSelected = selectedFriendIds.has(user._id);
+                        return (
+                          <button
+                            key={friendship._id}
+                            type="button"
+                            onClick={() => handleToggleFriendParticipant(user._id)}
+                            className={`w-full rounded-2xl border px-4 py-2 text-left transition-colors ${
+                              isSelected
+                                ? 'border-emerald-400 bg-emerald-50 text-text-primary shadow-brand-card'
+                                : 'border-border-subtle bg-white text-text-secondary hover:border-emerald-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="font-semibold text-text-primary">
+                                  {user.first_name} {user.last_name}
+                                </p>
+                                <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">{friendship.status}</p>
+                              </div>
+                              <span
+                                className={`text-xs font-semibold ${
+                                  isSelected ? 'text-emerald-600' : 'text-text-secondary'
+                                }`}
+                              >
+                                {isSelected ? 'Добавлен' : 'Добавить'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-text-secondary">Список друзей пуст.</p>
+                    )}
+                  </div>
+                </div>
+                <Button variant="primary" className="w-full" onClick={handleCreateGroupChat} disabled={!newChatName.trim()}>
+                  Создать чат
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-3">
+                <Input value={directChatCode} onChange={setDirectChatCode} placeholder="Код друга для личной переписки" />
+                <Button variant="primary" className="w-full" onClick={handleStartDirectChatByCode} disabled={!directChatCode.trim()}>
+                  Начать диалог
+                </Button>
+              </div>
+            )}
+            <div className="mt-6 rounded-2xl border border-dashed border-border-soft bg-surface-muted/60 p-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-text-muted">ваш код</p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="flex-1 break-all font-mono text-sm text-text-primary">{currentUser?._id || '—'}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-border-soft text-text-primary"
+                  onClick={handleCopyUserCode}
+                  disabled={!currentUser?._id}
+                >
+                  {copyUserCodeSuccess ? 'Скопировано' : 'Копировать'}
+                </Button>
+              </div>
+            </div>
+            <Button variant="outline" className="mt-4 w-full border-border-soft text-text-primary" onClick={closeCreateChatModal}>
+              Отменить
             </Button>
-          </div>
-        </div>
-      )}
-
-      {groupModalOpen && (
-        <div className="fixed inset-0 bg-brand-indigo/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-white border border-border-soft rounded-3xl p-6 w-full max-w-xl space-y-4 shadow-brand-card">
-            <h3 className="text-2xl font-semibold text-text-primary">Новая группа</h3>
-            <Input placeholder="Название" value={groupName} onChange={setGroupName} />
-            <textarea
-              value={groupDescription}
-              onChange={event => setGroupDescription(event.target.value)}
-              placeholder="Описание (необязательно)"
-              className="w-full rounded-2xl border border-border-soft bg-surface-muted p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo"
-              rows={3}
-            />
-            <div className="flex gap-3">
-              <button
-                type="button"
-                className={`flex-1 rounded-2xl border px-4 py-2 ${
-                  groupVisibility === 'private'
-                    ? 'border-brand-indigo text-text-primary bg-brand-almond/40'
-                    : 'border-border-subtle text-text-muted'
-                }`}
-                onClick={() => setGroupVisibility('private')}
-              >
-                Приватная
-              </button>
-              <button
-                type="button"
-                className={`flex-1 rounded-2xl border px-4 py-2 ${
-                  groupVisibility === 'public'
-                    ? 'border-brand-indigo text-text-primary bg-brand-almond/40'
-                    : 'border-border-subtle text-text-muted'
-                }`}
-                onClick={() => setGroupVisibility('public')}
-              >
-                Публичная
-              </button>
-            </div>
-            <div className="max-h-64 overflow-y-auto space-y-2">
-              {friends.map(friendship => (
-                <label key={friendship._id} className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-white p-3 shadow-sm">
-                  <input
-                    type="checkbox"
-                    checked={groupMembers.has(friendship.user._id)}
-                    onChange={() => toggleMember(friendship.user._id)}
-                  />
-                  <span>
-                    {friendship.user.first_name} {friendship.user.last_name}
-                  </span>
-                </label>
-              ))}
-              {friends.length === 0 && <p className="text-sm text-text-secondary">Нет друзей для добавления</p>}
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button className="flex-1" variant="outline" onClick={() => setGroupModalOpen(false)}>
-                Отмена
-              </Button>
-              <Button className="flex-1" variant="primary" onClick={handleCreateGroup}>
-                Создать
-              </Button>
-            </div>
           </div>
         </div>
       )}

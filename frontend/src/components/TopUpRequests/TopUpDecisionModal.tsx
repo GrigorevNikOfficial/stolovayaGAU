@@ -115,27 +115,27 @@ const TopUpDecisionModal: React.FC<TopUpDecisionModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleBackdropClick} />
-      <div className="relative bg-[#111213] border border-[#2b2c2d] rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55)] max-w-xl w-full overflow-hidden text-gray-100">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2f3031]">
-          <h3 className="text-xl font-semibold text-white">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleBackdropClick} />
+      <div className="relative w-full max-w-xl rounded-[32px] border border-border-soft bg-white text-text-primary shadow-[0_25px_80px_rgba(15,23,42,0.25)]">
+        <div className="flex items-center justify-between border-b border-border-subtle px-6 py-4">
+          <h3 className="text-xl font-semibold text-brand-indigo">
             {isApproveAction ? 'Одобрение заявки' : 'Отклонение заявки'}
           </h3>
           <button
             onClick={handleBackdropClick}
-            className="w-10 h-10 rounded-2xl bg-[#1c1d1e] border border-[#343536] text-gray-400 hover:text-white hover:border-[#69e7b6] transition-all"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border-subtle text-text-secondary transition-all hover:border-emerald-300 hover:text-emerald-600"
             aria-label="Закрыть"
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="rounded-2xl border border-[#2f3031] bg-[#1a1b1c] p-4">
-            <div className="flex items-center justify-between mb-2">
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <div className="rounded-2xl border border-border-soft bg-surface-muted px-4 py-4">
+            <div className="mb-2 flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Пользователь</p>
-                <p className="font-semibold text-white">
+                <p className="text-xs uppercase tracking-[0.2em] text-text-muted">Пользователь</p>
+                <p className="font-semibold text-text-primary">
                   {request.user_info
                     ? `${request.user_info.first_name} ${request.user_info.last_name}`
                     : 'Неизвестный пользователь'}
@@ -143,11 +143,11 @@ const TopUpDecisionModal: React.FC<TopUpDecisionModalProps> = ({
               </div>
               <StatusBadge status={request.status} />
             </div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-text-secondary">
               Запрошено: {formatCurrency(request.amount_requested)}
             </div>
             {typeof request.amount_approved === 'number' && request.status !== 'pending' && (
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-text-secondary">
                 Одобрено ранее: {formatCurrency(request.amount_approved)}
               </div>
             )}
@@ -155,7 +155,7 @@ const TopUpDecisionModal: React.FC<TopUpDecisionModalProps> = ({
 
           {isApproveAction && (
             <div>
-              <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
+              <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-text-muted">
                 Сумма для зачисления
               </label>
               <Input
@@ -170,13 +170,13 @@ const TopUpDecisionModal: React.FC<TopUpDecisionModalProps> = ({
           )}
 
           <div>
-            <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
+            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-text-muted">
               Комментарий для пользователя
             </label>
             <textarea
               value={note}
               onChange={event => setNote(event.target.value)}
-              className="w-full rounded-2xl border border-[#2f3031] bg-[#1b1c1d] text-gray-100 px-4 py-3 focus:ring-2 focus:ring-[#106157] focus:border-transparent"
+              className="w-full rounded-2xl border border-border-soft bg-white px-4 py-3 text-sm text-text-primary focus:border-brand-indigo focus:outline-none focus:ring-2 focus:ring-brand-indigo/20"
               rows={3}
               placeholder={
                 isApproveAction
@@ -187,7 +187,7 @@ const TopUpDecisionModal: React.FC<TopUpDecisionModalProps> = ({
           </div>
 
           {error && (
-            <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
               {error}
             </div>
           )}

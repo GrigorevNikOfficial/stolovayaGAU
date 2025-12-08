@@ -9,9 +9,7 @@ import {
 import Button from '../layout/Button/Button.tsx';
 import StatusBadge from '../Settings/StatusBadge.tsx';
 import TopUpDecisionModal from './TopUpDecisionModal.tsx';
-
-const formatCurrency = (value: number) =>
-  `${value.toLocaleString('ru-RU', { minimumFractionDigits: 0 })} ₽`;
+import { formatBalance } from '../../utils/formatBalance';
 
 const filters = [
   { id: 'all', label: 'Все заявки' },
@@ -82,13 +80,20 @@ export const TopUpRequestsAdmin: React.FC = () => {
             <button
               key={filter.id}
               onClick={() => setActiveFilter(filter.id)}
-              className={`px-4 py-2 rounded-2xl text-sm font-medium transition-all border ${
+              className={`group relative flex items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
                 activeFilter === filter.id
-                  ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
-                  : 'bg-white text-text-secondary border-border-subtle hover:border-brand-indigo/40'
-              }`}
+                  ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.2)]'
+                  : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
+              } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
             >
-              {filter.label}
+              <span>{filter.label}</span>
+              <span
+                className={`pointer-events-none absolute inset-x-4 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
+                  activeFilter === filter.id
+                    ? 'scale-x-100 opacity-100'
+                    : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                }`}
+              />
             </button>
           ))}
           <Button variant="outline" size="sm" onClick={handleRefresh}>
@@ -149,11 +154,11 @@ export const TopUpRequestsAdmin: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-sm text-text-primary">
                       <div className="font-semibold text-text-primary">
-                        {formatCurrency(request.amount_requested)}
+                        {formatBalance(request.amount_requested, { compact: true })}
                       </div>
                       {typeof request.amount_approved === 'number' && request.status !== 'pending' && (
                         <div className="text-xs text-text-secondary">
-                          Одобрено: {formatCurrency(request.amount_approved)}
+                          Одобрено: {formatBalance(request.amount_approved, { compact: true })}
                         </div>
                       )}
                     </td>

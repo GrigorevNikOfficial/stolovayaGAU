@@ -276,8 +276,6 @@ const CATEGORY_OPTIONS = [
 const PRICING_OPTIONS = [
   { label: 'Любой формат оплаты', value: '' },
   { label: 'Фиксированная стоимость', value: 'fixed' },
-  { label: 'Почасовая ставка', value: 'hourly' },
-  { label: 'Пакеты услуг', value: 'package' },
 ];
 
 const SORT_OPTIONS = [
@@ -883,6 +881,7 @@ export const MarketplacePage: React.FC = () => {
   const [isTopUpModalOpen, setIsTopUpModalOpen] = React.useState(false);
   const [incomingRequests, setIncomingRequests] = React.useState<ServiceRequest[]>([]);
   const [isLoadingIncomingRequests, setIsLoadingIncomingRequests] = React.useState(false);
+  const [areFiltersVisible, setAreFiltersVisible] = React.useState(false);
 
   const handleRealtimeRequestUpsert = React.useCallback(
     (payload: ServiceRequest | null) => {
@@ -1230,6 +1229,17 @@ export const MarketplacePage: React.FC = () => {
     () => myServices.filter(service => service.mode === 'offer' && service.isActive).length,
     [myServices]
   );
+  const activeFilterCount = React.useMemo(() => {
+    let count = 0;
+    if (filters.search.trim()) count += 1;
+    if (filters.category) count += 1;
+    if (filters.pricingType) count += 1;
+    if (filters.sort !== DEFAULT_FILTERS.sort) count += 1;
+    if (filters.minPrice) count += 1;
+    if (filters.maxPrice) count += 1;
+    if (filters.includeInactive) count += 1;
+    return count;
+  }, [filters]);
 
   const headerTabs = React.useMemo(() => availableTabs, [availableTabs]);
   const mobileHeaderTabs = React.useMemo(() => availableTabs.filter(tab => !tab.disabled), [availableTabs]);
@@ -1456,10 +1466,6 @@ export const MarketplacePage: React.FC = () => {
     }
   };
 
-  const heroDescription = filters.mode === 'request'
-    ? 'Заказывайте услуги у других студентов: фиксируйте бюджет, выбирайте исполнителя и оплачивайте работу через баланс.'
-    : 'Предлагайте свои услуги студентам: расскажите о навыках, принимайте брони и получайте оплату внутри баланса.';
-
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
@@ -1475,7 +1481,7 @@ export const MarketplacePage: React.FC = () => {
                 <img
                   src={LogoSAU}
                   alt="Логотип сервиса"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
+                  className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
                 />
                 <div className="leading-tight">
                   <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
@@ -1539,7 +1545,12 @@ export const MarketplacePage: React.FC = () => {
                   </button>
                 </>
               ) : (
-                <Button variant="primary" size="sm" onClick={() => handleNavigate('/login')}>
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
+                  onClick={() => handleNavigate('/login')}
+                >
                   Войти
                 </Button>
               )}
@@ -1553,114 +1564,111 @@ export const MarketplacePage: React.FC = () => {
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           {isCatalogTab && (
             <div className="space-y-10">
-              <section className="rounded-[36px] border border-border-soft bg-white p-8 shadow-brand-card">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <h2 className="mt-3 text-4xl font-semibold text-brand-indigo">Услуги</h2>
-                    <p className="mt-4 max-w-2xl text-lg text-text-secondary">
-                      {heroDescription}
-                    </p>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      {filters.mode === 'request' ? (
-                        <Button
-                          variant="primary"
-                          size="md"
-                          className="min-w-[200px]"
-                          onClick={openCreateRequestListingModal}
-                        >
-                          Создать заказ
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="primary"
-                          size="md"
-                          className="min-w-[200px]"
-                          onClick={openCreateOfferListingModal}
-                        >
-                          Предложить услуги
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="rounded-3xl border border-brand-indigo/15 bg-brand-indigo/5 p-5 text-sm text-brand-indigo">
-                    <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">баланс и защита оплат</p>
-                    <p className="mt-3 text-base text-brand-indigo">
-                      Оплата удерживается до завершения работы. Приём и вывод средств происходят внутри корпоративных счетов.
-                    </p>
-                  </div>
-                </div>
-              </section>
-
               <section className="grid gap-8">
                 <div className="space-y-6">
                   <div className="rounded-[28px] border border-border-soft bg-white p-6 shadow-sm">
-                    <div className="mb-5 flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
                       <h3 className="text-lg font-semibold text-brand-indigo">Фильтры</h3>
-                      <span className="text-xs uppercase tracking-[0.35em] text-text-muted">
-                        {filters.mode === 'request' ? 'для заказов' : 'для услуг'}
-                      </span>
+                      <button
+                        type="button"
+                        aria-expanded={areFiltersVisible}
+                        onClick={() => setAreFiltersVisible(prev => !prev)}
+                        className="flex items-center gap-2 rounded-full border border-border-soft px-4 py-2 text-sm font-semibold text-brand-indigo transition-colors hover:border-brand-indigo hover:bg-brand-indigo/5"
+                      >
+                        {areFiltersVisible
+                          ? 'Скрыть фильтры'
+                          : activeFilterCount > 0
+                          ? `Показать фильтры (${activeFilterCount})`
+                          : 'Показать фильтры'}
+                        <svg
+                          className={`h-4 w-4 transition-transform ${areFiltersVisible ? 'rotate-180' : ''}`}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Input
-                        value={filters.search}
-                        onChange={value => handleFilterChange('search', value)}
-                        placeholder="Поиск по названию или тегам"
-                      />
-                      <Select
-                        value={filters.category}
-                        onChange={value => handleFilterChange('category', value)}
-                        options={CATEGORY_OPTIONS}
-                      />
-                      <Select
-                        value={filters.pricingType}
-                        onChange={value => handleFilterChange('pricingType', value)}
-                        options={PRICING_OPTIONS}
-                      />
-                      <Select
-                        value={filters.sort}
-                        onChange={value => handleFilterChange('sort', value)}
-                        options={SORT_OPTIONS}
-                      />
-                      <Input
-                        type="number"
-                        value={filters.minPrice}
-                        onChange={value => handleFilterChange('minPrice', value)}
-                        placeholder="Минимальная цена"
-                      />
-                      <Input
-                        type="number"
-                        value={filters.maxPrice}
-                        onChange={value => handleFilterChange('maxPrice', value)}
-                        placeholder="Максимальная цена"
-                      />
-                    </div>
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-                      <label className="flex items-center gap-2 text-sm text-text-secondary">
-                        <input
-                          type="checkbox"
-                          checked={filters.includeInactive}
-                          onChange={event => handleFilterChange('includeInactive', event.target.checked)}
-                          className="h-4 w-4 rounded border-border-soft text-brand-indigo focus:ring-brand-indigo"
-                        />
-                        Показывать скрытые услуги
-                      </label>
-                      <Button variant="outline" size="sm" onClick={() => setFilters({ ...DEFAULT_FILTERS })}>
-                        Сбросить фильтры
-                      </Button>
-                    </div>
+                    {areFiltersVisible ? (
+                      <>
+                        <div className="mt-5 grid gap-4 md:grid-cols-2">
+                          <Input
+                            value={filters.search}
+                            onChange={value => handleFilterChange('search', value)}
+                            placeholder="Поиск по названию или тегам"
+                          />
+                          <Select
+                            value={filters.category}
+                            onChange={value => handleFilterChange('category', value)}
+                            options={CATEGORY_OPTIONS}
+                          />
+                          <Select
+                            value={filters.pricingType}
+                            onChange={value => handleFilterChange('pricingType', value)}
+                            options={PRICING_OPTIONS}
+                          />
+                          <Select
+                            value={filters.sort}
+                            onChange={value => handleFilterChange('sort', value)}
+                            options={SORT_OPTIONS}
+                          />
+                          <Input
+                            type="number"
+                            value={filters.minPrice}
+                            onChange={value => handleFilterChange('minPrice', value)}
+                            placeholder="Минимальная цена"
+                          />
+                          <Input
+                            type="number"
+                            value={filters.maxPrice}
+                            onChange={value => handleFilterChange('maxPrice', value)}
+                            placeholder="Максимальная цена"
+                          />
+                        </div>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                          <label className="flex items-center gap-2 text-sm text-text-secondary">
+                            <input
+                              type="checkbox"
+                              checked={filters.includeInactive}
+                              onChange={event => handleFilterChange('includeInactive', event.target.checked)}
+                              className="h-4 w-4 rounded border-border-soft text-brand-indigo focus:ring-brand-indigo"
+                            />
+                            Показывать скрытые услуги
+                          </label>
+                          <Button variant="outline" size="sm" onClick={() => setFilters({ ...DEFAULT_FILTERS })}>
+                            Сбросить фильтры
+                          </Button>
+                        </div>
+                      </>
+                    ) : null}
                   </div>
 
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-border-soft bg-white px-4 py-3 text-sm text-text-primary">
-                      <div className="flex flex-wrap items-center gap-4 font-semibold">
-                        <span>
-                          {pagination?.total ?? 0}{' '}
-                          {filters.mode === 'request' ? 'активных заказов' : 'активных предложений'}
-                        </span>
-                        <span>{uniqueCategories} категорий</span>
-                        <span>
-                          {uniqueProviders} {filters.mode === 'request' ? 'заказчиков' : 'исполнителей'}
-                        </span>
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-4 font-semibold">
+                          <span>
+                            {pagination?.total ?? 0}{' '}
+                            {filters.mode === 'request' ? 'активных заказов' : 'активных предложений'}
+                          </span>
+                          <span>{uniqueCategories} категорий</span>
+                          <span>
+                            {uniqueProviders} {filters.mode === 'request' ? 'заказчиков' : 'исполнителей'}
+                          </span>
+                        </div>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="flex-shrink-0"
+                          onClick={filters.mode === 'request' ? openCreateRequestListingModal : openCreateOfferListingModal}
+                        >
+                          {filters.mode === 'request' ? 'Создать заказ' : 'Предложить услуги'}
+                        </Button>
                       </div>
                     </div>
 
@@ -1772,11 +1780,11 @@ export const MarketplacePage: React.FC = () => {
                     <div>
                       <h3 className="text-2xl font-semibold text-brand-indigo">Управляйте своими услугами</h3>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-nowrap gap-2 overflow-x-auto">
                       <Button
                         variant="primary"
                         size="md"
-                        className="min-w-[180px]"
+                        className="min-w-[180px] flex-shrink-0"
                         onClick={openCreateOfferListingModal}
                       >
                         Предложить услуги
@@ -1784,7 +1792,7 @@ export const MarketplacePage: React.FC = () => {
                       <Button
                         variant="primary"
                         size="md"
-                        className="min-w-[180px]"
+                        className="min-w-[180px] flex-shrink-0"
                         onClick={openCreateRequestListingModal}
                       >
                         Создать заказ

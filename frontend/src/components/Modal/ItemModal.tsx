@@ -196,6 +196,10 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     currentUser &&
     (currentUser.role === 'admin' || currentUser.role === 'user');
 
+  const availabilityChipClasses = isAvailable
+    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+    : 'bg-surface-muted text-text-muted border border-border-soft';
+
   if (!isOpen || !item) {
     return null;
   }
@@ -203,15 +207,15 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl bg-[#121314] border border-[#343536] rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55)] overflow-hidden text-gray-100">
+        <div className="relative w-full max-w-4xl rounded-[32px] border border-border-soft bg-white text-text-primary shadow-[0_40px_90px_rgba(15,23,42,0.18)] overflow-hidden">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-2xl bg-[#1e1f20]/80 hover:bg-[#2a2b2c] border border-[#3f4042] flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200"
+            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border-soft bg-white/90 text-text-secondary shadow-sm transition-all duration-200 hover:border-brand-indigo/40 hover:text-brand-indigo"
             aria-label="Закрыть"
           >
             <svg
@@ -229,9 +233,9 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             </svg>
           </button>
 
-          <div className="flex flex-col lg:flex-row gap-6 p-6 lg:p-8">
+          <div className="flex flex-col gap-6 p-6 lg:flex-row lg:p-8">
             <div className="lg:w-1/2">
-              <div className="relative w-full rounded-2xl overflow-hidden border border-[#3a3b3a] bg-[#1a1b1c] min-h-[280px]">
+              <div className="relative min-h-[280px] w-full overflow-hidden rounded-3xl border border-border-soft bg-surface-muted">
                 {item.image_url || item.image?.url ? (
                   <img
                     src={item.image_url || item.image?.url}
@@ -239,7 +243,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+                  <div className="absolute inset-0 flex items-center justify-center text-text-muted">
                     <ForkKnifeIcon className="w-16 h-16" />
                   </div>
                 )}
@@ -248,14 +252,14 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
             <div className="lg:w-1/2 space-y-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
+                <p className="mb-2 text-xs uppercase tracking-[0.2em] text-text-muted">
                   Информация о блюде
                 </p>
-                <h2 className="text-3xl font-bold text-white mb-3 leading-tight">
+                <h2 className="mb-3 text-3xl font-bold leading-tight text-text-primary">
                   {item.name}
                 </h2>
                 {item.description && (
-                  <p className="text-sm text-gray-300 leading-relaxed">
+                  <p className="text-sm leading-relaxed text-text-secondary">
                     {item.description}
                   </p>
                 )}
@@ -263,39 +267,37 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-3xl font-bold text-[#69e7b6]">
+                  <span className="text-3xl font-bold text-brand-indigo">
                     {item.price} ₽
                   </span>
-                  <div className="flex items-center flex-wrap gap-2">
-                    <span
-                      className={`text-[11px] font-semibold px-3 py-1 rounded-full border ${isAvailable ? 'bg-[#106157]/20 text-[#69e7b6] border-[#106157]/40' : 'bg-[#1f2122] text-gray-400 border-[#3a3b3a]'}`}
-                    >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`px-3 py-1 text-[11px] font-semibold rounded-full ${availabilityChipClasses}`}>
                       {isAvailable ? 'Доступно' : 'Недоступно'}
                     </span>
                     {item.category_slug && (
-                      <span className="text-[11px] font-semibold px-3 py-1 rounded-full border border-[#3a3b3a] text-gray-300">
+                      <span className="rounded-full border border-border-soft bg-surface-muted px-3 py-1 text-[11px] font-semibold text-text-secondary">
                         {item.category_slug}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
+                <div className="grid grid-cols-2 gap-3 text-sm text-text-secondary">
                   {item.calories && (
-                    <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
-                      <FlameIcon className="w-4 h-4 text-gray-500" />
+                    <div className="flex items-center gap-2 rounded-2xl border border-border-soft bg-surface-muted px-3 py-2">
+                      <FlameIcon className="w-4 h-4 text-text-muted" />
                       <span>{item.calories} ккал</span>
                     </div>
                   )}
                   {item.preparation_time && (
-                    <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
-                      <ClockIcon className="w-4 h-4 text-gray-500" />
+                    <div className="flex items-center gap-2 rounded-2xl border border-border-soft bg-surface-muted px-3 py-2">
+                      <ClockIcon className="w-4 h-4 text-text-muted" />
                       <span>{item.preparation_time} мин</span>
                     </div>
                   )}
                   {item.number_pribors && (
-                    <div className="rounded-xl border border-[#2f3031] bg-[#1a1b1c] px-3 py-2 flex items-center gap-2">
-                      <ForkKnifeIcon className="w-4 h-4 text-gray-500" />
+                    <div className="flex items-center gap-2 rounded-2xl border border-border-soft bg-surface-muted px-3 py-2">
+                      <ForkKnifeIcon className="w-4 h-4 text-text-muted" />
                       <span>{item.number_pribors} приборов</span>
                     </div>
                   )}
@@ -305,14 +307,14 @@ export const ItemModal: React.FC<ItemModalProps> = ({
               {canAddToCart && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">
+                    <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-text-muted">
                       Количество
                     </label>
                     <div className="flex items-center justify-center gap-4">
                       <button
                         onClick={() => handleAdjustQuantity(-1)}
                         disabled={!isAvailable}
-                        className="w-10 h-10 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-lg font-bold hover:bg-[#106157] hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-indigo/30 bg-white text-brand-indigo transition-all hover:bg-brand-indigo hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                         type="button"
                       >
                         -
@@ -323,20 +325,20 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                         max={999}
                         value={desiredQuantity}
                         onChange={e => handleQuantityInputChange(e.target.value)}
-                        className="w-28 text-center text-2xl font-bold text-white border border-[#343536] rounded-2xl py-2 px-3 bg-[#1b1c1d] focus:outline-none focus:ring-2 focus:ring-[#106157]"
+                        className="w-28 rounded-2xl border border-border-soft bg-white py-2 px-3 text-center text-2xl font-bold text-text-primary focus:border-brand-indigo focus:outline-none focus:ring-2 focus:ring-brand-indigo/15"
                         disabled={!isAvailable}
                       />
                       <button
                         onClick={() => handleAdjustQuantity(1)}
                         disabled={!isAvailable}
-                        className="w-10 h-10 rounded-full bg-[#1f2122] text-[#69e7b6] border border-[#106157]/40 flex items-center justify-center text-lg font-bold hover:bg-[#106157] hover:text-white transition-all disabled:opacity-50"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-indigo/30 bg-white text-brand-indigo transition-all hover:bg-brand-indigo hover:text-white disabled:opacity-40"
                         type="button"
                       >
                         +
                       </button>
                     </div>
                     {quantity === 0 && (
-                      <p className="text-xs text-gray-500 mt-2 text-center">
+                      <p className="mt-2 text-center text-xs text-text-secondary">
                         Укажите нужное количество и добавьте товар в корзину
                       </p>
                     )}
@@ -375,7 +377,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 </div>
               )}
               {!isAvailable && (
-                <p className="text-sm text-red-400 text-center">
+                <p className="text-center text-sm text-red-500">
                   Товар временно недоступен для заказа
                 </p>
               )}

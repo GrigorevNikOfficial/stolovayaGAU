@@ -246,7 +246,7 @@ export const HomePage: React.FC = () => {
               <img
                 src={LogoSAU}
                 alt="Логотип столовой ГАУ"
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
+                className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
               />
               <div className="leading-tight">
                 <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
@@ -334,6 +334,7 @@ export const HomePage: React.FC = () => {
                   onClick={() => handleNavigation('/login')}
                   variant="primary"
                   size="md"
+                  className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
                 >
                   Войти
                 </Button>

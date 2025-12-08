@@ -1,5 +1,4 @@
 import React from 'react';
-import type { User } from '../../types/user';
 import Button from '../layout/Button/Button';
 import type { UpdateProfileRequest, User } from '../../types/user';
 import { formatBalance } from '../../utils/formatBalance';

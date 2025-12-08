@@ -154,19 +154,30 @@ export const EmployeeManagement: React.FC = () => {
         <div className="space-y-4">
           <div className="bg-white border border-border-soft rounded-3xl p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between shadow-brand-card">
             <div className="flex flex-wrap gap-2">
-              {roleTabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveRoleFilter(tab.id)}
-                  className={`px-4 py-2 rounded-2xl text-sm font-medium border transition-all ${
-                    activeRoleFilter === tab.id
-                      ? 'bg-brand-indigo text-white border-brand-indigo shadow-brand-card'
-                      : 'border-border-subtle text-text-secondary hover:text-brand-indigo hover:border-brand-indigo/50'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+              {roleTabs.map(tab => {
+                const isActive = activeRoleFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveRoleFilter(tab.id)}
+                    type="button"
+                    className={`group relative flex items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
+                      isActive
+                        ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.2)]'
+                        : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
+                    } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`pointer-events-none absolute inset-x-4 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
+                        isActive
+                          ? 'scale-x-100 opacity-100'
+                          : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                      }`}
+                    />
+                  </button>
+                );
+              })}
             </div>
 
             <div className="w-full lg:w-64">
