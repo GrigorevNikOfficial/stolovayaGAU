@@ -2,7 +2,7 @@ import React from 'react';
 import { useUnit } from 'effector-react';
 import { marketplaceApi } from '../api/services';
 import { serviceRequestsApi } from '../api/service-requests';
-import { $currentUser, uploadAvatar, uploadAvatarFx, logout } from '../models/users';
+import { $currentUser, uploadAvatar, uploadAvatarFx, logout, updateProfile, updateProfileFx } from '../models/users';
 import { loadOrders } from '../models/orders';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
@@ -10,9 +10,13 @@ import { Tabs } from '../components/layout/Tabs/Tabs';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import NotificationSettings from '../components/Profile/NotificationSettings.tsx';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
+import Achievements from '../components/Profile/Achievements';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal';
 import LogoSAU from '../images/logo.jpg';
 import { formatBalance } from '../utils/formatBalance';
+import type { ProfileStats } from '../components/Profile/profileStats';
+import { defaultProfileStats } from '../components/Profile/profileStats';
+import { countUnlockedAchievements } from '../components/Profile/achievementsData';
 
 type ProfileTabId = 'data' | 'stats' | 'notifications' | 'achievements';
 
@@ -39,9 +43,8 @@ const PROFILE_TABS: Array<{
   },
   {
     id: 'achievements',
-    label: 'Достижения в разработке',
-    description: 'Скоро появятся награды',
-    disabled: true,
+    label: 'Достижения',
+    description: 'Бейджи активности',
   },
 ];
 
@@ -62,24 +65,6 @@ const getTabFromLocation = (): ProfileTabId | null => {
   return isValidProfileTab(requested) ? requested : null;
 };
 
-type ProfileStats = {
-  requestsAsCustomer: number;
-  requestsAsProvider: number;
-  activeRequests: number;
-  completedRequests: number;
-  servicesPublished: number;
-  lastServiceUpdatedAt: string | null;
-};
-
-const defaultStats: ProfileStats = {
-  requestsAsCustomer: 0,
-  requestsAsProvider: 0,
-  activeRequests: 0,
-  completedRequests: 0,
-  servicesPublished: 0,
-  lastServiceUpdatedAt: null,
-};
-
 export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
   const {
     currentUser,
@@ -87,12 +72,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
     handleUploadAvatar,
     handleLogout,
     isAvatarUploading,
+    handleUpdateProfile,
+    isProfileUpdating,
   } = useUnit({
     currentUser: $currentUser,
     handleLoadOrders: loadOrders,
     handleUploadAvatar: uploadAvatar,
     handleLogout: logout,
     isAvatarUploading: uploadAvatarFx.pending,
+    handleUpdateProfile: updateProfile,
+    isProfileUpdating: updateProfileFx.pending,
   });
 
   const [activeTab, setActiveTab] = React.useState<ProfileTabId>(() => {
@@ -105,7 +94,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
     }
     return 'data';
   });
-  const [stats, setStats] = React.useState<ProfileStats>(defaultStats);
+  const [stats, setStats] = React.useState<ProfileStats>(defaultProfileStats);
   const [isStatsLoading, setIsStatsLoading] = React.useState(false);
   const [statsError, setStatsError] = React.useState<string | null>(null);
   const [hasLoadedStats, setHasLoadedStats] = React.useState(false);
@@ -147,11 +136,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
         id: tab.id,
         label: tab.label,
         roles: ['user'],
-        disabled: tab.disabled,
       })),
     []
   );
-  const mobileTabs = React.useMemo(() => PROFILE_TABS.filter(tab => !tab.disabled), []);
+  const mobileTabs = React.useMemo(() => PROFILE_TABS, []);
 
   const activeTabIndex = React.useMemo(() => {
     const index = PROFILE_TABS.findIndex(tab => tab.id === activeTab);
@@ -215,7 +203,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
   }, [currentUser?._id]);
 
   React.useEffect(() => {
-    if (activeTab === 'stats' && currentUser && !hasLoadedStats && !isStatsLoading) {
+    const needsStats = activeTab === 'stats' || activeTab === 'achievements';
+    if (needsStats && currentUser && !hasLoadedStats && !isStatsLoading) {
       void loadStats();
     }
   }, [activeTab, currentUser, hasLoadedStats, isStatsLoading, loadStats]);
@@ -223,7 +212,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
   const handleHeaderTabChange = React.useCallback(
     (index: number) => {
       const tab = PROFILE_TABS[index];
-      if (tab && !tab.disabled) {
+      if (tab) {
         setActiveTab(tab.id);
       }
     },
@@ -250,6 +239,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
     .toUpperCase()
     .trim() || 'U';
   const totalRequests = stats.requestsAsCustomer + stats.requestsAsProvider;
+  const unlockedAchievements = countUnlockedAchievements(stats);
   const balanceLabel = formatBalance(currentUser.balance);
 
   const renderStatsTab = () => (
@@ -260,16 +250,57 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
         </div>
       )}
 
-      <div className="rounded-[32px] border border-border-soft bg-white px-6 py-8 text-center shadow-brand-card">
-        <p className="text-xs uppercase tracking-[0.4em] text-text-muted">заявки в маркетплейсе</p>
-        <p className="mt-3 text-5xl font-semibold text-brand-indigo">{totalRequests}</p>
-        <p className="mt-2 text-sm text-text-secondary">
-          {stats.requestsAsCustomer} как заказчик · {stats.requestsAsProvider} как исполнитель
-        </p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-3xl border border-border-soft bg-white px-5 py-6 shadow-brand-card lg:col-span-2">
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">заявки в маркетплейсе</p>
+          <p className="mt-2 text-4xl font-bold text-brand-indigo">{totalRequests}</p>
+          <p className="mt-2 text-sm text-text-secondary">
+            {stats.requestsAsCustomer} как заказчик · {stats.requestsAsProvider} как исполнитель
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-border-soft bg-white px-5 py-6 shadow-brand-card">
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">активные</p>
+          <p className="mt-2 text-3xl font-semibold text-brand-indigo">{stats.activeRequests}</p>
+          <p className="mt-1 text-sm text-text-secondary">Заявки в работе или ожидании</p>
+        </div>
+
+        <div className="rounded-3xl border border-border-soft bg-white px-5 py-6 shadow-brand-card">
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">завершено</p>
+          <p className="mt-2 text-3xl font-semibold text-brand-indigo">{stats.completedRequests}</p>
+          <p className="mt-1 text-sm text-text-secondary">Сделки закрыты обеими сторонами</p>
+        </div>
+
+        <div className="rounded-3xl border border-border-soft bg-white px-5 py-6 shadow-brand-card">
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">услуги опубликованы</p>
+          <p className="mt-2 text-3xl font-semibold text-brand-indigo">{stats.servicesPublished}</p>
+          <p className="mt-1 text-sm text-text-secondary">Объявления видны коллегам</p>
+        </div>
+
+        <div className="rounded-3xl border border-border-soft bg-white px-5 py-6 shadow-brand-card">
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">последнее обновление</p>
+          <p className="mt-2 text-xl font-semibold text-brand-indigo">
+            {stats.lastServiceUpdatedAt
+              ? new Date(stats.lastServiceUpdatedAt).toLocaleString('ru-RU', {
+                  day: '2-digit',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : 'нет публикаций'}
+          </p>
+          <p className="mt-1 text-sm text-text-secondary">Когда вы редактировали услугу</p>
+        </div>
+
+        <div className="rounded-3xl border border-border-soft bg-white px-5 py-6 shadow-brand-card">
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">получено достижений</p>
+          <p className="mt-2 text-3xl font-semibold text-brand-indigo">{unlockedAchievements}</p>
+          <p className="mt-1 text-sm text-text-secondary">Бейджи профиля за активность</p>
+        </div>
       </div>
 
       <div className="rounded-3xl border border-dashed border-border-soft bg-surface-muted/60 px-5 py-4 text-sm text-text-secondary text-center">
-        Статистика обновляется автоматически после действий в маркетплейсе. Чем активнее вы оставляете заявки, тем выше счётчик.
+        Статистика обновляется автоматически после действий в маркетплейсе и управлении услугами. Чем активнее вы публикуете и закрываете заявки, тем богаче карточки.
       </div>
     </div>
   );
@@ -370,7 +401,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
                   currentUser={currentUser}
                   onUploadAvatar={handleUploadAvatar}
                   onLoadOrders={handleLoadOrders}
+                  onUpdateProfile={handleUpdateProfile}
                   isAvatarUploading={isAvatarUploading}
+                  isProfileUpdating={isProfileUpdating}
                   layout="embedded"
                   showHeader={false}
                 />
@@ -391,11 +424,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
 
               {activeTab === 'notifications' && <NotificationSettings />}
 
-              {activeTab === 'achievements' && (
-                <div className="rounded-3xl border border-dashed border-border-soft bg-surface-muted px-5 py-8 text-center text-text-secondary">
-                  Раздел «Достижения в разработке» сейчас в разработке. Мы добавим бейджи и уровни за активность чуть позже.
-                </div>
-              )}
+              {activeTab === 'achievements' && <Achievements stats={stats} />}
             </div>
           </div>
         </div>
