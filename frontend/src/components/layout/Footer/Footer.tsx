@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
               </div>
               <div>
                 <p className="font-semibold text-white mb-1">Адрес</p>
-                <p>г. Краснодар, 20 общежитие КУБГАУ, к. 205</p>
+                <p>г. Краснодар, 20 общежитие КУБГАУ, к. 206</p>
               </div>
             </div>
           </div>

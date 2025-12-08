@@ -2,7 +2,7 @@ import React from 'react';
 import { useUnit } from 'effector-react';
 import { marketplaceApi } from '../api/services';
 import { serviceRequestsApi } from '../api/service-requests';
-import { $currentUser, uploadAvatar, uploadAvatarFx, logout } from '../models/users';
+import { $currentUser, uploadAvatar, uploadAvatarFx, logout, updateProfile, updateProfileFx } from '../models/users';
 import { loadOrders } from '../models/orders';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
@@ -72,12 +72,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
     handleUploadAvatar,
     handleLogout,
     isAvatarUploading,
+    handleUpdateProfile,
+    isProfileUpdating,
   } = useUnit({
     currentUser: $currentUser,
     handleLoadOrders: loadOrders,
     handleUploadAvatar: uploadAvatar,
     handleLogout: logout,
     isAvatarUploading: uploadAvatarFx.pending,
+    handleUpdateProfile: updateProfile,
+    isProfileUpdating: updateProfileFx.pending,
   });
 
   const [activeTab, setActiveTab] = React.useState<ProfileTabId>(() => {
@@ -397,7 +401,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
                   currentUser={currentUser}
                   onUploadAvatar={handleUploadAvatar}
                   onLoadOrders={handleLoadOrders}
+                  onUpdateProfile={handleUpdateProfile}
                   isAvatarUploading={isAvatarUploading}
+                  isProfileUpdating={isProfileUpdating}
                   layout="embedded"
                   showHeader={false}
                 />

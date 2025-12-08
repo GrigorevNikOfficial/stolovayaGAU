@@ -14,6 +14,8 @@ import {
   logout,
   uploadAvatar,
   uploadAvatarFx,
+  updateProfile,
+  updateProfileFx,
 } from '../models/users';
 import { $orders, loadOrders } from '../models/orders';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal.tsx';
@@ -57,6 +59,8 @@ export const HomePage: React.FC = () => {
     handleUploadAvatar,
     handleLoadOrders,
     isAvatarUploading,
+    handleUpdateProfile,
+    isProfileUpdating,
     orders,
   } = useUnit({
     currentUser: $currentUser,
@@ -65,6 +69,8 @@ export const HomePage: React.FC = () => {
     handleUploadAvatar: uploadAvatar,
     handleLoadOrders: loadOrders,
     isAvatarUploading: uploadAvatarFx.pending,
+    handleUpdateProfile: updateProfile,
+    isProfileUpdating: updateProfileFx.pending,
     orders: $orders,
   });
   const [activeTab, setActiveTab] = useState(0);
@@ -499,7 +505,9 @@ export const HomePage: React.FC = () => {
                     currentUser={currentUser}
                     onUploadAvatar={handleUploadAvatar}
                     onLoadOrders={handleLoadOrders}
+                    onUpdateProfile={handleUpdateProfile}
                     isAvatarUploading={isAvatarUploading}
+                    isProfileUpdating={isProfileUpdating}
                     layout="embedded"
                   />
                 </div>
