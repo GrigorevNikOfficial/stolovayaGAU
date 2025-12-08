@@ -5,6 +5,7 @@ import {
   BellIcon,
   CalendarIcon,
   ChatBubblesIcon,
+  PieChartIcon,
   ForkKnifeIcon,
   ToolkitIcon,
 } from '../components/icons/ServiceIcons.tsx';
@@ -37,6 +38,7 @@ type ServiceCardDescriptor = {
   Icon: FC<IconProps>;
   iconAccent: string;
   path: string;
+  requiredRole?: User['role'];
 };
 
 const services: ServiceCardDescriptor[] = [
@@ -102,6 +104,16 @@ const services: ServiceCardDescriptor[] = [
     Icon: ToolkitIcon,
     iconAccent: 'from-slate-300 to-slate-500',
     path: '#',
+  },
+  {
+    id: 'admin',
+    title: 'Админ-панель',
+    description: 'Настройка комиссий, мониторинг баланса и статус сервисов.',
+    status: 'live',
+    Icon: PieChartIcon,
+    iconAccent: 'from-slate-500 to-slate-800',
+    path: '/admin',
+    requiredRole: 'admin',
   },
 ];
 
@@ -225,7 +237,9 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              {services.map(service => {
+              {services
+                .filter(service => !service.requiredRole || currentUser?.role === service.requiredRole)
+                .map(service => {
                 const tone = statusMap[service.status];
                 const Icon = service.Icon;
                 const isComingSoon = service.status === 'soon';

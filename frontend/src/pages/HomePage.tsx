@@ -7,7 +7,6 @@ import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
 import CartModal from '../components/Modal/CardModal.tsx';
 import { OrdersList } from '../components/Orders/OrdersList.tsx';
-import { Settings } from '../components/Settings/Settings.tsx';
 import LogoSAU from '../images/logo.jpg';
 import { $cart } from '../models/cart';
 import {
@@ -95,16 +94,19 @@ export const HomePage: React.FC = () => {
       {
         id: 'menu',
         label: 'Меню',
+        icon: '🍽️',
         roles: ['admin', 'canteenManager', 'cateenManager', 'user', 'guest'],
       },
       {
         id: 'categories',
         label: 'Категории',
+        icon: '📂',
         roles: ['admin', 'canteenManager', 'cateenManager'],
       },
       {
         id: 'orders',
         label: 'Заказы',
+        icon: '🧾',
         roles: [
           'admin',
           'canteenManager',
@@ -113,17 +115,13 @@ export const HomePage: React.FC = () => {
           'user',
         ],
       },
-      {
-        id: 'settings',
-        label: 'Настройки',
-        roles: ['admin'],
-      },
     ];
 
     if (user) {
       allTabs.push({
         id: 'profile',
         label: 'Профиль',
+        icon: '👤',
         roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
       });
     }
@@ -155,11 +153,10 @@ export const HomePage: React.FC = () => {
 
   const visibleTabs = useMemo(() => {
     const tabs = getVisibleTabs(currentUser);
-    return tabs.map(tab =>
-      tab.id === 'orders' && ordersBadge
-        ? { ...tab, badge: ordersBadge }
-        : tab
-    );
+    return tabs.map(tab => ({
+      ...tab,
+      badge: tab.id === 'orders' && ordersBadge ? ordersBadge : undefined,
+    }));
   }, [currentUser, ordersBadge]);
 
   const profileTabIndex = visibleTabs.findIndex(tab => tab.id === 'profile');
@@ -191,15 +188,6 @@ export const HomePage: React.FC = () => {
       setActiveTab(Math.max(0, visibleTabs.length - 1));
     }
   }, [activeTab, visibleTabs.length]);
-
-  const handleProfileTabOpen = () => {
-    if (profileTabIndex !== -1) {
-      selectTabById('profile');
-      setIsMobileMenuOpen(false);
-    } else {
-      handleNavigation('/profile');
-    }
-  };
 
   const handleLogoutClick = () => {
     handleLogout();
@@ -510,19 +498,6 @@ export const HomePage: React.FC = () => {
                 </div>
               )}
 
-              {visibleTabs[activeTab].id === 'settings' && (
-                <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
-                      <span>{visibleTabs[activeTab].icon}</span>
-                      <span>{visibleTabs[activeTab].label}</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <Settings />
-                  </div>
-                </div>
-              )}
 
               {visibleTabs[activeTab].id === 'profile' && currentUser && (
                 <div className="h-full">

@@ -1,10 +1,10 @@
 import React from 'react';
 import type { ProfileStats } from './profileStats';
 import { getAchievementProgress, countUnlockedAchievements } from './achievementsData';
-import type { AchievementDefinition } from './achievementsData';
+import type { AchievementWithProgress } from './achievementsData';
 import { Button } from '../layout/Button/Button';
 
-export type Achievement = AchievementDefinition & { progress: number };
+type Achievement = AchievementWithProgress;
 
 type AchievementsProps = {
   stats: ProfileStats;

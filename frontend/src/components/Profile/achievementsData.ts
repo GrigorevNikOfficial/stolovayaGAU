@@ -9,6 +9,8 @@ export type AchievementDefinition = {
   getProgress: (stats: ProfileStats) => number;
 };
 
+export type AchievementWithProgress = AchievementDefinition & { progress: number };
+
 export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   {
     id: 'first-request',
@@ -36,13 +38,9 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
 ];
 
-export const getAchievementProgress = (stats: ProfileStats) =>
+export const getAchievementProgress = (stats: ProfileStats): AchievementWithProgress[] =>
   ACHIEVEMENT_DEFINITIONS.map(def => ({
-    id: def.id,
-    title: def.title,
-    description: def.description,
-    icon: def.icon,
-    threshold: def.threshold,
+    ...def,
     progress: def.getProgress(stats),
   }));
 
