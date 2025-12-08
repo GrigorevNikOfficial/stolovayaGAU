@@ -80,7 +80,7 @@ const services: ServiceCardDescriptor[] = [
     id: 'events',
     title: 'Афиша событий',
     description: 'Календарь мероприятий университета, напоминания и быстрые регистрации на встречи и активности.',
-    status: 'soon',
+    status: 'testing',
     Icon: CalendarIcon,
     iconAccent: 'from-purple-300 to-purple-500',
     path: '/services/events',

@@ -102,15 +102,15 @@ const EventsPage: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { text: string; color: string }> = {
-      draft: { text: 'Черновик', color: 'bg-gray-500' },
-      published: { text: 'Опубликовано', color: 'bg-green-500' },
-      ongoing: { text: 'Идет', color: 'bg-blue-500' },
-      completed: { text: 'Завершено', color: 'bg-gray-400' },
-      cancelled: { text: 'Отменено', color: 'bg-red-500' },
+      draft: { text: 'Черновик', color: 'border border-slate-200 bg-slate-50 text-slate-600' },
+      published: { text: 'Опубликовано', color: 'border border-emerald-200 bg-emerald-50 text-emerald-700' },
+      ongoing: { text: 'Идет', color: 'border border-purple-200 bg-purple-50 text-purple-700' },
+      completed: { text: 'Завершено', color: 'border border-slate-200 bg-slate-50 text-slate-500' },
+      cancelled: { text: 'Отменено', color: 'border border-rose-200 bg-rose-50 text-rose-700' },
     };
-    const badge = badges[status] || { text: status, color: 'bg-gray-500' };
+    const badge = badges[status] || { text: status, color: 'border border-slate-200 bg-slate-50 text-slate-600' };
     return (
-      <span className={`px-2 py-1 rounded text-white text-xs ${badge.color}`}>
+      <span className={`rounded-full px-3 py-1 text-xs font-semibold tracking-widest uppercase ${badge.color}`}>
         {badge.text}
       </span>
     );
@@ -153,72 +153,128 @@ const EventsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-surface-base flex flex-col text-text-primary">
       {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <img src={LogoSAU} alt="SAU" className="h-12 w-12 rounded" />
-            <h1 className="text-2xl font-bold text-gray-800">События</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <NotificationBell />
-            <div className="text-sm text-gray-600">
-              Баланс: {formatBalance(currentUser?.balance || 0)}
+      <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
+        <div className="px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
+            <div className="flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1">
+              <img
+                src={LogoSAU}
+                alt="Логотип сервиса"
+                className="w-12 h-12 rounded-3xl border border-transparent sm:w-14 sm:h-14"
+              />
+              <div className="leading-tight">
+                <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
+                  <span className="tracking-[-0.04em]">STUD</span>
+                  <span className="ml-1 bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
+                    MI
+                  </span>
+                </h1>
+              </div>
             </div>
-            <button
-              onClick={() => logout()}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              Выйти
-            </button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate'));}
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50/90 px-2.5 py-1 text-xs font-semibold text-purple-700 shadow-inner transition-colors hover:bg-purple-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              >
+                <span className="text-sm font-semibold text-purple-800 sm:text-base">← Навигация</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => window.history.pushState({}, '', '/profile'); window.dispatchEvent(new PopStateEvent('popstate'));}
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              >
+                <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={formatBalance(currentUser?.balance || 0)}>
+                  {formatBalance(currentUser?.balance || 0)}
+                </span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
+              </button>
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-purple-300 hover:text-purple-600"
+                aria-label="Выйти"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* View Mode Tabs */}
-        <div className="flex space-x-4 mb-6">
+        <div className="flex w-full gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 mb-6" role="tablist">
           <button
             onClick={() => setViewMode('all')}
-            className={`px-4 py-2 rounded ${
+            className={`group relative flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all duration-300 ${
               viewMode === 'all'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
+                ? 'border-purple-400/70 bg-purple-50 text-purple-800 shadow-[0_18px_45px_rgba(168,85,247,0.25)]'
+                : 'border-transparent bg-transparent text-text-secondary hover:text-purple-600'
+            } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300`}
           >
-            Все события
+            <span className="flex items-center gap-2 whitespace-nowrap">Все события</span>
+            <span
+              className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 transition-all duration-300 ${
+                viewMode === 'all' ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+              }`}
+            />
           </button>
           <button
             onClick={() => setViewMode('my')}
-            className={`px-4 py-2 rounded ${
+            className={`group relative flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all duration-300 ${
               viewMode === 'my'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
+                ? 'border-purple-400/70 bg-purple-50 text-purple-800 shadow-[0_18px_45px_rgba(168,85,247,0.25)]'
+                : 'border-transparent bg-transparent text-text-secondary hover:text-purple-600'
+            } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300`}
           >
-            Мои события
+            <span className="flex items-center gap-2 whitespace-nowrap">Мои события</span>
+            <span
+              className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 transition-all duration-300 ${
+                viewMode === 'my' ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+              }`}
+            />
           </button>
           {isAdmin && (
             <button
               onClick={() => setViewMode('organized')}
-              className={`px-4 py-2 rounded ${
+              className={`group relative flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all duration-300 ${
                 viewMode === 'organized'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+                  ? 'border-purple-400/70 bg-purple-50 text-purple-800 shadow-[0_18px_45px_rgba(168,85,247,0.25)]'
+                  : 'border-transparent bg-transparent text-text-secondary hover:text-purple-600'
+              } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300`}
             >
-              Организованные мной
+              <span className="flex items-center gap-2 whitespace-nowrap">Организованные мной</span>
+              <span
+                className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 transition-all duration-300 ${
+                  viewMode === 'organized' ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                }`}
+              />
             </button>
           )}
         </div>
 
         {/* Filters */}
         {viewMode === 'all' && (
-          <div className="bg-white p-4 rounded-lg shadow mb-6">
+          <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Поиск</label>
+                <label className="block text-sm font-medium text-text-primary mb-2">Поиск</label>
                 <Input
                   value={filters.search || ''}
                   onChange={(value) => setFilters({ ...filters, search: value })}
@@ -226,7 +282,7 @@ const EventsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Тип</label>
+                <label className="block text-sm font-medium text-text-primary mb-2">Тип</label>
                 <Select
                   value={filters.type || ''}
                   onChange={(value) => setFilters({ ...filters, type: value })}
@@ -242,7 +298,7 @@ const EventsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Статус</label>
+                <label className="block text-sm font-medium text-text-primary mb-2">Статус</label>
                 <Select
                   value={filters.status || ''}
                   onChange={(value) => setFilters({ ...filters, status: value })}
@@ -261,75 +317,81 @@ const EventsPage: React.FC = () => {
         {/* Create Button */}
         {isAdmin && (
           <div className="mb-6">
-            <Button onClick={() => setShowCreateModal(true)}>Создать событие</Button>
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-brand-card hover:-translate-y-0.5 transition-all duration-200"
+            >
+              Создать событие
+            </Button>
           </div>
         )}
 
         {/* Events List */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="text-gray-600">Загрузка...</div>
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-purple-200 border-t-purple-600"></div>
+            <p className="mt-4 text-sm tracking-[0.35em] uppercase text-text-muted">Загрузка...</p>
           </div>
         ) : events.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-600">Нет доступных событий</p>
+          <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-12 text-center shadow-brand-card">
+            <p className="text-text-secondary">Нет доступных событий</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => (
               <div
                 key={event._id}
-                className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+                className="group relative overflow-hidden rounded-[28px] border border-border-subtle bg-white p-6 shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(168,85,247,0.25)]"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    <h3 className="text-xl font-semibold text-brand-indigo mb-2">
                       {event.title}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-text-muted">
                       {getEventTypeLabel(event.type)}
                     </p>
                   </div>
                   {getStatusBadge(event.status)}
                 </div>
 
-                <p className="text-gray-600 mb-4 line-clamp-3">{event.description}</p>
+                <p className="text-text-secondary mb-4 line-clamp-3 leading-relaxed">{event.description}</p>
 
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-text-secondary">
                     <span className="font-medium mr-2">📅</span>
                     {formatDate(event.startDate)}
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-text-secondary">
                     <span className="font-medium mr-2">📍</span>
                     {event.location}
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-text-secondary">
                     <span className="font-medium mr-2">👥</span>
                     {event.participantCount} / {event.capacity}
                   </div>
                   {event.averageRating > 0 && (
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-text-secondary">
                       <span className="font-medium mr-2">⭐</span>
                       {event.averageRating.toFixed(1)} ({event.reviewCount} отзывов)
                     </div>
                   )}
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex flex-col space-y-2">
                   <button
                     onClick={() => {
                       setSelectedEvent(event);
                       setShowDetailsModal(true);
                     }}
-                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    className="w-full px-4 py-2 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl font-semibold shadow-[0_18px_35px_rgba(168,85,247,0.35)] transition-all duration-200 hover:-translate-y-0.5"
                   >
                     Подробнее
                   </button>
                   {canRegister(event) && (
                     <button
                       onClick={() => handleRegister(event._id)}
-                      className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                      className="w-full px-4 py-2 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl font-semibold shadow-[0_18px_35px_rgba(16,185,129,0.35)] transition-all duration-200 hover:-translate-y-0.5"
                     >
                       Регистрация
                     </button>
@@ -337,12 +399,13 @@ const EventsPage: React.FC = () => {
                   {isUserRegistered(event) && (
                     <button
                       onClick={() => handleUnregister(event._id)}
-                      className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                      className="w-full px-4 py-2 bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl font-semibold shadow-[0_18px_35px_rgba(244,63,94,0.35)] transition-all duration-200 hover:-translate-y-0.5"
                     >
-                      Отменить
+                      Отменить регистрацию
                     </button>
                   )}
                 </div>
+                <div className="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               </div>
             ))}
           </div>
