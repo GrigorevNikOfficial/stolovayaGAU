@@ -20,6 +20,8 @@ import { formatBalance } from '../../utils/formatBalance';
 
 type ViewMode = 'all' | 'my' | 'organized';
 
+const PAGE_CONTAINER = 'w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8';
+
 const EventsPage: React.FC = () => {
   const currentUser = useUnit($currentUser);
   const [viewMode, setViewMode] = useState<ViewMode>('all');
@@ -247,7 +249,7 @@ const EventsPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.08),_transparent_55%)] text-text-primary">
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
-        <div className="px-3 sm:px-4 lg:px-6">
+        <div className={PAGE_CONTAINER}>
           <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
             <button
               type="button"
@@ -273,7 +275,7 @@ const EventsPage: React.FC = () => {
               </div>
             </button>
             <div className="hidden lg:flex flex-1 justify-center">
-              <div className="max-w-3xl w-full">{renderHeaderTabs()}</div>
+              <div className="w-full max-w-4xl">{renderHeaderTabs()}</div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <button
@@ -320,7 +322,7 @@ const EventsPage: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className={`${PAGE_CONTAINER} flex-1 py-10`}>
         {/* Filters */}
         {viewMode === 'all' && (
           <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card mb-6">
