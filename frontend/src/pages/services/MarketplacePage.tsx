@@ -245,7 +245,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
         <div className="mb-5 flex items-start justify-between gap-4">
           {title ? (
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-text-muted">форма</p>
               <h2 className="mt-1 text-2xl font-semibold text-brand-indigo">{title}</h2>
             </div>
           ) : null}
