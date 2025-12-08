@@ -176,14 +176,20 @@ const EventsPage: React.FC = () => {
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
-                onClick={() => window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate'));}
+                onClick={() => {
+                  window.history.pushState({}, '', '/');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
                 className="flex min-w-0 items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50/90 px-2.5 py-1 text-xs font-semibold text-purple-700 shadow-inner transition-colors hover:bg-purple-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
               >
                 <span className="text-sm font-semibold text-purple-800 sm:text-base">← Навигация</span>
               </button>
               <button
                 type="button"
-                onClick={() => window.history.pushState({}, '', '/profile'); window.dispatchEvent(new PopStateEvent('popstate'));}
+                onClick={() => {
+                  window.history.pushState({}, '', '/profile');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
                 className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
               >
                 <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={formatBalance(currentUser?.balance || 0)}>
