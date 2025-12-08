@@ -130,47 +130,49 @@ export const ProfileContent: React.FC<ProfileContentProps> = ({
 
   return (
     <div className={containerClasses}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6">
-        <div className="flex items-center gap-5 sm:gap-8">
-          <div className="flex flex-col items-center">
-            <button
-              type="button"
-              onClick={triggerAvatarUpload}
-              disabled={isAvatarUploading}
-              className="group relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-brand-indigo to-brand-grape overflow-hidden border-2 border-white/70 shadow-brand-card flex items-center justify-center text-2xl sm:text-3xl font-bold text-white transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/40 disabled:opacity-60"
-              aria-label="Сменить аватар"
-            >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={`${currentUser.first_name} ${currentUser.last_name}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span>{userInitials}</span>
-              )}
-              <span className="pointer-events-none absolute bottom-2 right-2 rounded-xl bg-white/80 px-2 py-1 text-[11px] font-semibold uppercase tracking-widest text-brand-indigo shadow-sm">
-                ✎
-              </span>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-              disabled={isAvatarUploading}
-            />
+      {showHeader && (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-5 sm:gap-8">
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                onClick={triggerAvatarUpload}
+                disabled={isAvatarUploading}
+                className="group relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-brand-indigo to-brand-grape overflow-hidden border-2 border-white/70 shadow-brand-card flex items-center justify-center text-2xl sm:text-3xl font-bold text-white transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/40 disabled:opacity-60"
+                aria-label="Сменить аватар"
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={`${currentUser.first_name} ${currentUser.last_name}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{userInitials}</span>
+                )}
+                <span className="pointer-events-none absolute bottom-2 right-2 rounded-xl bg-white/80 px-2 py-1 text-[11px] font-semibold uppercase tracking-widest text-brand-indigo shadow-sm">
+                  ✎
+                </span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+                disabled={isAvatarUploading}
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
+                {currentUser.first_name} {currentUser.last_name}
+              </h1>
+              <p className="text-text-secondary text-sm sm:text-base mt-1">Личный кабинет</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
-              {currentUser.first_name} {currentUser.last_name}
-            </h1>
-            <p className="text-text-secondary text-sm sm:text-base mt-1">Личный кабинет</p>
-          </div>
+          {editActions}
         </div>
-        {editActions}
-      </div>
+      )}
 
       <form id={formId} className={infoWrapperClasses} onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">

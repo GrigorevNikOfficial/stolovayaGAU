@@ -17,11 +17,13 @@ jobs:
       packages: write
     env:
       FRONTEND_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL != '' && secrets.FRONTEND_API_BASE_URL || 'http://localhost:5000/api' }}
-      BACKEND_IMAGE_LOWER: ${{ format('ghcr.io/{0}/stolovaya-backend', github.repository_owner.lower()) }}
-      FRONTEND_IMAGE_LOWER: ${{ format('ghcr.io/{0}/stolovaya-frontend', github.repository_owner.lower()) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Prepare lowercase owner
+        id: vars
+        run: echo "owner_lower=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -40,8 +42,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.BACKEND_IMAGE_LOWER }}:latest
-            ${{ env.BACKEND_IMAGE_LOWER }}:${{ github.sha }}
+            ghcr.io/${{ steps.vars.outputs.owner_lower }}/stolovaya-backend:latest
+            ghcr.io/${{ steps.vars.outputs.owner_lower }}/stolovaya-backend:${{ github.sha }}
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v6
@@ -52,8 +54,8 @@ jobs:
           build-args: |
             VITE_API_BASE_URL=${{ env.FRONTEND_API_BASE_URL }}
           tags: |
-            ${{ env.FRONTEND_IMAGE_LOWER }}:latest
-            ${{ env.FRONTEND_IMAGE_LOWER }}:${{ github.sha }}
+            ghcr.io/${{ steps.vars.outputs.owner_lower }}/stolovaya-frontend:latest
+            ghcr.io/${{ steps.vars.outputs.owner_lower }}/stolovaya-frontend:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
