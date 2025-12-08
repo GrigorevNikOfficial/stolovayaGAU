@@ -67,9 +67,9 @@ const CHANNEL_LABELS: Record<keyof NotificationPreferences['channels'], { title:
 const SETTINGS_TABS = [
   { id: 'categories', label: 'Категории' },
   { id: 'channels', label: 'Каналы' },
-] as const;
+];
 
-type SettingsTab = (typeof SETTINGS_TABS)[number]['id'];
+type SettingsTab = 'categories' | 'channels';
 
 const WORKING_TRIGGERS = [
   'Статусы заказов столовой',
@@ -253,7 +253,10 @@ const NotificationSettings: React.FC = () => {
           <Tabs
             tabs={SETTINGS_TABS}
             activeTab={settingsTabIndex}
-            onTabChange={index => setActiveSettingsTab(SETTINGS_TABS[index]?.id ?? 'categories')}
+            onTabChange={index => {
+              const nextTab = SETTINGS_TABS[index];
+              setActiveSettingsTab((nextTab?.id as SettingsTab) ?? 'categories');
+            }}
             variant="marketplace"
             wrap={false}
             className="max-w-md"

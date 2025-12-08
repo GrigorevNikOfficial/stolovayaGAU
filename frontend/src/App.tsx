@@ -9,8 +9,9 @@ import { ProfilePage } from './pages/ProfilePage';
 import { ChatPage } from './pages/services/chat/ChatPage.tsx';
 import { EventsServicePage } from './pages/services/ServicePlaceholderPages.tsx';
 import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
+import { AdminPanelPage } from './pages/AdminPanelPage';
 
-const PROTECTED_PATHS = new Set(['/profile', '/services/chat']);
+const PROTECTED_PATHS = new Set(['/profile', '/services/chat', '/admin']);
 
 const AuthPendingScreen = () => (
   <div className="flex min-h-screen items-center justify-center text-text-primary">
@@ -73,6 +74,12 @@ function App() {
     }
 
     if (isProtected && !currentUser && !token) {
+      navigate('/');
+    }
+  }, [currentPath, currentUser, navigate]);
+
+  React.useEffect(() => {
+    if (currentPath === '/admin' && currentUser && currentUser.role !== 'admin') {
       navigate('/');
     }
   }, [currentPath, currentUser, navigate]);
@@ -144,6 +151,27 @@ function App() {
 
     if (currentPath === '/services/events') {
       return <EventsServicePage />;
+    }
+
+    if (currentPath === '/admin') {
+      if (!currentUser) {
+        return hasToken ? <AuthPendingScreen /> : <AuthForm />;
+      }
+
+      if (currentUser.role !== 'admin') {
+        return (
+          <NavigationPage
+            currentUser={currentUser}
+            onNavigate={navigate}
+            onLogout={() => {
+              handleLogout();
+              navigate('/');
+            }}
+          />
+        );
+      }
+
+      return <AdminPanelPage />;
     }
 
     return (

@@ -1,6 +1,5 @@
 import React from 'react';
 import type { User } from '../../types/user';
-import { formatBalance } from '../../utils/formatBalance';
 
 interface ProfileContentProps {
   currentUser: User;
