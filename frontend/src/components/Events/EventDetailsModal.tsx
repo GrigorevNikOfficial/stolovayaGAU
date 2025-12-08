@@ -182,11 +182,13 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 {event.reviews.map((review, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded">
                     <div className="flex items-center mb-2">
-                      <img
-                        src={review.user.avatar.url}
-                        alt={review.user.first_name}
-                        className="w-10 h-10 rounded-full mr-3"
-                      />
+                      {review.user.avatar?.url && (
+                        <img
+                          src={review.user.avatar.url}
+                          alt={review.user.first_name}
+                          className="w-10 h-10 rounded-full mr-3"
+                        />
+                      )}
                       <div>
                         <p className="font-semibold text-gray-800">
                           {review.user.first_name} {review.user.last_name}

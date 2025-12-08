@@ -72,8 +72,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
     e.preventDefault();
 
     if (!formData.title || !formData.description || !formData.startDate || !formData.endDate || !formData.location) {
-      alert('Заполните все обязательные поля');
-      return;
+      return; // Form validation will handle showing errors
     }
 
     // Parse tags from input
