@@ -2,7 +2,7 @@ import { Notification } from '../models/Notification.js';
 import { NotificationPreference } from '../models/NotificationPreference.js';
 import { emitNotificationCreated, emitNotificationUpdated } from './socketService.js';
 
-const DEFAULT_CATEGORIES = ['orders', 'marketplace', 'system', 'chat', 'balance', 'topups'];
+const DEFAULT_CATEGORIES = ['orders', 'marketplace', 'system', 'chat', 'balance', 'topups', 'events'];
 const DEFAULT_SEVERITY = 'info';
 
 const cloneDefaultCategories = () => {
