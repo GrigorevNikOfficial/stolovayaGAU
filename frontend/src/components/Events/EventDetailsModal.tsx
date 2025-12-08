@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { Event } from '../../api/events';
 import Button from '../layout/Button/Button';
 
@@ -67,8 +68,12 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {/* Header */}
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">{event.title}</h2>
-              <p className="text-lg text-gray-600">{getEventTypeLabel(event.type)}</p>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                {event.title}
+              </h2>
+              <p className="text-lg text-gray-600">
+                {getEventTypeLabel(event.type)}
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -131,7 +136,8 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 <div>
                   <p className="font-semibold text-gray-700">Рейтинг</p>
                   <p className="text-gray-600">
-                    {event.averageRating.toFixed(1)} ({event.reviewCount} отзывов)
+                    {event.averageRating.toFixed(1)} ({event.reviewCount}{' '}
+                    отзывов)
                   </p>
                 </div>
               </div>
@@ -140,8 +146,12 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
           {/* Description */}
           <div className="mb-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Описание</h3>
-            <p className="text-gray-600 whitespace-pre-wrap">{event.description}</p>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+              Описание
+            </h3>
+            <p className="text-gray-600 whitespace-pre-wrap">
+              {event.description}
+            </p>
           </div>
 
           {/* Tags */}
@@ -164,12 +174,17 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {/* QR Code */}
           {isRegistered && event.qrCode && (
             <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">QR-код для входа</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                QR-код для входа
+              </h3>
               <p className="text-gray-600 mb-2">
                 Покажите этот код на входе для регистрации посещения
               </p>
-              <div className="bg-gray-100 p-4 rounded text-center font-mono text-lg">
-                {event.qrCode}
+              <div className="bg-gray-100 p-4 rounded flex flex-col items-center gap-3">
+                <QRCodeSVG value={event.qrCode} size={192} includeMargin />
+                <p className="text-xs text-gray-500 break-all">
+                  {event.qrCode}
+                </p>
               </div>
             </div>
           )}
@@ -177,7 +192,9 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {/* Reviews */}
           {event.reviews.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Отзывы</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Отзывы
+              </h3>
               <div className="space-y-4">
                 {event.reviews.map((review, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded">
@@ -199,12 +216,16 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                             {'☆'.repeat(5 - review.rating)}
                           </span>
                           <span className="text-sm text-gray-500">
-                            {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                            {new Date(review.createdAt).toLocaleDateString(
+                              'ru-RU'
+                            )}
                           </span>
                         </div>
                       </div>
                     </div>
-                    {review.comment && <p className="text-gray-600">{review.comment}</p>}
+                    {review.comment && (
+                      <p className="text-gray-600">{review.comment}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -215,22 +236,28 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {isRegistered && onAddReview && (
             <div className="mb-6">
               {!showReviewForm ? (
-                <Button onClick={() => setShowReviewForm(true)}>Оставить отзыв</Button>
+                <Button onClick={() => setShowReviewForm(true)}>
+                  Оставить отзыв
+                </Button>
               ) : (
                 <div className="bg-gray-50 p-4 rounded">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Ваш отзыв</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Ваш отзыв
+                  </h3>
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Оценка
                     </label>
                     <div className="flex space-x-2">
-                      {[1, 2, 3, 4, 5].map((value) => (
+                      {[1, 2, 3, 4, 5].map(value => (
                         <button
                           key={value}
                           type="button"
                           onClick={() => setRating(value)}
                           className={`text-3xl ${
-                            value <= rating ? 'text-yellow-500' : 'text-gray-300'
+                            value <= rating
+                              ? 'text-yellow-500'
+                              : 'text-gray-300'
                           }`}
                         >
                           ★
@@ -244,14 +271,16 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     </label>
                     <textarea
                       value={comment}
-                      onChange={(e) => setComment(e.target.value)}
+                      onChange={e => setComment(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={3}
                       placeholder="Расскажите о вашем опыте..."
                     />
                   </div>
                   <div className="flex space-x-2">
-                    <Button onClick={handleSubmitReview}>Отправить отзыв</Button>
+                    <Button onClick={handleSubmitReview}>
+                      Отправить отзыв
+                    </Button>
                     <button
                       type="button"
                       onClick={() => setShowReviewForm(false)}
