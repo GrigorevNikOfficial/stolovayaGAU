@@ -2,7 +2,6 @@ import { useUnit } from 'effector-react';
 import React from 'react';
 import { marketplaceApi } from '../../api/services';
 import { serviceRequestsApi } from '../../api/service-requests';
-import { settingsApi } from '../../api/settings';
 import Button from '../../components/layout/Button/Button';
 import Footer from '../../components/layout/Footer/Footer';
 import Input from '../../components/layout/Input/Input';
@@ -35,7 +34,6 @@ import type {
   ServiceSort,
   UpdateServiceRequestStatusPayload,
 } from '../../types/services';
-import type { MarketplaceSettings } from '../../types/settings';
 import type { User } from '../../types/user';
 type FiltersState = {
   search: string;
@@ -60,13 +58,6 @@ type CreateServiceFormValues = {
 
 type RequestStatusAction = UpdateServiceRequestStatusPayload['status'];
 
-type ModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  title?: string;
-  children: React.ReactNode;
-};
-
 const DEFAULT_FILTERS: FiltersState = {
   search: '',
   category: '',
@@ -90,10 +81,7 @@ const sortRequestsByDateDesc = (list: ServiceRequest[]) =>
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-const upsertRequestInList = (
-  list: ServiceRequest[],
-  request: ServiceRequest
-) => {
+const upsertRequestInList = (list: ServiceRequest[], request: ServiceRequest) => {
   const next = [...list];
   const index = next.findIndex(item => item.id === request.id);
 
@@ -137,23 +125,12 @@ const isRequestRelevantForScope = (
 };
 
 const isPendingIncomingForUser = (request: ServiceRequest, userId?: string) =>
-  Boolean(
-    userId &&
-      request.status === 'pending' &&
-      isListingOwnerForRequest(request, userId)
-  );
+  Boolean(userId && request.status === 'pending' && isListingOwnerForRequest(request, userId));
 
 type SocketRequestPayload = Partial<ServiceRequest> & { id?: string };
 
-const sanitizeSocketRequest = (
-  payload?: SocketRequestPayload | null
-): ServiceRequest | null => {
-  if (
-    !payload ||
-    typeof payload.id !== 'string' ||
-    !payload.status ||
-    payload.price === undefined
-  ) {
+const sanitizeSocketRequest = (payload?: SocketRequestPayload | null): ServiceRequest | null => {
+  if (!payload || typeof payload.id !== 'string' || !payload.status || payload.price === undefined) {
     return null;
   }
 
@@ -203,12 +180,7 @@ const mapFiltersToQuery = (filters: FiltersState): ServiceListQuery => {
 
 type MarketplaceRole = 'guest' | User['role'];
 
-type MarketplaceTabId =
-  | 'catalog_request'
-  | 'catalog_offer'
-  | 'manage'
-  | 'requests'
-  | 'platform';
+type MarketplaceTabId = 'catalog_request' | 'catalog_offer' | 'manage' | 'requests';
 
 type MarketplaceTab = {
   id: MarketplaceTabId;
@@ -226,28 +198,14 @@ const MARKETPLACE_TABS: MarketplaceTab[] = [
     id: 'catalog_request',
     label: 'Заказы',
     description: 'Создавайте задачи с замороженным бюджетом',
-    roles: [
-      'guest',
-      'user',
-      'admin',
-      'canteenManager',
-      'cateenManager',
-      'storeManager',
-    ],
+    roles: ['guest', 'user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
     mode: 'request',
   },
   {
     id: 'catalog_offer',
     label: 'Услуги',
     description: 'Предлагайте свои навыки коллегам',
-    roles: [
-      'guest',
-      'user',
-      'admin',
-      'canteenManager',
-      'cateenManager',
-      'storeManager',
-    ],
+    roles: ['guest', 'user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
     mode: 'offer',
   },
   {
@@ -260,16 +218,19 @@ const MARKETPLACE_TABS: MarketplaceTab[] = [
     label: 'Заявки',
     roles: ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
   },
-  {
-    id: 'platform',
-    label: 'Платформа',
-    roles: ['admin'],
-  },
 ];
+
 
 const getMarketplaceTabs = (user: User | null): MarketplaceTab[] => {
   const role: MarketplaceRole = user?.role ?? 'guest';
   return MARKETPLACE_TABS.filter(tab => tab.roles.includes(role));
+};
+
+type ModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
 };
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
@@ -279,20 +240,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur" onClick={onClose} />
       <div className="relative w-full max-w-2xl rounded-[32px] border border-border-soft bg-white p-6 shadow-[0_25px_80px_rgba(15,23,42,0.35)]">
         <div className="mb-5 flex items-start justify-between gap-4">
           {title ? (
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-text-muted">
-                форма
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold text-brand-indigo">
-                {title}
-              </h2>
+              <h2 className="mt-1 text-2xl font-semibold text-brand-indigo">{title}</h2>
             </div>
           ) : null}
           <button
@@ -323,8 +276,6 @@ const CATEGORY_OPTIONS = [
 const PRICING_OPTIONS = [
   { label: 'Любой формат оплаты', value: '' },
   { label: 'Фиксированная стоимость', value: 'fixed' },
-  { label: 'Почасовая ставка', value: 'hourly' },
-  { label: 'Пакеты услуг', value: 'package' },
 ];
 
 const SORT_OPTIONS = [
@@ -389,9 +340,7 @@ const CreateServiceModal: React.FC<{
   isSubmitting: boolean;
   mode: MarketplaceListingMode;
 }> = ({ isOpen, onClose, onSubmit, isSubmitting, mode }) => {
-  const [formState, setFormState] = React.useState<CreateServiceFormValues>(
-    () => createInitialServiceFormValues()
-  );
+  const [formState, setFormState] = React.useState<CreateServiceFormValues>(() => createInitialServiceFormValues());
 
   React.useEffect(() => {
     if (isOpen) {
@@ -414,12 +363,14 @@ const CreateServiceModal: React.FC<{
     mode === 'request'
       ? {
           title: 'Создать заказ',
-          info: 'Мы спишем стоимость объявления с вашего баланса и заморозим её до завершения работ. Деньги перейдут исполнителю после подтверждения результата.',
+          info:
+            'Мы спишем стоимость объявления с вашего баланса и заморозим её до завершения работ. Деньги перейдут исполнителю после подтверждения результата.',
           submit: 'Опубликовать заказ',
         }
       : {
           title: 'Опубликовать услугу',
-          info: 'Коллеги будут оставлять заявки на вашу услугу. Средства спишутся с заказчика и перейдут вам после завершения проекта.',
+          info:
+            'Коллеги будут оставлять заявки на вашу услугу. Средства спишутся с заказчика и перейдут вам после завершения проекта.',
           submit: 'Опубликовать услугу',
         };
 
@@ -471,12 +422,7 @@ const CreateServiceModal: React.FC<{
           <Button variant="outline" size="md" onClick={onClose} type="button">
             Отмена
           </Button>
-          <Button
-            variant="primary"
-            size="md"
-            type="submit"
-            disabled={isSubmitting}
-          >
+          <Button variant="primary" size="md" type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Публикуем...' : modeCopy.submit}
           </Button>
         </div>
@@ -517,16 +463,13 @@ const RequestModal: React.FC<{
 
   const requestMode: MarketplaceListingMode = service?.mode ?? 'request';
   const ownerLabel = MODE_OWNER_LABEL[requestMode];
-  const modalTitle =
-    requestMode === 'offer' ? 'Заказ услуги' : 'Отклик на задачу';
-  const paymentTitle =
-    requestMode === 'offer' ? 'спишем при отправке' : 'оплата зарезервирована';
+  const modalTitle = requestMode === 'offer' ? 'Заказ услуги' : 'Отклик на задачу';
+  const paymentTitle = requestMode === 'offer' ? 'спишем при отправке' : 'оплата зарезервирована';
   const paymentDescription =
     requestMode === 'offer'
       ? 'Мы спишем средства с вашего баланса и переведём исполнителю после завершения.'
       : 'Бюджет удерживается на депозите заказчика, вы получите выплату после завершения.';
-  const messagePlaceholder =
-    requestMode === 'offer' ? 'Комментарий исполнителю' : 'Сообщение заказчику';
+  const messagePlaceholder = requestMode === 'offer' ? 'Комментарий исполнителю' : 'Сообщение заказчику';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
@@ -546,37 +489,24 @@ const RequestModal: React.FC<{
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2 rounded-2xl border border-border-soft bg-surface-muted px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
-                {paymentTitle}
-              </p>
+              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">{paymentTitle}</p>
               <p className="mt-1 text-lg font-semibold text-brand-indigo">
                 {service ? priceFormatter.format(service.price) : '—'}
               </p>
-              <p className="mt-2 text-xs text-text-secondary">
-                {paymentDescription}
-              </p>
+              <p className="mt-2 text-xs text-text-secondary">{paymentDescription}</p>
             </div>
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" size="md" onClick={onClose} type="button">
               Отмена
             </Button>
-            <Button
-              variant="primary"
-              size="md"
-              type="submit"
-              disabled={isSubmitting}
-            >
-              {isSubmitting
-                ? 'Отправляем...'
-                : MODE_PRIMARY_ACTION[requestMode]}
+            <Button variant="primary" size="md" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Отправляем...' : MODE_PRIMARY_ACTION[requestMode]}
             </Button>
           </div>
         </form>
       ) : (
-        <p className="text-sm text-text-secondary">
-          Выберите услугу перед отправкой заявки.
-        </p>
+        <p className="text-sm text-text-secondary">Выберите услугу перед отправкой заявки.</p>
       )}
     </Modal>
   );
@@ -598,39 +528,26 @@ const ServiceDetailsModal: React.FC<{
     service.mode === 'request'
       ? 'Вы откликаетесь как исполнитель: оплата уже зарезервирована у автора объявления.'
       : 'Вы бронируете готовое предложение: средства спишутся с вашего баланса при подтверждении.';
-  const modeBadgeText =
-    service.mode === 'request'
-      ? 'Запрос исполнителя'
-      : 'Предложение специалиста';
+  const modeBadgeText = service.mode === 'request' ? 'Запрос исполнителя' : 'Предложение специалиста';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Вы выбрали услугу">
       <div className="space-y-5">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-brand-lilac">
-            подробности
-          </p>
-          <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">
-            {service.title}
-          </h3>
+          <p className="text-xs uppercase tracking-[0.4em] text-brand-lilac">подробности</p>
+          <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">{service.title}</h3>
           <span
             className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${MODE_BADGE_STYLES[service.mode]}`}
           >
             {modeBadgeText}
           </span>
-          <p className="mt-2 text-sm text-text-secondary">
-            {service.description}
-          </p>
+          <p className="mt-2 text-sm text-text-secondary">{service.description}</p>
         </div>
 
         <div className="flex flex-wrap items-baseline justify-between rounded-2xl border border-border-soft bg-brand-indigo/5 px-5 py-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">
-              стоимость
-            </p>
-            <p className="text-3xl font-semibold text-brand-indigo">
-              {priceFormatter.format(service.price)}
-            </p>
+            <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">стоимость</p>
+            <p className="text-3xl font-semibold text-brand-indigo">{priceFormatter.format(service.price)}</p>
             <p className="text-xs text-text-secondary">
               {service.pricingType === 'fixed' && 'Фиксированная стоимость'}
               {service.pricingType === 'hourly' && 'Оплата за каждый час'}
@@ -644,32 +561,18 @@ const ServiceDetailsModal: React.FC<{
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <DetailStat
-            label="Рейтинг"
-            value={`${service.rating.toFixed(1)} / 5`}
-          />
+          <DetailStat label="Рейтинг" value={`${service.rating.toFixed(1)} / 5`} />
           <DetailStat label="Отзывы" value={service.reviewsCount} />
-          <DetailStat
-            label="Доступность"
-            value={service.availability?.days?.length || 0}
-          />
-          <DetailStat
-            label="Обновлено"
-            value={new Date(service.updatedAt).toLocaleDateString('ru-RU')}
-          />
+          <DetailStat label="Доступность" value={service.availability?.days?.length || 0} />
+          <DetailStat label="Обновлено" value={new Date(service.updatedAt).toLocaleDateString('ru-RU')} />
         </div>
 
         {service.tags.length > 0 && (
           <div className="rounded-2xl border border-border-soft bg-surface-muted px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
-              ключевые навыки
-            </p>
+            <p className="text-xs uppercase tracking-[0.4em] text-text-muted">ключевые навыки</p>
             <div className="mt-3 flex flex-wrap gap-2 text-sm text-text-secondary">
               {service.tags.map(tag => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-border-soft px-3 py-1"
-                >
+                <span key={tag} className="rounded-full border border-border-soft px-3 py-1">
                   #{tag}
                 </span>
               ))}
@@ -692,9 +595,7 @@ const ServiceDetailsModal: React.FC<{
               <p className="text-base font-semibold text-text-primary">
                 {service.owner.firstName} {service.owner.lastName}
               </p>
-              <p className="text-xs uppercase tracking-[0.35em] text-text-muted">
-                {service.owner.role}
-              </p>
+              <p className="text-xs uppercase tracking-[0.35em] text-text-muted">{service.owner.role}</p>
             </div>
           </div>
         )}
@@ -725,94 +626,71 @@ const ServiceCard: React.FC<{
   isActive: boolean;
   onSelect: (service: ServiceListing) => void;
 }> = ({ service, isActive, onSelect }) => {
-  const modeBadgeText =
-    service.mode === 'request' ? 'Нужен исполнитель' : 'Исполнитель готов';
+  const modeBadgeText = service.mode === 'request' ? 'Нужен исполнитель' : 'Исполнитель готов';
   const ownerLabel = MODE_OWNER_LABEL[service.mode];
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(service)}
-      className={`text-left rounded-3xl border bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
-        isActive
-          ? 'border-brand-indigo shadow-brand-card'
-          : 'border-border-soft'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span
-            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-seashell text-brand-indigo shadow-inner"
-            aria-hidden
-          >
-            <CategoryIcon category={service.category} />
-          </span>
-          <div>
-            <h3 className="text-lg font-semibold text-text-primary">
-              {service.title}
-            </h3>
-            <p className="line-clamp-2 text-sm text-text-secondary">
-              {service.description}
+  <button
+    type="button"
+    onClick={() => onSelect(service)}
+    className={`text-left rounded-3xl border bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
+      isActive ? 'border-brand-indigo shadow-brand-card' : 'border-border-soft'
+    }`}
+  >
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-seashell text-brand-indigo shadow-inner" aria-hidden>
+          <CategoryIcon category={service.category} />
+        </span>
+        <div>
+          <h3 className="text-lg font-semibold text-text-primary">{service.title}</h3>
+          <p className="line-clamp-2 text-sm text-text-secondary">{service.description}</p>
+          {service.owner ? (
+            <p className="mt-1 text-xs text-text-muted">
+              {ownerLabel}: {service.owner.firstName} {service.owner.lastName}
             </p>
-            {service.owner ? (
-              <p className="mt-1 text-xs text-text-muted">
-                {ownerLabel}: {service.owner.firstName} {service.owner.lastName}
-              </p>
-            ) : null}
-          </div>
+          ) : null}
         </div>
-        <span className="text-base font-semibold text-brand-indigo">
-          {priceFormatter.format(service.price)}
-        </span>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2 text-xs text-text-muted">
-        <span
-          className={`rounded-full border px-3 py-1 ${MODE_BADGE_STYLES[service.mode]}`}
-        >
-          {modeBadgeText}
+      <span className="text-base font-semibold text-brand-indigo">
+        {priceFormatter.format(service.price)}
+      </span>
+    </div>
+    <div className="mt-4 flex flex-wrap gap-2 text-xs text-text-muted">
+      <span className={`rounded-full border px-3 py-1 ${MODE_BADGE_STYLES[service.mode]}`}>
+        {modeBadgeText}
+      </span>
+      <span className="rounded-full border border-border-soft px-3 py-1">
+        {service.pricingType === 'fixed' && 'Фиксированная стоимость'}
+        {service.pricingType === 'hourly' && 'Почасовая ставка'}
+        {service.pricingType === 'package' && 'Пакетная цена'}
+      </span>
+      {service.tags.slice(0, 2).map(tag => (
+        <span key={tag} className="rounded-full border border-border-soft px-3 py-1">
+          #{tag}
         </span>
-        <span className="rounded-full border border-border-soft px-3 py-1">
-          {service.pricingType === 'fixed' && 'Фиксированная стоимость'}
-          {service.pricingType === 'hourly' && 'Почасовая ставка'}
-          {service.pricingType === 'package' && 'Пакетная цена'}
-        </span>
-        {service.tags.slice(0, 2).map(tag => (
-          <span
-            key={tag}
-            className="rounded-full border border-border-soft px-3 py-1"
-          >
-            #{tag}
-          </span>
-        ))}
-        <span className="rounded-full border border-border-soft px-3 py-1 inline-flex items-center gap-2">
-          <EyeIcon className="w-4 h-4" />
-          {service.views}
-        </span>
-        <span className="rounded-full border border-border-soft px-3 py-1 inline-flex items-center gap-2">
-          <CheckIcon className="w-4 h-4" />
-          {service.completedOrders}
-        </span>
-      </div>
-    </button>
+      ))}
+      <span className="rounded-full border border-border-soft px-3 py-1 inline-flex items-center gap-2">
+        <EyeIcon className="w-4 h-4" />
+        {service.views}
+      </span>
+      <span className="rounded-full border border-border-soft px-3 py-1 inline-flex items-center gap-2">
+        <CheckIcon className="w-4 h-4" />
+        {service.completedOrders}
+      </span>
+    </div>
+  </button>
   );
 };
 
-const DetailStat: React.FC<{ label: string; value: string | number }> = ({
-  label,
-  value,
-}) => (
+const DetailStat: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
   <div className="rounded-2xl border border-border-soft bg-white/60 px-4 py-3">
-    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">
-      {label}
-    </p>
+    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">{label}</p>
     <p className="text-lg font-semibold text-brand-indigo">{value}</p>
   </div>
 );
 
-const EmptyState: React.FC<{ title: string; description: string }> = ({
-  title,
-  description,
-}) => (
+const EmptyState: React.FC<{ title: string; description: string }> = ({ title, description }) => (
   <div className="rounded-3xl border border-dashed border-border-soft bg-surface-muted px-6 py-12 text-center">
     <p className="flex justify-center" aria-hidden>
       <LeafIcon className="w-8 h-8 text-brand-indigo" />
@@ -859,25 +737,13 @@ const RequestCard: React.FC<{
   onOpenChat: (chatId: string) => void;
   pendingActionId: string | null;
   currentUserId?: string;
-}> = ({
-  request,
-  scope,
-  onUpdateStatus,
-  onOpenChat,
-  pendingActionId,
-  currentUserId,
-}) => {
+}> = ({ request, scope, onUpdateStatus, onOpenChat, pendingActionId, currentUserId }) => {
   const requestMode = resolveRequestMode(request);
-  const counterpart =
-    scope === 'customer' ? request.provider : request.customer;
-  const counterpartName = counterpart
-    ? `${counterpart.firstName} ${counterpart.lastName}`
-    : '—';
+  const counterpart = scope === 'customer' ? request.provider : request.customer;
+  const counterpartName = counterpart ? `${counterpart.firstName} ${counterpart.lastName}` : '—';
   const counterpartLabel = scope === 'customer' ? 'Исполнитель' : 'Заказчик';
   const isActionPending = pendingActionId === request.id;
-  const isListingOwner = currentUserId
-    ? isListingOwnerForRequest(request, currentUserId)
-    : false;
+  const isListingOwner = currentUserId ? isListingOwnerForRequest(request, currentUserId) : false;
   const isCollaborator = currentUserId
     ? requestMode === 'request'
       ? request.provider?.id === currentUserId
@@ -886,12 +752,9 @@ const RequestCard: React.FC<{
   const canAccept = isListingOwner && request.status === 'pending';
   const canDecline = canAccept;
   const canCancel = isCollaborator && request.status === 'pending';
-  const canComplete =
-    currentUserId === request.customer?.id &&
-    ['accepted', 'in_progress'].includes(request.status);
+  const canComplete = currentUserId === request.customer?.id && ['accepted', 'in_progress'].includes(request.status);
   const canOpenChat = Boolean(request.chatId);
-  const modeBadgeText =
-    requestMode === 'request' ? 'Отклик на заказ' : 'Бронь услуги';
+  const modeBadgeText = requestMode === 'request' ? 'Отклик на заказ' : 'Бронь услуги';
 
   const handleChatOpen = () => {
     if (request.chatId) {
@@ -903,18 +766,14 @@ const RequestCard: React.FC<{
     <div className="rounded-3xl border border-border-soft bg-white px-5 py-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">
-            услуга
-          </p>
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">услуга</p>
           <h4 className="mt-1 text-lg font-semibold text-text-primary">
             {request.service?.title ?? 'Без названия'}
           </h4>
           <p className="text-sm text-text-secondary">
             {counterpartLabel}: {counterpartName}
           </p>
-          <p className="text-xs text-text-muted">
-            Создана {formatRequestDate(request.createdAt)}
-          </p>
+          <p className="text-xs text-text-muted">Создана {formatRequestDate(request.createdAt)}</p>
         </div>
         <div className="text-right">
           <span
@@ -928,9 +787,7 @@ const RequestCard: React.FC<{
             {REQUEST_STATUS_LABELS[request.status]}
           </span>
           <p className="mt-3 text-xl font-semibold text-brand-indigo">
-            {priceFormatter.format(
-              request.price || request.service?.price || 0
-            )}
+            {priceFormatter.format(request.price || request.service?.price || 0)}
           </p>
         </div>
       </div>
@@ -996,60 +853,35 @@ export const MarketplacePage: React.FC = () => {
     currentUser: $currentUser,
     handleLogout: logout,
   });
-  const isAdmin = currentUser?.role === 'admin';
   const currentUserId = currentUser?._id;
   const [activeTab, setActiveTab] = React.useState(0);
-  const [filters, setFilters] = React.useState<FiltersState>(() => ({
-    ...DEFAULT_FILTERS,
-  }));
+  const [filters, setFilters] = React.useState<FiltersState>(() => ({ ...DEFAULT_FILTERS }));
   const [services, setServices] = React.useState<ServiceListing[]>([]);
-  const [pagination, setPagination] =
-    React.useState<ServiceListPagination | null>(null);
-  const [selectedService, setSelectedService] =
-    React.useState<ServiceListing | null>(null);
+  const [pagination, setPagination] = React.useState<ServiceListPagination | null>(null);
+  const [selectedService, setSelectedService] = React.useState<ServiceListing | null>(null);
   const [isServiceDetailsOpen, setIsServiceDetailsOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFetchingMyServices, setIsFetchingMyServices] = React.useState(false);
   const [myServices, setMyServices] = React.useState<ServiceListing[]>([]);
   const [requests, setRequests] = React.useState<ServiceRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = React.useState(false);
-  const [requestScope, setRequestScope] = React.useState<
-    'customer' | 'provider'
-  >('customer');
-  const [pendingRequestActionId, setPendingRequestActionId] = React.useState<
-    string | null
-  >(null);
-  const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(
-    null
-  );
-  const [isCreateRequestModalOpen, setIsCreateRequestModalOpen] =
-    React.useState(false);
-  const [isCreateOfferModalOpen, setIsCreateOfferModalOpen] =
-    React.useState(false);
+  const [requestScope, setRequestScope] = React.useState<'customer' | 'provider'>('customer');
+  const [pendingRequestActionId, setPendingRequestActionId] = React.useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null);
+  const [isCreateRequestModalOpen, setIsCreateRequestModalOpen] = React.useState(false);
+  const [isCreateOfferModalOpen, setIsCreateOfferModalOpen] = React.useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = React.useState(false);
-  const [requestModalService, setRequestModalService] =
-    React.useState<ServiceListing | null>(null);
-  const [isSubmittingRequestListing, setIsSubmittingRequestListing] =
-    React.useState(false);
-  const [isSubmittingOfferListing, setIsSubmittingOfferListing] =
-    React.useState(false);
+  const [requestModalService, setRequestModalService] = React.useState<ServiceListing | null>(null);
+  const [isSubmittingRequestListing, setIsSubmittingRequestListing] = React.useState(false);
+  const [isSubmittingOfferListing, setIsSubmittingOfferListing] = React.useState(false);
   const [isSubmittingRequest, setIsSubmittingRequest] = React.useState(false);
   const [listReloadKey, setListReloadKey] = React.useState(0);
   const [myServicesReloadKey, setMyServicesReloadKey] = React.useState(0);
   const [requestsReloadKey, setRequestsReloadKey] = React.useState(0);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = React.useState(false);
-  const [incomingRequests, setIncomingRequests] = React.useState<
-    ServiceRequest[]
-  >([]);
-  const [isLoadingIncomingRequests, setIsLoadingIncomingRequests] =
-    React.useState(false);
-  const [marketplaceSettings, setMarketplaceSettings] =
-    React.useState<MarketplaceSettings | null>(null);
-  const [isLoadingMarketplaceSettings, setIsLoadingMarketplaceSettings] =
-    React.useState(false);
-  const [isSavingMarketplaceSettings, setIsSavingMarketplaceSettings] =
-    React.useState(false);
-  const [commissionInput, setCommissionInput] = React.useState('');
+  const [incomingRequests, setIncomingRequests] = React.useState<ServiceRequest[]>([]);
+  const [isLoadingIncomingRequests, setIsLoadingIncomingRequests] = React.useState(false);
+  const [areFiltersVisible, setAreFiltersVisible] = React.useState(false);
 
   const handleRealtimeRequestUpsert = React.useCallback(
     (payload: ServiceRequest | null) => {
@@ -1075,22 +907,16 @@ export const MarketplacePage: React.FC = () => {
     [currentUserId, requestScope]
   );
 
-  const handleRealtimeRequestRemoval = React.useCallback(
-    (requestId?: string) => {
-      if (!requestId) {
-        return;
-      }
+  const handleRealtimeRequestRemoval = React.useCallback((requestId?: string) => {
+    if (!requestId) {
+      return;
+    }
 
-      setRequests(prev => removeRequestById(prev, requestId));
-      setIncomingRequests(prev => removeRequestById(prev, requestId));
-    },
-    []
-  );
+    setRequests(prev => removeRequestById(prev, requestId));
+    setIncomingRequests(prev => removeRequestById(prev, requestId));
+  }, []);
 
-  const availableTabs = React.useMemo(
-    () => getMarketplaceTabs(currentUser),
-    [currentUser]
-  );
+  const availableTabs = React.useMemo(() => getMarketplaceTabs(currentUser), [currentUser]);
   React.useEffect(() => {
     if (availableTabs.length === 0) {
       return;
@@ -1100,14 +926,9 @@ export const MarketplacePage: React.FC = () => {
     }
   }, [activeTab, availableTabs.length]);
 
-  const safeActiveTabIndex =
-    availableTabs.length === 0
-      ? 0
-      : Math.min(activeTab, availableTabs.length - 1);
-  const activeTabId =
-    availableTabs[safeActiveTabIndex]?.id ?? 'catalog_request';
-  const isCatalogTab =
-    activeTabId === 'catalog_request' || activeTabId === 'catalog_offer';
+  const safeActiveTabIndex = availableTabs.length === 0 ? 0 : Math.min(activeTab, availableTabs.length - 1);
+  const activeTabId = availableTabs[safeActiveTabIndex]?.id ?? 'catalog_request';
+  const isCatalogTab = activeTabId === 'catalog_request' || activeTabId === 'catalog_offer';
 
   const openRequestsInbox = React.useCallback(() => {
     const targetIndex = availableTabs.findIndex(tab => tab.id === 'requests');
@@ -1119,18 +940,13 @@ export const MarketplacePage: React.FC = () => {
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
-    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() ||
-      'U'
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
     : '';
   const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
 
   const handleNavigate = React.useCallback((path: string) => {
     const nextUrl = new URL(path, window.location.origin);
-    window.history.pushState(
-      {},
-      '',
-      `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
-    );
+    window.history.pushState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
   }, []);
 
@@ -1139,9 +955,10 @@ export const MarketplacePage: React.FC = () => {
       setActiveTab(index);
       const tab = availableTabs[index];
       if (tab?.mode && tab.mode !== filters.mode) {
+        const nextMode: MarketplaceListingMode = tab.mode;
         setFilters(prev => ({
           ...prev,
-          mode: tab.mode ?? prev.mode ?? 'request',
+          mode: nextMode,
           page: 1,
         }));
       }
@@ -1158,6 +975,7 @@ export const MarketplacePage: React.FC = () => {
     },
     [availableTabs, handleHeaderTabChange]
   );
+
 
   const handleLogoutClick = React.useCallback(() => {
     handleLogout();
@@ -1180,10 +998,7 @@ export const MarketplacePage: React.FC = () => {
     [handleNavigate]
   );
 
-  const handleFilterChange = (
-    field: keyof typeof DEFAULT_FILTERS,
-    value: string | boolean | number
-  ) => {
+  const handleFilterChange = (field: keyof typeof DEFAULT_FILTERS, value: string | boolean | number) => {
     setFilters(prev => ({
       ...prev,
       [field]: value,
@@ -1214,10 +1029,7 @@ export const MarketplacePage: React.FC = () => {
       })
       .catch(error => {
         if (!isActive) return;
-        showToast({
-          message: error.message || 'Не удалось загрузить услуги',
-          type: 'error',
-        });
+        showToast({ message: error.message || 'Не удалось загрузить услуги', type: 'error' });
       })
       .finally(() => {
         if (isActive) {
@@ -1248,10 +1060,7 @@ export const MarketplacePage: React.FC = () => {
       })
       .catch(error => {
         if (isActive) {
-          showToast({
-            message: error.message || 'Не удалось загрузить ваши услуги',
-            type: 'error',
-          });
+          showToast({ message: error.message || 'Не удалось загрузить ваши услуги', type: 'error' });
         }
       })
       .finally(() => {
@@ -1283,10 +1092,7 @@ export const MarketplacePage: React.FC = () => {
       })
       .catch(error => {
         if (isActive) {
-          showToast({
-            message: error.message || 'Не удалось загрузить заявки',
-            type: 'error',
-          });
+          showToast({ message: error.message || 'Не удалось загрузить заявки', type: 'error' });
         }
       })
       .finally(() => {
@@ -1310,40 +1116,23 @@ export const MarketplacePage: React.FC = () => {
     setIsLoadingIncomingRequests(true);
 
     Promise.all([
-      serviceRequestsApi.getRequests({
-        scope: 'customer',
-        status: 'pending',
-        type: 'request',
-      }),
-      serviceRequestsApi.getRequests({
-        scope: 'provider',
-        status: 'pending',
-        type: 'offer',
-      }),
+      serviceRequestsApi.getRequests({ scope: 'customer', status: 'pending', type: 'request' }),
+      serviceRequestsApi.getRequests({ scope: 'provider', status: 'pending', type: 'offer' }),
     ])
       .then(([asCustomer, asProvider]) => {
         if (!isActive) {
           return;
         }
         const owningRequests = [
-          ...asCustomer.data.filter(
-            item => resolveRequestMode(item) === 'request'
-          ),
-          ...asProvider.data.filter(
-            item => resolveRequestMode(item) === 'offer'
-          ),
+          ...asCustomer.data.filter(item => resolveRequestMode(item) === 'request'),
+          ...asProvider.data.filter(item => resolveRequestMode(item) === 'offer'),
         ];
-        const deduped = Array.from(
-          new Map(owningRequests.map(item => [item.id, item])).values()
-        );
+        const deduped = Array.from(new Map(owningRequests.map(item => [item.id, item])).values());
         setIncomingRequests(sortRequestsByDateDesc(deduped));
       })
       .catch(error => {
         if (isActive) {
-          showToast({
-            message: error.message || 'Не удалось загрузить входящие заявки',
-            type: 'error',
-          });
+          showToast({ message: error.message || 'Не удалось загрузить входящие заявки', type: 'error' });
         }
       })
       .finally(() => {
@@ -1357,58 +1146,10 @@ export const MarketplacePage: React.FC = () => {
     };
   }, [currentUser, requestsReloadKey]);
 
-  React.useEffect(() => {
-    if (!isAdmin) {
-      setMarketplaceSettings(null);
-      setCommissionInput('');
-      return;
-    }
 
-    let isActive = true;
-    setIsLoadingMarketplaceSettings(true);
-
-    settingsApi
-      .getMarketplaceSettings()
-      .then(response => {
-        if (!isActive) {
-          return;
-        }
-        setMarketplaceSettings(response);
-        setCommissionInput(response.marketplaceCommissionPercent.toString());
-      })
-      .catch(error => {
-        if (!isActive) {
-          return;
-        }
-        showToast({
-          message:
-            error.message || 'Не удалось загрузить настройки маркетплейса',
-          type: 'error',
-        });
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoadingMarketplaceSettings(false);
-        }
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [isAdmin]);
-
-  const refreshListings = React.useCallback(
-    () => setListReloadKey(prev => prev + 1),
-    []
-  );
-  const refreshMyServices = React.useCallback(
-    () => setMyServicesReloadKey(prev => prev + 1),
-    []
-  );
-  const refreshRequests = React.useCallback(
-    () => setRequestsReloadKey(prev => prev + 1),
-    []
-  );
+  const refreshListings = React.useCallback(() => setListReloadKey(prev => prev + 1), []);
+  const refreshMyServices = React.useCallback(() => setMyServicesReloadKey(prev => prev + 1), []);
+  const refreshRequests = React.useCallback(() => setRequestsReloadKey(prev => prev + 1), []);
 
   React.useEffect(() => {
     const unsubscribes = [
@@ -1420,78 +1161,40 @@ export const MarketplacePage: React.FC = () => {
         refreshListings();
         refreshMyServices();
       }),
-      onSocketEvent(
-        'marketplace:listings:deleted',
-        (payload: { id?: string }) => {
-          setSelectedService(prev => {
-            if (payload?.id && prev?.id === payload.id) {
-              setIsServiceDetailsOpen(false);
-              return null;
-            }
-            return prev;
-          });
-          refreshListings();
-          refreshMyServices();
-        }
-      ),
-      onSocketEvent(
-        'marketplace:requests:created',
-        (payload: SocketRequestPayload) => {
-          const normalized = sanitizeSocketRequest(payload);
-          if (normalized) {
-            handleRealtimeRequestUpsert(normalized);
-          } else {
-            refreshRequests();
+      onSocketEvent('marketplace:listings:deleted', (payload: { id?: string }) => {
+        setSelectedService(prev => {
+          if (payload?.id && prev?.id === payload.id) {
+            setIsServiceDetailsOpen(false);
+            return null;
           }
+          return prev;
+        });
+        refreshListings();
+        refreshMyServices();
+      }),
+      onSocketEvent('marketplace:requests:created', (payload: SocketRequestPayload) => {
+        const normalized = sanitizeSocketRequest(payload);
+        if (normalized) {
+          handleRealtimeRequestUpsert(normalized);
+        } else {
+          refreshRequests();
         }
-      ),
-      onSocketEvent(
-        'marketplace:requests:updated',
-        (payload: SocketRequestPayload) => {
-          const normalized = sanitizeSocketRequest(payload);
-          if (normalized) {
-            handleRealtimeRequestUpsert(normalized);
-          } else {
-            refreshRequests();
-          }
+      }),
+      onSocketEvent('marketplace:requests:updated', (payload: SocketRequestPayload) => {
+        const normalized = sanitizeSocketRequest(payload);
+        if (normalized) {
+          handleRealtimeRequestUpsert(normalized);
+        } else {
+          refreshRequests();
         }
-      ),
-      onSocketEvent(
-        'marketplace:requests:deleted',
-        (payload: { id?: string }) => {
-          if (payload?.id) {
-            handleRealtimeRequestRemoval(payload.id);
-          } else {
-            refreshRequests();
-          }
+      }),
+      onSocketEvent('marketplace:requests:deleted', (payload: { id?: string }) => {
+        if (payload?.id) {
+          handleRealtimeRequestRemoval(payload.id);
+        } else {
+          refreshRequests();
         }
-      ),
-      onSocketEvent(
-        'marketplace:settings:updated',
-        (payload: Partial<MarketplaceSettings>) => {
-          setMarketplaceSettings(prev => {
-            if (!prev) {
-              return {
-                marketplaceCommissionPercent:
-                  payload.marketplaceCommissionPercent ?? 0,
-                marketplaceBalance: payload.marketplaceBalance ?? 0,
-              };
-            }
-
-            return {
-              marketplaceCommissionPercent:
-                payload.marketplaceCommissionPercent ??
-                prev.marketplaceCommissionPercent,
-              marketplaceBalance:
-                payload.marketplaceBalance ?? prev.marketplaceBalance,
-            };
-          });
-
-          if (typeof payload?.marketplaceCommissionPercent === 'number') {
-            setCommissionInput(payload.marketplaceCommissionPercent.toString());
-          }
-        }
-      ),
+      }),
     ];
 
     return () => {
@@ -1509,13 +1212,9 @@ export const MarketplacePage: React.FC = () => {
     handleRealtimeRequestRemoval,
   ]);
 
-  const uniqueCategories = React.useMemo(
-    () => new Set(services.map(service => service.category)).size,
-    [services]
-  );
+  const uniqueCategories = React.useMemo(() => new Set(services.map(service => service.category)).size, [services]);
   const uniqueProviders = React.useMemo(
-    () =>
-      new Set(services.map(service => service.owner?.id).filter(Boolean)).size,
+    () => new Set(services.map(service => service.owner?.id).filter(Boolean)).size,
     [services]
   );
   const hiddenMyServicesCount = React.useMemo(
@@ -1523,31 +1222,31 @@ export const MarketplacePage: React.FC = () => {
     [myServices]
   );
   const activeRequestsCount = React.useMemo(
-    () =>
-      myServices.filter(
-        service => service.mode === 'request' && service.isActive
-      ).length,
+    () => myServices.filter(service => service.mode === 'request' && service.isActive).length,
     [myServices]
   );
   const activeOffersCount = React.useMemo(
-    () =>
-      myServices.filter(service => service.mode === 'offer' && service.isActive)
-        .length,
+    () => myServices.filter(service => service.mode === 'offer' && service.isActive).length,
     [myServices]
   );
+  const activeFilterCount = React.useMemo(() => {
+    let count = 0;
+    if (filters.search.trim()) count += 1;
+    if (filters.category) count += 1;
+    if (filters.pricingType) count += 1;
+    if (filters.sort !== DEFAULT_FILTERS.sort) count += 1;
+    if (filters.minPrice) count += 1;
+    if (filters.maxPrice) count += 1;
+    if (filters.includeInactive) count += 1;
+    return count;
+  }, [filters]);
 
   const headerTabs = React.useMemo(() => availableTabs, [availableTabs]);
-  const mobileHeaderTabs = React.useMemo(
-    () => availableTabs.filter(tab => !tab.disabled),
-    [availableTabs]
-  );
+  const mobileHeaderTabs = React.useMemo(() => availableTabs.filter(tab => !tab.disabled), [availableTabs]);
 
   const renderHeaderTabs = React.useCallback(
     (className = '') => (
-      <div
-        className={`flex w-full gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`}
-        role="tablist"
-      >
+      <div className={`flex w-full gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`} role="tablist">
         {headerTabs.map((tab, index) => {
           const isActive = safeActiveTabIndex === index;
           const isDisabled = Boolean(tab.disabled);
@@ -1569,19 +1268,13 @@ export const MarketplacePage: React.FC = () => {
                   ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
                   : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
               } ${
-                isDisabled
-                  ? 'cursor-not-allowed opacity-60'
-                  : 'cursor-pointer hover:-translate-y-0.5'
+                isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-0.5'
               } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
             >
-              <span className="flex items-center gap-2 whitespace-nowrap">
-                {tab.label}
-              </span>
+              <span className="flex items-center gap-2 whitespace-nowrap">{tab.label}</span>
               <span
                 className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
-                  isActive
-                    ? 'scale-x-100 opacity-100'
-                    : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                  isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
                 }`}
               />
             </button>
@@ -1594,10 +1287,7 @@ export const MarketplacePage: React.FC = () => {
 
   const openCreateRequestListingModal = () => {
     if (!currentUser) {
-      showToast({
-        message: 'Авторизуйтесь, чтобы размещать услуги',
-        type: 'error',
-      });
+      showToast({ message: 'Авторизуйтесь, чтобы размещать услуги', type: 'error' });
       return;
     }
     setIsCreateRequestModalOpen(true);
@@ -1605,10 +1295,7 @@ export const MarketplacePage: React.FC = () => {
 
   const openCreateOfferListingModal = () => {
     if (!currentUser) {
-      showToast({
-        message: 'Авторизуйтесь, чтобы размещать услуги',
-        type: 'error',
-      });
+      showToast({ message: 'Авторизуйтесь, чтобы размещать услуги', type: 'error' });
       return;
     }
     setIsCreateOfferModalOpen(true);
@@ -1626,32 +1313,20 @@ export const MarketplacePage: React.FC = () => {
     }
     const targetService = service ?? selectedService;
     if (!targetService) {
-      showToast({
-        message: 'Выберите объявление перед отправкой заявки',
-        type: 'error',
-      });
+      showToast({ message: 'Выберите объявление перед отправкой заявки', type: 'error' });
       return;
     }
     if (targetService.owner?.id && targetService.owner.id === currentUser._id) {
-      showToast({
-        message: 'Нельзя откликаться на собственное объявление',
-        type: 'error',
-      });
+      showToast({ message: 'Нельзя откликаться на собственное объявление', type: 'error' });
       return;
     }
     setRequestModalService(targetService);
     setIsRequestModalOpen(true);
   };
 
-  const handleCreateService = async (
-    payload: CreateServiceFormValues,
-    mode: MarketplaceListingMode
-  ) => {
+  const handleCreateService = async (payload: CreateServiceFormValues, mode: MarketplaceListingMode) => {
     if (!currentUser) {
-      showToast({
-        message: 'Авторизуйтесь, чтобы размещать услуги',
-        type: 'error',
-      });
+      showToast({ message: 'Авторизуйтесь, чтобы размещать услуги', type: 'error' });
       return;
     }
 
@@ -1666,10 +1341,7 @@ export const MarketplacePage: React.FC = () => {
     const price = Number(payload.price);
 
     if (!title || !description || !category) {
-      showToast({
-        message: 'Заполните заголовок, описание и выберите категорию',
-        type: 'error',
-      });
+      showToast({ message: 'Заполните заголовок, описание и выберите категорию', type: 'error' });
       return;
     }
 
@@ -1695,17 +1367,12 @@ export const MarketplacePage: React.FC = () => {
       refreshListings();
       refreshMyServices();
     } catch (error: any) {
-      showToast({
-        message: error.message || 'Ошибка при создании услуги',
-        type: 'error',
-      });
+      showToast({ message: error.message || 'Ошибка при создании услуги', type: 'error' });
       throw error;
     }
   };
 
-  const handleCreateRequestListing = async (
-    payload: CreateServiceFormValues
-  ) => {
+  const handleCreateRequestListing = async (payload: CreateServiceFormValues) => {
     try {
       setIsSubmittingRequestListing(true);
       await handleCreateService(payload, 'request');
@@ -1731,16 +1398,11 @@ export const MarketplacePage: React.FC = () => {
 
   const handleDeleteService = async (serviceId: string) => {
     if (!currentUser) {
-      showToast({
-        message: 'Авторизуйтесь, чтобы управлять услугами',
-        type: 'error',
-      });
+      showToast({ message: 'Авторизуйтесь, чтобы управлять услугами', type: 'error' });
       return;
     }
 
-    const confirmed = window.confirm(
-      'Удалить услугу? Это действие необратимо.'
-    );
+    const confirmed = window.confirm('Удалить услугу? Это действие необратимо.');
     if (!confirmed) {
       return;
     }
@@ -1752,21 +1414,17 @@ export const MarketplacePage: React.FC = () => {
       refreshListings();
       refreshMyServices();
     } catch (error: any) {
-      showToast({
-        message: error.message || 'Не удалось удалить услугу',
-        type: 'error',
-      });
+      showToast({ message: error.message || 'Не удалось удалить услугу', type: 'error' });
     } finally {
       setPendingDeleteId(null);
     }
   };
 
-  const handleCreateRequest = async (payload: { message?: string }) => {
+  const handleCreateRequest = async (payload: {
+    message?: string;
+  }) => {
     if (!currentUser || !requestModalService) {
-      showToast({
-        message: 'Авторизуйтесь, чтобы отправлять заявки',
-        type: 'error',
-      });
+      showToast({ message: 'Авторизуйтесь, чтобы отправлять заявки', type: 'error' });
       return;
     }
 
@@ -1784,24 +1442,15 @@ export const MarketplacePage: React.FC = () => {
       setIsRequestModalOpen(false);
       refreshRequests();
     } catch (error: any) {
-      showToast({
-        message: error.message || 'Не удалось отправить заявку',
-        type: 'error',
-      });
+      showToast({ message: error.message || 'Не удалось отправить заявку', type: 'error' });
     } finally {
       setIsSubmittingRequest(false);
     }
   };
 
-  const handleUpdateRequestStatus = async (
-    requestId: string,
-    status: RequestStatusAction
-  ) => {
+  const handleUpdateRequestStatus = async (requestId: string, status: RequestStatusAction) => {
     if (!currentUser) {
-      showToast({
-        message: 'Авторизуйтесь, чтобы управлять заявками',
-        type: 'error',
-      });
+      showToast({ message: 'Авторизуйтесь, чтобы управлять заявками', type: 'error' });
       return;
     }
 
@@ -1811,60 +1460,11 @@ export const MarketplacePage: React.FC = () => {
       showToast({ message: 'Статус заявки обновлён', type: 'success' });
       refreshRequests();
     } catch (error: any) {
-      showToast({
-        message: error.message || 'Не удалось обновить статус',
-        type: 'error',
-      });
+      showToast({ message: error.message || 'Не удалось обновить статус', type: 'error' });
     } finally {
       setPendingRequestActionId(null);
     }
   };
-
-  const handleMarketplaceSettingsSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
-
-    if (!isAdmin) {
-      return;
-    }
-
-    const parsedValue = Number(commissionInput);
-
-    if (Number.isNaN(parsedValue) || parsedValue < 0 || parsedValue > 100) {
-      showToast({
-        message: 'Комиссия должна быть числом от 0 до 100%',
-        type: 'error',
-      });
-      return;
-    }
-
-    try {
-      setIsSavingMarketplaceSettings(true);
-      const updated = await settingsApi.updateMarketplaceSettings({
-        marketplaceCommissionPercent: parsedValue,
-      });
-      setMarketplaceSettings(updated);
-      setCommissionInput(updated.marketplaceCommissionPercent.toString());
-      showToast({ message: 'Комиссия обновлена', type: 'success' });
-    } catch (error: any) {
-      showToast({
-        message: error.message || 'Не удалось обновить комиссию',
-        type: 'error',
-      });
-    } finally {
-      setIsSavingMarketplaceSettings(false);
-    }
-  };
-
-  const commissionValue = Number(commissionInput);
-  const isCommissionValid =
-    !Number.isNaN(commissionValue) &&
-    commissionValue >= 0 &&
-    commissionValue <= 100;
-  const isCommissionDirty = marketplaceSettings
-    ? commissionValue !== marketplaceSettings.marketplaceCommissionPercent
-    : commissionInput.trim().length > 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
@@ -1881,7 +1481,7 @@ export const MarketplacePage: React.FC = () => {
                 <img
                   src={LogoSAU}
                   alt="Логотип сервиса"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
+                  className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
                 />
                 <div className="leading-tight">
                   <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
@@ -1890,14 +1490,14 @@ export const MarketplacePage: React.FC = () => {
                       MI
                     </span>
                   </h1>
-                  <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">
-                    услуги
-                  </p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">услуги</p>
                 </div>
               </button>
             </div>
             <div className="hidden lg:flex flex-1 justify-center">
-              <div className="max-w-3xl">{renderHeaderTabs()}</div>
+              <div className="max-w-3xl">
+                {renderHeaderTabs()}
+              </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               {currentUser ? (
@@ -1907,15 +1507,10 @@ export const MarketplacePage: React.FC = () => {
                     onClick={() => setIsTopUpModalOpen(true)}
                     className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
                   >
-                    <span
-                      className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
-                      title={balanceLabel}
-                    >
+                    <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
                       {balanceLabel}
                     </span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">
-                      +
-                    </span>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
                   </button>
                   <NotificationBell />
                   <button
@@ -1925,15 +1520,7 @@ export const MarketplacePage: React.FC = () => {
                     aria-label="Профиль"
                   >
                     <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
-                      {avatarUrl ? (
-                        <img
-                          src={avatarUrl}
-                          alt="Аватар"
-                          className="h-full w-full rounded-full object-cover"
-                        />
-                      ) : (
-                        userInitials
-                      )}
+                      {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
                     </span>
                   </button>
                   <button
@@ -1961,7 +1548,7 @@ export const MarketplacePage: React.FC = () => {
                 <Button
                   variant="primary"
                   size="md"
-                  className="px-7 text-base font-semibold shadow-brand-card hover:-translate-y-0.5"
+                  className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
                   onClick={() => handleNavigate('/login')}
                 >
                   Войти
@@ -1969,6 +1556,7 @@ export const MarketplacePage: React.FC = () => {
               )}
             </div>
           </div>
+          
         </div>
       </header>
 
@@ -1976,147 +1564,111 @@ export const MarketplacePage: React.FC = () => {
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           {isCatalogTab && (
             <div className="space-y-10">
-              <section className="rounded-[36px] border border-border-soft bg-white p-8 shadow-brand-card">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <h2 className="mt-3 text-4xl font-semibold text-brand-indigo">
-                      Услуги
-                    </h2>
-                    <p className="mt-4 max-w-2xl text-lg text-text-secondary">
-                      Два сценария в одном окне: создавайте задачи с заморозкой
-                      бюджета или предлагайте собственные услуги коллегам. Все
-                      платежи проходят внутри баланса.
-                    </p>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      {filters.mode === 'request' ? (
-                        <Button
-                          variant="primary"
-                          size="md"
-                          className="min-w-[200px]"
-                          onClick={openCreateRequestListingModal}
-                        >
-                          Создать заказ
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="primary"
-                          size="md"
-                          className="min-w-[200px]"
-                          onClick={openCreateOfferListingModal}
-                        >
-                          Предложить услуги
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="rounded-3xl border border-brand-indigo/15 bg-brand-indigo/5 p-5 text-sm text-brand-indigo">
-                    <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">
-                      баланс и защита оплат
-                    </p>
-                    <p className="mt-3 text-base text-brand-indigo">
-                      Оплата удерживается до завершения работы. Приём и вывод
-                      средств происходят внутри корпоративных счетов.
-                    </p>
-                  </div>
-                </div>
-              </section>
-
               <section className="grid gap-8">
                 <div className="space-y-6">
                   <div className="rounded-[28px] border border-border-soft bg-white p-6 shadow-sm">
-                    <div className="mb-5 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-brand-indigo">
-                        Фильтры
-                      </h3>
-                      <span className="text-xs uppercase tracking-[0.35em] text-text-muted">
-                        {filters.mode === 'request'
-                          ? 'для заказов'
-                          : 'для услуг'}
-                      </span>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Input
-                        value={filters.search}
-                        onChange={value => handleFilterChange('search', value)}
-                        placeholder="Поиск по названию или тегам"
-                      />
-                      <Select
-                        value={filters.category}
-                        onChange={value =>
-                          handleFilterChange('category', value)
-                        }
-                        options={CATEGORY_OPTIONS}
-                      />
-                      <Select
-                        value={filters.pricingType}
-                        onChange={value =>
-                          handleFilterChange('pricingType', value)
-                        }
-                        options={PRICING_OPTIONS}
-                      />
-                      <Select
-                        value={filters.sort}
-                        onChange={value => handleFilterChange('sort', value)}
-                        options={SORT_OPTIONS}
-                      />
-                      <Input
-                        type="number"
-                        value={filters.minPrice}
-                        onChange={value =>
-                          handleFilterChange('minPrice', value)
-                        }
-                        placeholder="Минимальная цена"
-                      />
-                      <Input
-                        type="number"
-                        value={filters.maxPrice}
-                        onChange={value =>
-                          handleFilterChange('maxPrice', value)
-                        }
-                        placeholder="Максимальная цена"
-                      />
-                    </div>
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-                      <label className="flex items-center gap-2 text-sm text-text-secondary">
-                        <input
-                          type="checkbox"
-                          checked={filters.includeInactive}
-                          onChange={event =>
-                            handleFilterChange(
-                              'includeInactive',
-                              event.target.checked
-                            )
-                          }
-                          className="h-4 w-4 rounded border-border-soft text-brand-indigo focus:ring-brand-indigo"
-                        />
-                        Показывать скрытые услуги
-                      </label>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFilters({ ...DEFAULT_FILTERS })}
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <h3 className="text-lg font-semibold text-brand-indigo">Фильтры</h3>
+                      <button
+                        type="button"
+                        aria-expanded={areFiltersVisible}
+                        onClick={() => setAreFiltersVisible(prev => !prev)}
+                        className="flex items-center gap-2 rounded-full border border-border-soft px-4 py-2 text-sm font-semibold text-brand-indigo transition-colors hover:border-brand-indigo hover:bg-brand-indigo/5"
                       >
-                        Сбросить фильтры
-                      </Button>
+                        {areFiltersVisible
+                          ? 'Скрыть фильтры'
+                          : activeFilterCount > 0
+                          ? `Показать фильтры (${activeFilterCount})`
+                          : 'Показать фильтры'}
+                        <svg
+                          className={`h-4 w-4 transition-transform ${areFiltersVisible ? 'rotate-180' : ''}`}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
                     </div>
+                    {areFiltersVisible ? (
+                      <>
+                        <div className="mt-5 grid gap-4 md:grid-cols-2">
+                          <Input
+                            value={filters.search}
+                            onChange={value => handleFilterChange('search', value)}
+                            placeholder="Поиск по названию или тегам"
+                          />
+                          <Select
+                            value={filters.category}
+                            onChange={value => handleFilterChange('category', value)}
+                            options={CATEGORY_OPTIONS}
+                          />
+                          <Select
+                            value={filters.pricingType}
+                            onChange={value => handleFilterChange('pricingType', value)}
+                            options={PRICING_OPTIONS}
+                          />
+                          <Select
+                            value={filters.sort}
+                            onChange={value => handleFilterChange('sort', value)}
+                            options={SORT_OPTIONS}
+                          />
+                          <Input
+                            type="number"
+                            value={filters.minPrice}
+                            onChange={value => handleFilterChange('minPrice', value)}
+                            placeholder="Минимальная цена"
+                          />
+                          <Input
+                            type="number"
+                            value={filters.maxPrice}
+                            onChange={value => handleFilterChange('maxPrice', value)}
+                            placeholder="Максимальная цена"
+                          />
+                        </div>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                          <label className="flex items-center gap-2 text-sm text-text-secondary">
+                            <input
+                              type="checkbox"
+                              checked={filters.includeInactive}
+                              onChange={event => handleFilterChange('includeInactive', event.target.checked)}
+                              className="h-4 w-4 rounded border-border-soft text-brand-indigo focus:ring-brand-indigo"
+                            />
+                            Показывать скрытые услуги
+                          </label>
+                          <Button variant="outline" size="sm" onClick={() => setFilters({ ...DEFAULT_FILTERS })}>
+                            Сбросить фильтры
+                          </Button>
+                        </div>
+                      </>
+                    ) : null}
                   </div>
 
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-border-soft bg-white px-4 py-3 text-sm text-text-primary">
-                      <div className="flex flex-wrap items-center gap-4 font-semibold">
-                        <span>
-                          {pagination?.total ?? 0}{' '}
-                          {filters.mode === 'request'
-                            ? 'активных заказов'
-                            : 'активных предложений'}
-                        </span>
-                        <span>{uniqueCategories} категорий</span>
-                        <span>
-                          {uniqueProviders}{' '}
-                          {filters.mode === 'request'
-                            ? 'заказчиков'
-                            : 'исполнителей'}
-                        </span>
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-4 font-semibold">
+                          <span>
+                            {pagination?.total ?? 0}{' '}
+                            {filters.mode === 'request' ? 'активных заказов' : 'активных предложений'}
+                          </span>
+                          <span>{uniqueCategories} категорий</span>
+                          <span>
+                            {uniqueProviders} {filters.mode === 'request' ? 'заказчиков' : 'исполнителей'}
+                          </span>
+                        </div>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="flex-shrink-0"
+                          onClick={filters.mode === 'request' ? openCreateRequestListingModal : openCreateOfferListingModal}
+                        >
+                          {filters.mode === 'request' ? 'Создать заказ' : 'Предложить услуги'}
+                        </Button>
                       </div>
                     </div>
 
@@ -2144,63 +1696,48 @@ export const MarketplacePage: React.FC = () => {
 
                     {pagination && pagination.pages > 1 && (
                       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border-soft bg-white px-4 py-3 text-sm text-text-secondary">
-                        {Array.from(
-                          { length: pagination.pages },
-                          (_, index) => {
-                            const pageNumber = index + 1;
-                            const isActivePage = pageNumber === pagination.page;
-                            return (
-                              <button
-                                key={pageNumber}
-                                type="button"
-                                aria-current={isActivePage ? 'page' : undefined}
-                                onClick={() =>
-                                  handleFilterChange('page', pageNumber)
-                                }
-                                className={`rounded-full px-3 py-1 text-sm font-semibold transition-colors ${
-                                  isActivePage
-                                    ? 'bg-brand-indigo text-white shadow-sm'
-                                    : 'border border-border-soft bg-white text-text-secondary hover:border-brand-indigo/60 hover:text-brand-indigo'
-                                }`}
-                              >
-                                {pageNumber}
-                              </button>
-                            );
-                          }
-                        )}
+                        {Array.from({ length: pagination.pages }, (_, index) => {
+                          const pageNumber = index + 1;
+                          const isActivePage = pageNumber === pagination.page;
+                          return (
+                            <button
+                              key={pageNumber}
+                              type="button"
+                              aria-current={isActivePage ? 'page' : undefined}
+                              onClick={() => handleFilterChange('page', pageNumber)}
+                              className={`rounded-full px-3 py-1 text-sm font-semibold transition-colors ${
+                                isActivePage
+                                  ? 'bg-brand-indigo text-white shadow-sm'
+                                  : 'border border-border-soft bg-white text-text-secondary hover:border-brand-indigo/60 hover:text-brand-indigo'
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
+
                   </div>
                 </div>
               </section>
               <section className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
-                      отклики на объявления
-                    </p>
-                    <h3 className="mt-2 text-xl font-semibold text-brand-indigo">
-                      Заявки на заказы и предложения
-                    </h3>
+                    <p className="text-xs uppercase tracking-[0.4em] text-text-muted">отклики на объявления</p>
+                    <h3 className="mt-2 text-xl font-semibold text-brand-indigo">Заявки на заказы и предложения</h3>
                     <p className="text-sm text-text-secondary">
-                      Здесь появляются отклики на ваши задачи и брони на ваши
-                      предложения. Подтвердите исполнителя или клиента в пару
-                      кликов.
+                      Здесь появляются отклики на ваши задачи и брони на ваши предложения. Подтвердите исполнителя или клиента в пару кликов.
                     </p>
                   </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={openRequestsInbox}
-                  >
+                  <Button variant="primary" size="sm" onClick={openRequestsInbox}>
                     Ко всем заявкам
                   </Button>
                 </div>
 
                 {!currentUser ? (
                   <div className="mt-6 rounded-2xl border border-dashed border-border-soft px-4 py-3 text-sm text-text-secondary">
-                    Войдите, чтобы видеть отклики на ваши объявления и
-                    подтверждать исполнителей.
+                    Войдите, чтобы видеть отклики на ваши объявления и подтверждать исполнителей.
                   </div>
                 ) : isLoadingIncomingRequests ? (
                   <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border-soft px-4 py-3 text-sm text-text-secondary">
@@ -2216,9 +1753,7 @@ export const MarketplacePage: React.FC = () => {
                   <div className="mt-4 grid grid-cols-1 gap-3">
                     {incomingRequests.slice(0, 4).map(request => {
                       const inboxScope: 'customer' | 'provider' =
-                        resolveRequestMode(request) === 'offer'
-                          ? 'provider'
-                          : 'customer';
+                        resolveRequestMode(request) === 'offer' ? 'provider' : 'customer';
                       return (
                         <RequestCard
                           key={request.id}
@@ -2243,15 +1778,13 @@ export const MarketplacePage: React.FC = () => {
                 <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <h3 className="text-2xl font-semibold text-brand-indigo">
-                        Управляйте своими услугами
-                      </h3>
+                      <h3 className="text-2xl font-semibold text-brand-indigo">Управляйте своими услугами</h3>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-nowrap gap-2 overflow-x-auto">
                       <Button
                         variant="primary"
                         size="md"
-                        className="min-w-[180px]"
+                        className="min-w-[180px] flex-shrink-0"
                         onClick={openCreateOfferListingModal}
                       >
                         Предложить услуги
@@ -2259,7 +1792,7 @@ export const MarketplacePage: React.FC = () => {
                       <Button
                         variant="primary"
                         size="md"
-                        className="min-w-[180px]"
+                        className="min-w-[180px] flex-shrink-0"
                         onClick={openCreateRequestListingModal}
                       >
                         Создать заказ
@@ -2280,27 +1813,17 @@ export const MarketplacePage: React.FC = () => {
                         />
                       ) : (
                         myServices.slice(0, 4).map(service => (
-                          <div
-                            key={service.id}
-                            className="rounded-2xl border border-border-soft px-5 py-4"
-                          >
+                          <div key={service.id} className="rounded-2xl border border-border-soft px-5 py-4">
                             <div className="flex items-center justify-between text-sm">
                               <div>
-                                <p className="font-medium text-text-primary">
-                                  {service.title}
-                                </p>
+                                <p className="font-medium text-text-primary">{service.title}</p>
                                 <p className="text-xs text-text-secondary">
-                                  Обновлено{' '}
-                                  {new Date(
-                                    service.updatedAt
-                                  ).toLocaleDateString('ru-RU')}
+                                  Обновлено {new Date(service.updatedAt).toLocaleDateString('ru-RU')}
                                 </p>
                               </div>
                               <span
                                 className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] ${
-                                  service.isActive
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'bg-border-soft text-text-muted'
+                                  service.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-border-soft text-text-muted'
                                 }`}
                               >
                                 {service.isActive ? 'активно' : 'скрыто'}
@@ -2309,14 +1832,10 @@ export const MarketplacePage: React.FC = () => {
                             <span
                               className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${MODE_BADGE_STYLES[service.mode]}`}
                             >
-                              {service.mode === 'request'
-                                ? 'заказ с предоплатой'
-                                : 'предложение исполнителя'}
+                              {service.mode === 'request' ? 'заказ с предоплатой' : 'предложение исполнителя'}
                             </span>
                             <div className="mt-3 flex flex-wrap gap-4 text-xs text-text-secondary">
-                              <span>
-                                {priceFormatter.format(service.price)}
-                              </span>
+                              <span>{priceFormatter.format(service.price)}</span>
                               <span>Просмотров {service.views}</span>
                               <span>Заявок {service.completedOrders}</span>
                             </div>
@@ -2327,9 +1846,7 @@ export const MarketplacePage: React.FC = () => {
                                 disabled={pendingDeleteId === service.id}
                                 onClick={() => handleDeleteService(service.id)}
                               >
-                                {pendingDeleteId === service.id
-                                  ? 'Удаляем...'
-                                  : 'Удалить'}
+                                {pendingDeleteId === service.id ? 'Удаляем...' : 'Удалить'}
                               </Button>
                             </div>
                           </div>
@@ -2338,50 +1855,26 @@ export const MarketplacePage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="mt-4 text-sm text-text-secondary">
-                      Войдите в систему, чтобы публиковать услуги и управлять
-                      заказами.
+                      Войдите в систему, чтобы публиковать услуги и управлять заказами.
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-6 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
-                    инструменты исполнителя
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">Как это работает</p>
                   <ul className="space-y-3 text-sm text-text-secondary">
-                    <li>
-                      Обновляйте описание и стоимость, чтобы чаще попадать в
-                      подборки.
-                    </li>
-                    <li>
-                      Добавляйте до пяти тегов — система выделит популярные
-                      навыки.
-                    </li>
-                    <li>
-                      Скрывайте услуги, когда заняты: клиенты увидят статус в
-                      карточке.
-                    </li>
+                    <li>Обновляйте описание и стоимость, чтобы чаще попадать в подборки.</li>
+                    <li>Добавляйте до пяти тегов — система выделит популярные навыки.</li>
+                    <li>Скрывайте услуги, когда заняты: клиенты увидят статус в карточке.</li>
+                    <li>Удалить объявление можно, пока по нему нет активных заявок (принятых или в работе)</li>
                   </ul>
-                  <p className="text-xs text-text-muted">
-                    Удалить объявление можно, пока по нему нет активных заявок
-                    (принятых или в работе).
-                  </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <DetailStat
-                      label="Активные заказы"
-                      value={activeRequestsCount}
-                    />
-                    <DetailStat
-                      label="Активные предложения"
-                      value={activeOffersCount}
-                    />
+                    <DetailStat label="Активные заказы" value={activeRequestsCount} />
+                    <DetailStat label="Активные предложения" value={activeOffersCount} />
                   </div>
-                  <p className="text-xs text-text-muted">
-                    Скрытые позиции: {hiddenMyServicesCount}
-                  </p>
+                  <p className="text-xs text-text-muted">Скрытые позиции: {hiddenMyServicesCount}</p>
                   <div className="rounded-2xl border border-brand-indigo/20 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
-                    Создавайте разные форматы (фикс, почасово, пакеты) — клиенты
-                    видят это в фильтрах.
+                    Создавайте разные форматы (фикс, почасово, пакеты) — клиенты видят это в фильтрах.
                   </div>
                 </div>
               </section>
@@ -2394,9 +1887,7 @@ export const MarketplacePage: React.FC = () => {
                 <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-2xl font-semibold text-brand-indigo">
-                        Управление заказами
-                      </h3>
+                      <h3 className="text-2xl font-semibold text-brand-indigo">Управление заказами</h3>
                     </div>
                     <div className="flex gap-2 rounded-2xl border border-border-soft bg-surface-muted p-1">
                       {(['customer', 'provider'] as const).map(scope => (
@@ -2405,21 +1896,17 @@ export const MarketplacePage: React.FC = () => {
                           type="button"
                           onClick={() => setRequestScope(scope)}
                           className={`rounded-2xl px-3 py-1 text-xs font-semibold ${
-                            requestScope === scope
-                              ? 'bg-white text-brand-indigo shadow-sm'
-                              : 'text-text-secondary'
+                            requestScope === scope ? 'bg-white text-brand-indigo shadow-sm' : 'text-text-secondary'
                           }`}
                         >
-                          {scope === 'customer'
-                            ? 'Я заказчик'
-                            : 'Я исполнитель'}
+                          {scope === 'customer' ? 'Я заказчик' : 'Я исполнитель'}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {currentUser ? (
-                    <div className="mt-4 grid grid-cols-1 gap-3">
+                      {currentUser ? (
+                        <div className="mt-4 grid grid-cols-1 gap-3">
                       {isLoadingRequests ? (
                         <div className="flex items-center gap-3 rounded-2xl border border-border-soft px-4 py-3 text-sm text-text-secondary">
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo"></div>
@@ -2431,225 +1918,47 @@ export const MarketplacePage: React.FC = () => {
                           description="Отправьте отклик как исполнитель или ждите, пока коллеги выберут ваше объявление."
                         />
                       ) : (
-                        requests
-                          .slice(0, 6)
-                          .map(request => (
-                            <RequestCard
-                              key={request.id}
-                              request={request}
-                              scope={requestScope}
-                              onUpdateStatus={handleUpdateRequestStatus}
-                              onOpenChat={handleOpenChat}
-                              pendingActionId={pendingRequestActionId}
-                              currentUserId={currentUserId}
-                            />
-                          ))
+                            requests.slice(0, 6).map(request => (
+                              <RequestCard
+                                key={request.id}
+                                request={request}
+                                scope={requestScope}
+                                onUpdateStatus={handleUpdateRequestStatus}
+                                onOpenChat={handleOpenChat}
+                                pendingActionId={pendingRequestActionId}
+                                currentUserId={currentUserId}
+                              />
+                            ))
                       )}
                     </div>
                   ) : (
                     <div className="mt-4 text-sm text-text-secondary">
-                      Авторизуйтесь, чтобы управлять заказами, переписываться и
-                      подтверждать исполнителей.
+                      Авторизуйтесь, чтобы управлять заказами, переписываться и подтверждать исполнителей.
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-6 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
-                    как это работает
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">как это работает</p>
                   <ol className="space-y-4 text-sm text-text-secondary">
                     <li>
-                      <strong className="text-text-primary">
-                        1. Разместите заказ или предложение.
-                      </strong>{' '}
-                      Выберите режим — «Мне нужен исполнитель» или «Я оказываю
-                      услугу».
+                      <strong className="text-text-primary">1. Создайте заказ или предложение.</strong> Переключитесь в режим «Нужен исполнитель» для задач или «Предлагаю услугу», если готовы выполнять сами.
                     </li>
                     <li>
-                      <strong className="text-text-primary">
-                        2. Получайте отклики.
-                      </strong>{' '}
-                      Исполнители отвечают на заказы, а заказчики бронируют
-                      предложения.
+                      <strong className="text-text-primary">2. Ждите отклики внутри системы.</strong> Исполнители отвечают на ваши заказы, а студенты-заказчики подтверждают бронь на ваши услуги.
                     </li>
                     <li>
-                      <strong className="text-text-primary">
-                        3. Средства резервируются автоматически.
-                      </strong>{' '}
-                      Для заказов бюджет замораживается у автора, для
-                      предложений — у покупателя при подтверждении.
+                      <strong className="text-text-primary">3. Бюджет резервируется автоматически.</strong> Для заказов блокируем сумму у автора до завершения, для предложений — списываем с покупателя при подтверждении.
                     </li>
                   </ol>
                   <div className="rounded-2xl border border-brand-indigo/30 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
-                    Комиссия платформы управляется администратором и
-                    автоматически списывается при оплате.
+                    Комиссия платформы управляется администратором и автоматически списывается при оплате.
                   </div>
                 </div>
               </section>
             </div>
           )}
 
-          {activeTabId === 'platform' && isAdmin && (
-            <div className="space-y-8">
-              <section className="rounded-[36px] border border-brand-indigo/20 bg-gradient-to-br from-brand-indigo/5 via-white to-brand-grape/10 p-6 shadow-brand-card">
-                <div className="flex flex-wrap items-center justify-between gap-6">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">
-                      баланс платформы
-                    </p>
-                    <h3 className="mt-3 text-4xl font-semibold text-brand-indigo">
-                      {formatBalance(
-                        marketplaceSettings?.marketplaceBalance ?? 0,
-                        { withDecimals: true }
-                      )}
-                    </h3>
-                    <p className="mt-2 text-sm text-brand-indigo/80">
-                      Текущая комиссия:{' '}
-                      {marketplaceSettings?.marketplaceCommissionPercent ?? 0}%
-                    </p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.3em] text-brand-indigo/60">
-                      обновляется автоматически при каждом платеже
-                    </p>
-                  </div>
-                  <div className="grid gap-3 text-sm text-brand-indigo">
-                    <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
-                      <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">
-                        автообновление
-                      </p>
-                      <p className="mt-1 font-semibold text-brand-indigo">
-                        Подписка на событие marketplace:settings:updated уже
-                        активна
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
-                      <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">
-                        контроль комиссий
-                      </p>
-                      <p className="mt-1 font-semibold text-brand-indigo">
-                        Любое изменение мгновенно синхронизируется между
-                        администраторами
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
-                        комиссия платформы
-                      </p>
-                      <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">
-                        Настройка удержаний
-                      </h3>
-                    </div>
-                    <span className="rounded-full border border-brand-indigo/30 px-3 py-1 text-xs font-semibold text-brand-indigo">
-                      Только админ
-                    </span>
-                  </div>
-
-                  {isLoadingMarketplaceSettings ? (
-                    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border-soft px-4 py-3 text-sm text-text-secondary">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo"></div>
-                      Загружаем настройки...
-                    </div>
-                  ) : !marketplaceSettings ? (
-                    <EmptyState
-                      title="Настройки недоступны"
-                      description="Перезагрузите страницу или попробуйте позже."
-                    />
-                  ) : (
-                    <form
-                      className="mt-6 space-y-5"
-                      onSubmit={handleMarketplaceSettingsSubmit}
-                    >
-                      <label className="block text-sm font-medium text-text-primary">
-                        Комиссия, %
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value={commissionInput}
-                          onChange={event =>
-                            setCommissionInput(event.target.value)
-                          }
-                          className="mt-2 w-full rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-base text-text-primary focus:border-brand-indigo focus:outline-none focus:ring-2 focus:ring-brand-indigo/20"
-                          placeholder="15"
-                        />
-                      </label>
-                      <p className="text-sm text-text-secondary">
-                        Комиссия удерживается при создании заявки и
-                        автоматически зачисляется на баланс платформы.
-                      </p>
-                      <div className="flex flex-wrap gap-3">
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          size="md"
-                          disabled={
-                            !isCommissionValid ||
-                            !isCommissionDirty ||
-                            isSavingMarketplaceSettings
-                          }
-                        >
-                          {isSavingMarketplaceSettings
-                            ? 'Сохраняем...'
-                            : 'Сохранить'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="md"
-                          onClick={() =>
-                            setCommissionInput(
-                              marketplaceSettings.marketplaceCommissionPercent.toString()
-                            )
-                          }
-                          disabled={isSavingMarketplaceSettings}
-                        >
-                          Сбросить изменения
-                        </Button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-
-                <div className="space-y-5 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
-                    как работает баланс
-                  </p>
-                  <ul className="space-y-4 text-sm text-text-secondary">
-                    <li className="rounded-2xl border border-border-soft px-4 py-3">
-                      <strong className="text-text-primary">
-                        1. Создание заявки
-                      </strong>{' '}
-                      — комиссия удерживается сразу и попадает на баланс.
-                    </li>
-                    <li className="rounded-2xl border border-border-soft px-4 py-3">
-                      <strong className="text-text-primary">2. Отмена</strong> —
-                      при возврате средств комиссия автоматически списывается с
-                      баланса платформы.
-                    </li>
-                    <li className="rounded-2xl border border-border-soft px-4 py-3">
-                      <strong className="text-text-primary">
-                        3. Мониторинг
-                      </strong>{' '}
-                      — данные синхронизируются между всеми открытыми админскими
-                      окнами без перезагрузки.
-                    </li>
-                  </ul>
-                  <div className="rounded-2xl border border-brand-indigo/30 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
-                    Если баланс изменивается неожиданно, проверьте историю
-                    заявок: каждая операция оставляет запись в Transaction.
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
         </div>
       </main>
 
@@ -2677,9 +1986,7 @@ export const MarketplacePage: React.FC = () => {
                       {tab.badge}
                     </span>
                   ) : null}
-                  <span className="whitespace-normal leading-tight">
-                    {tab.label}
-                  </span>
+                  <span className="whitespace-normal leading-tight">{tab.label}</span>
                 </button>
               );
             })}
@@ -2714,10 +2021,7 @@ export const MarketplacePage: React.FC = () => {
         onSubmit={handleCreateRequest}
         isSubmitting={isSubmittingRequest}
       />
-      <TopUpRequestModal
-        isOpen={isTopUpModalOpen}
-        onClose={() => setIsTopUpModalOpen(false)}
-      />
+      <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
     </div>
   );
 };

@@ -12,6 +12,4 @@ export { marketplaceApi } from './services';
 export { serviceRequestsApi } from './service-requests';
 export { paymentsApi } from './payments';
 export { notificationsApi } from './notifications';
-export { eventsApi } from './events';
-export type * from './events';
 
