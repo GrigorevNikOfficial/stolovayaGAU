@@ -1960,7 +1960,8 @@ export const MarketplacePage: React.FC = () => {
               ) : (
                 <Button
                   variant="primary"
-                  size="sm"
+                  size="md"
+                  className="px-7 text-base font-semibold shadow-brand-card hover:-translate-y-0.5"
                   onClick={() => handleNavigate('/login')}
                 >
                   Войти

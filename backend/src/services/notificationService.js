@@ -1,13 +1,24 @@
-import { Notification } from '../models/Notification.js';
-import { NotificationPreference } from '../models/NotificationPreference.js';
-import { emitNotificationCreated, emitNotificationUpdated } from './socketService.js';
+import { Notification } from "../models/Notification.js";
+import { NotificationPreference } from "../models/NotificationPreference.js";
+import {
+  emitNotificationCreated,
+  emitNotificationUpdated,
+} from "./socketService.js";
 
-const DEFAULT_CATEGORIES = ['orders', 'marketplace', 'system', 'chat', 'balance', 'topups', 'events'];
-const DEFAULT_SEVERITY = 'info';
+const DEFAULT_CATEGORIES = [
+  "orders",
+  "marketplace",
+  "system",
+  "chat",
+  "balance",
+  "topups",
+  "events",
+];
+const DEFAULT_SEVERITY = "info";
 
 const cloneDefaultCategories = () => {
   const map = {};
-  DEFAULT_CATEGORIES.forEach(category => {
+  DEFAULT_CATEGORIES.forEach((category) => {
     map[category] = true;
   });
   return map;
@@ -18,16 +29,16 @@ const ensureMapFlag = (bucket, key, fallback = true) => {
     return fallback;
   }
 
-  if (typeof bucket.get === 'function') {
+  if (typeof bucket.get === "function") {
     const mapValue = bucket.get(key);
-    if (typeof mapValue === 'boolean') {
+    if (typeof mapValue === "boolean") {
       return mapValue;
     }
   }
 
   if (Object.prototype.hasOwnProperty.call(bucket, key)) {
     const value = bucket[key];
-    if (typeof value === 'boolean') {
+    if (typeof value === "boolean") {
       return value;
     }
   }
@@ -36,11 +47,11 @@ const ensureMapFlag = (bucket, key, fallback = true) => {
 };
 
 const timeStringToMinutes = (value) => {
-  if (!value || typeof value !== 'string') {
+  if (!value || typeof value !== "string") {
     return null;
   }
 
-  const [hours, minutes] = value.split(':').map(Number);
+  const [hours, minutes] = value.split(":").map(Number);
   if (Number.isNaN(hours) || Number.isNaN(minutes)) {
     return null;
   }
@@ -53,7 +64,8 @@ const isWithinQuietHours = (preferences) => {
     return false;
   }
 
-  const fromMinutes = timeStringToMinutes(preferences.quietHours.from) ?? 22 * 60;
+  const fromMinutes =
+    timeStringToMinutes(preferences.quietHours.from) ?? 22 * 60;
   const toMinutes = timeStringToMinutes(preferences.quietHours.to) ?? 8 * 60;
 
   const now = new Date();
@@ -91,9 +103,10 @@ const normalizeNotificationDoc = (doc) => {
     return null;
   }
 
-  const raw = typeof doc.toObject === 'function'
-    ? doc.toObject({ versionKey: false })
-    : doc;
+  const raw =
+    typeof doc.toObject === "function"
+      ? doc.toObject({ versionKey: false })
+      : doc;
 
   return {
     id: raw._id?.toString?.() ?? raw._id,
@@ -120,11 +133,33 @@ const normalizeNotificationDoc = (doc) => {
 
 export const ensureNotificationPreferences = async (userId) => {
   if (!userId) {
-    throw new Error('USER_ID_REQUIRED');
+    throw new Error("USER_ID_REQUIRED");
   }
 
   const existing = await NotificationPreference.findOne({ userId });
   if (existing) {
+    const mergedCategories = { ...cloneDefaultCategories() };
+    if (existing.categories) {
+      DEFAULT_CATEGORIES.forEach((category) => {
+        mergedCategories[category] = ensureMapFlag(
+          existing.categories,
+          category,
+          true
+        );
+      });
+    }
+
+    const hasMissingCategory = DEFAULT_CATEGORIES.some(
+      (category) =>
+        mergedCategories[category] !==
+        ensureMapFlag(existing.categories, category, true)
+    );
+
+    if (hasMissingCategory) {
+      existing.categories = mergedCategories;
+      await existing.save();
+    }
+
     return existing;
   }
 
@@ -144,7 +179,7 @@ export const updateNotificationPreferences = async (userId, updates = {}) => {
 
   if (updates.categories) {
     const sanitized = { ...cloneDefaultCategories(), ...updates.categories };
-    DEFAULT_CATEGORIES.forEach(category => {
+    DEFAULT_CATEGORIES.forEach((category) => {
       sanitized[category] = Boolean(sanitized[category]);
     });
     safeUpdates.categories = sanitized;
@@ -161,9 +196,9 @@ export const createUserNotification = async ({
   userId,
   title,
   body,
-  category = 'system',
+  category = "system",
   severity = DEFAULT_SEVERITY,
-  type = 'generic',
+  type = "generic",
   topic,
   icon,
   actionLabel,
@@ -173,10 +208,14 @@ export const createUserNotification = async ({
   expiresAt,
 }) => {
   if (!userId || !title || !body) {
-    throw new Error('INVALID_NOTIFICATION_PAYLOAD');
+    throw new Error("INVALID_NOTIFICATION_PAYLOAD");
   }
-
   const preferences = await ensureNotificationPreferences(userId);
+
+  // If the category is explicitly disabled, skip creating the notification entirely
+  if (category && !ensureMapFlag(preferences.categories, category, true)) {
+    return null;
+  }
   const muted = shouldMuteNotification(preferences, category);
 
   const notification = await Notification.create({
@@ -217,7 +256,7 @@ export const fetchNotificationFeed = async (
     query.category = category;
   }
 
-  if (unreadOnly === true || unreadOnly === 'true') {
+  if (unreadOnly === true || unreadOnly === "true") {
     query.read = false;
   }
 
@@ -234,7 +273,10 @@ export const fetchNotificationFeed = async (
   const sliced = hasMore ? items.slice(0, normalizedLimit) : items;
   const nextCursor = hasMore ? sliced[sliced.length - 1]?.createdAt : null;
 
-  const unreadCount = await Notification.countDocuments({ userId, read: false });
+  const unreadCount = await Notification.countDocuments({
+    userId,
+    read: false,
+  });
 
   return {
     items: sliced.map(normalizeNotificationDoc),
@@ -257,8 +299,11 @@ export const markNotificationsRead = async (userId, notificationIds = []) => {
   );
 
   if (result.modifiedCount > 0) {
-    const updatedNotifications = await Notification.find({ _id: { $in: notificationIds }, userId }).lean();
-    updatedNotifications.forEach(doc => {
+    const updatedNotifications = await Notification.find({
+      _id: { $in: notificationIds },
+      userId,
+    }).lean();
+    updatedNotifications.forEach((doc) => {
       emitNotificationUpdated(
         normalizeNotificationDoc(doc),
         doc.userId?.toString?.() ?? userId?.toString?.() ?? userId
@@ -276,13 +321,20 @@ export const markAllNotificationsRead = async (userId) => {
   );
 
   if (result.modifiedCount > 0) {
-    emitNotificationUpdated({ markAllRead: true }, userId?.toString?.() ?? userId);
+    emitNotificationUpdated(
+      { markAllRead: true },
+      userId?.toString?.() ?? userId
+    );
   }
 
   return { updated: result.modifiedCount };
 };
 
-export const toggleNotificationReadState = async ({ userId, notificationId, read }) => {
+export const toggleNotificationReadState = async ({
+  userId,
+  notificationId,
+  read,
+}) => {
   const update = read
     ? { read: true, readAt: new Date() }
     : { read: false, readAt: null };
@@ -304,9 +356,15 @@ export const toggleNotificationReadState = async ({ userId, notificationId, read
 };
 
 export const deleteNotification = async ({ userId, notificationId }) => {
-  const doc = await Notification.findOneAndDelete({ _id: notificationId, userId });
+  const doc = await Notification.findOneAndDelete({
+    _id: notificationId,
+    userId,
+  });
   if (doc) {
-    emitNotificationUpdated({ id: notificationId, deleted: true }, userId?.toString?.() ?? userId);
+    emitNotificationUpdated(
+      { id: notificationId, deleted: true },
+      userId?.toString?.() ?? userId
+    );
   }
   return doc;
 };

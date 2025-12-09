@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const defaultCategories = {
   orders: true,
@@ -7,6 +7,7 @@ const defaultCategories = {
   chat: true,
   balance: true,
   topups: true,
+  events: true,
 };
 
 const defaultChannels = {
@@ -23,11 +24,11 @@ const quietHoursSchema = new mongoose.Schema(
     },
     from: {
       type: String,
-      default: '22:00',
+      default: "22:00",
     },
     to: {
       type: String,
-      default: '08:00',
+      default: "08:00",
     },
   },
   { _id: false }
@@ -37,7 +38,7 @@ const notificationPreferenceSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       unique: true,
       index: true,
@@ -62,7 +63,7 @@ const notificationPreferenceSchema = new mongoose.Schema(
     },
     quietHours: {
       type: quietHoursSchema,
-      default: () => ({ enabled: false, from: '22:00', to: '08:00' }),
+      default: () => ({ enabled: false, from: "22:00", to: "08:00" }),
     },
     mutedUntil: {
       type: Date,
@@ -70,7 +71,7 @@ const notificationPreferenceSchema = new mongoose.Schema(
     },
     timezone: {
       type: String,
-      default: 'Europe/Moscow',
+      default: "Europe/Moscow",
     },
   },
   {
@@ -78,4 +79,7 @@ const notificationPreferenceSchema = new mongoose.Schema(
   }
 );
 
-export const NotificationPreference = mongoose.model('NotificationPreference', notificationPreferenceSchema);
+export const NotificationPreference = mongoose.model(
+  "NotificationPreference",
+  notificationPreferenceSchema
+);

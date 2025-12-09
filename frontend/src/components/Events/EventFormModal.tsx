@@ -2,14 +2,22 @@ import React, { useEffect, useState } from 'react';
 import Button from '../layout/Button/Button';
 import Input from '../layout/Input/Input';
 import Select from '../layout/Select/Select';
-import type { CreateEventPayload, Event } from '../../api/events';
+import type {
+  CreateEventPayload,
+  Event,
+  UpdateEventPayload,
+} from '../../api/events';
 
 interface EventFormModalProps {
   event?: Event | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: CreateEventPayload) => void;
+  onSave: (
+    data: CreateEventPayload | UpdateEventPayload
+  ) => void | Promise<void>;
 }
+
+type EventFormState = CreateEventPayload & UpdateEventPayload;
 
 export const EventFormModal: React.FC<EventFormModalProps> = ({
   event,
@@ -17,7 +25,14 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [formData, setFormData] = useState<CreateEventPayload>({
+  const toLocalInputValue = (isoString: string) => {
+    const date = new Date(isoString);
+    const tzOffset = date.getTimezoneOffset();
+    date.setMinutes(date.getMinutes() - tzOffset);
+    return date.toISOString().slice(0, 16);
+  };
+
+  const [formData, setFormData] = useState<EventFormState>({
     title: '',
     description: '',
     type: 'seminar',
@@ -38,13 +53,16 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
         title: event.title,
         description: event.description,
         type: event.type,
-        startDate: new Date(event.startDate).toISOString().slice(0, 16),
-        endDate: new Date(event.endDate).toISOString().slice(0, 16),
+        startDate: toLocalInputValue(event.startDate),
+        endDate: toLocalInputValue(event.endDate),
         location: event.location,
         capacity: event.capacity,
         requiresApproval: event.requiresApproval,
         tags: event.tags,
-        status: event.status === 'draft' || event.status === 'published' ? event.status : 'draft',
+        status:
+          event.status === 'draft' || event.status === 'published'
+            ? event.status
+            : 'draft',
       });
       setTagsInput(event.tags.join(', '));
     } else if (isOpen) {
@@ -65,21 +83,27 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   }, [event, isOpen]);
 
   const handleInputChange = (field: keyof CreateEventPayload, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.description || !formData.startDate || !formData.endDate || !formData.location) {
+    if (
+      !formData.title ||
+      !formData.description ||
+      !formData.startDate ||
+      !formData.endDate ||
+      !formData.location
+    ) {
       return; // Form validation will handle showing errors
     }
 
     // Parse tags from input
     const tags = tagsInput
       .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
 
     onSave({ ...formData, tags });
   };
@@ -109,7 +133,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               </label>
               <Input
                 value={formData.title}
-                onChange={(value) => handleInputChange('title', value)}
+                onChange={value => handleInputChange('title', value)}
                 placeholder="Введите название события"
                 required
               />
@@ -121,7 +145,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={e => handleInputChange('description', e.target.value)}
                 placeholder="Введите описание события"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={4}
@@ -135,7 +159,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               </label>
               <Select
                 value={formData.type}
-                onChange={(value) => handleInputChange('type', value as any)}
+                onChange={value => handleInputChange('type', value as any)}
                 options={[
                   { value: 'seminar', label: 'Семинар' },
                   { value: 'hackathon', label: 'Хакатон' },
@@ -155,7 +179,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               <input
                 type="datetime-local"
                 value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                onChange={e => handleInputChange('startDate', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -168,7 +192,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               <input
                 type="datetime-local"
                 value={formData.endDate}
-                onChange={(e) => handleInputChange('endDate', e.target.value)}
+                onChange={e => handleInputChange('endDate', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -180,7 +204,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               </label>
               <Input
                 value={formData.location}
-                onChange={(value) => handleInputChange('location', value)}
+                onChange={value => handleInputChange('location', value)}
                 placeholder="Введите место проведения"
                 required
               />
@@ -193,7 +217,9 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               <Input
                 type="number"
                 value={formData.capacity.toString()}
-                onChange={(value) => handleInputChange('capacity', parseInt(value) || 0)}
+                onChange={value =>
+                  handleInputChange('capacity', parseInt(value) || 0)
+                }
                 min="1"
                 required
               />
@@ -205,7 +231,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               </label>
               <Input
                 value={tagsInput}
-                onChange={(value) => setTagsInput(value)}
+                onChange={value => setTagsInput(value)}
                 placeholder="программирование, хакатон, студенты"
               />
             </div>
@@ -216,11 +242,21 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
               </label>
               <Select
                 value={formData.status || 'draft'}
-                onChange={(value) => handleInputChange('status', value as any)}
-                options={[
-                  { value: 'draft', label: 'Черновик' },
-                  { value: 'published', label: 'Опубликовать' },
-                ]}
+                onChange={value => handleInputChange('status', value as any)}
+                options={
+                  event
+                    ? [
+                        { value: 'draft', label: 'Черновик' },
+                        { value: 'published', label: 'Опубликовано' },
+                        { value: 'ongoing', label: 'Идет' },
+                        { value: 'completed', label: 'Завершено' },
+                        { value: 'cancelled', label: 'Отменено' },
+                      ]
+                    : [
+                        { value: 'draft', label: 'Черновик' },
+                        { value: 'published', label: 'Опубликовать' },
+                      ]
+                }
               />
             </div>
 
@@ -229,10 +265,15 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
                 type="checkbox"
                 id="requiresApproval"
                 checked={formData.requiresApproval}
-                onChange={(e) => handleInputChange('requiresApproval', e.target.checked)}
+                onChange={e =>
+                  handleInputChange('requiresApproval', e.target.checked)
+                }
                 className="mr-2"
               />
-              <label htmlFor="requiresApproval" className="text-sm text-gray-700">
+              <label
+                htmlFor="requiresApproval"
+                className="text-sm text-gray-700"
+              >
                 Требуется подтверждение регистрации
               </label>
             </div>

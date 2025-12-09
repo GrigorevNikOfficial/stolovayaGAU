@@ -45,7 +45,8 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'cafeteria',
     title: 'Еда',
-    description: 'Полноценный сервис заказа блюд и отслеживания доставки в реальном времени.',
+    description:
+      'Полноценный сервис заказа блюд и отслеживания доставки в реальном времени.',
     status: 'live',
     Icon: ForkKnifeIcon,
     iconAccent: 'from-emerald-400 to-emerald-600',
@@ -54,7 +55,8 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'chat',
     title: 'Чат',
-    description: 'Создавайте тематические каналы, общайтесь с друзьями и коллегами и получайте быстрый доступ к поддержке.',
+    description:
+      'Создавайте тематические каналы, общайтесь с друзьями и коллегами и получайте быстрый доступ к поддержке.',
     status: 'testing',
     Icon: ChatBubblesIcon,
     iconAccent: 'from-sky-400 via-sky-500 to-sky-600',
@@ -63,7 +65,8 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'notifications',
     title: 'Уведомления',
-    description: 'Централизованные уведомления по заказам, поставкам, внутренним объявлениям и важным новостям.',
+    description:
+      'Централизованные уведомления по заказам, поставкам, внутренним объявлениям и важным новостям.',
     status: 'testing',
     Icon: BellIcon,
     iconAccent: 'from-amber-300 to-amber-500',
@@ -72,7 +75,8 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'marketplace',
     title: 'Услуги',
-    description: 'Локальные сервисы услуг студентов: аренда, обучение, консультации и другие предложения.',
+    description:
+      'Локальные сервисы услуг студентов: аренда, обучение, консультации и другие предложения.',
     status: 'testing',
     Icon: ToolkitIcon,
     iconAccent: 'from-rose-300 to-rose-500',
@@ -81,7 +85,8 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'events',
     title: 'Афиша событий',
-    description: 'Календарь мероприятий университета, напоминания и быстрые регистрации на встречи и активности.',
+    description:
+      'Календарь мероприятий университета, напоминания и быстрые регистрации на встречи и активности.',
     status: 'testing',
     Icon: CalendarIcon,
     iconAccent: 'from-purple-300 to-purple-500',
@@ -90,7 +95,8 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'achievements',
     title: 'Достижения',
-    description: 'Собирайте бейджи активности за заявки, услуги и участие в сервисах.',
+    description:
+      'Собирайте бейджи активности за заявки, услуги и участие в сервисах.',
     status: 'testing',
     Icon: BellIcon,
     iconAccent: 'from-emerald-300 to-emerald-500',
@@ -99,7 +105,8 @@ const services: ServiceCardDescriptor[] = [
   {
     id: 'work',
     title: 'Работа',
-    description: 'Раздел подбора подработок и задач от университета, скоро включим доступ.',
+    description:
+      'Раздел подбора подработок и задач от университета, скоро включим доступ.',
     status: 'soon',
     Icon: ToolkitIcon,
     iconAccent: 'from-slate-300 to-slate-500',
@@ -123,10 +130,15 @@ type NavigationPageProps = {
   onLogout: () => void;
 };
 
-export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigate, onLogout }) => {
+export const NavigationPage: FC<NavigationPageProps> = ({
+  currentUser,
+  onNavigate,
+  onLogout,
+}) => {
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
-    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() ||
+      'U'
     : '';
   const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
 
@@ -158,20 +170,33 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                     onClick={() => onNavigate('/profile')}
                     className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
                   >
-                    <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
+                    <span
+                      className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
+                      title={balanceLabel}
+                    >
                       {balanceLabel}
                     </span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">
+                      +
+                    </span>
                   </button>
                   <NotificationBell />
                   <button
                     type="button"
                     onClick={() => onNavigate('/profile')}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_10px_24px_rgba(16,185,129,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(16,185,129,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                     aria-label="Профиль"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
-                      {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-base font-semibold text-white">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="Аватар"
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        userInitials
+                      )}
                     </span>
                   </button>
                   <button
@@ -197,11 +222,10 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
                 </>
               ) : (
                 <>
-                  <NotificationBell onRequireAuth={() => onNavigate('/login')} />
                   <Button
                     variant="primary"
                     size="md"
-                    className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
+                    className="px-7 text-base font-semibold shadow-brand-card hover:-translate-y-0.5"
                     onClick={() => onNavigate('/login')}
                   >
                     Войти
@@ -216,119 +240,148 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
           <div className="grid gap-10 xl:grid-cols-[1.3fr_0.7fr]">
-          <section className="space-y-6">
-            <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <h2 className="mt-3 text-3xl font-semibold text-brand-indigo">Выберите сервис для продолжения</h2>
-                  <p className="mt-4 text-text-secondary">
-                    Новые сервисы появятся в вашей панели без повторной регистрации.
-                  </p>
-                </div>
-                {currentUser && (
-                  <div className="rounded-2xl border border-border-subtle bg-surface-muted px-5 py-4 text-sm text-text-secondary">
-                    <p className="text-brand-indigo mb-1 font-semibold">
-                      {currentUser.first_name} {currentUser.last_name}
+            <section className="space-y-6">
+              <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <h2 className="mt-3 text-3xl font-semibold text-brand-indigo">
+                      Выберите сервис для продолжения
+                    </h2>
+                    <p className="mt-4 text-text-secondary">
+                      Новые сервисы появятся в вашей панели без повторной
+                      регистрации.
                     </p>
-                    <p className="text-text-muted">Статус аккаунта синхронизирован</p>
                   </div>
+                  {currentUser && (
+                    <div className="rounded-2xl border border-border-subtle bg-surface-muted px-5 py-4 text-sm text-text-secondary">
+                      <p className="text-brand-indigo mb-1 font-semibold">
+                        {currentUser.first_name} {currentUser.last_name}
+                      </p>
+                      <p className="text-text-muted">
+                        Статус аккаунта синхронизирован
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                {services
+                  .filter(
+                    service =>
+                      !service.requiredRole ||
+                      currentUser?.role === service.requiredRole
+                  )
+                  .map(service => {
+                    const tone = statusMap[service.status];
+                    const Icon = service.Icon;
+                    const isComingSoon = service.status === 'soon';
+                    const isCardDisabled = isComingSoon;
+                    const cardCtaCopy = isComingSoon
+                      ? 'Готовим к запуску'
+                      : 'Перейти в сервис';
+
+                    const handleServiceClick = () => {
+                      if (isComingSoon) {
+                        return;
+                      }
+                      onNavigate(service.path);
+                    };
+                    return (
+                      <button
+                        key={service.id}
+                        type="button"
+                        disabled={isCardDisabled}
+                        onClick={handleServiceClick}
+                        className={`group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-border-subtle bg-white p-7 sm:p-8 text-left text-text-primary shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(16,185,129,0.25)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-almond/30 ${
+                          isCardDisabled
+                            ? 'opacity-70 cursor-not-allowed'
+                            : 'cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div
+                            className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${service.iconAccent} text-white shadow-[0_18px_35px_rgba(16,185,129,0.35)]`}
+                          >
+                            <Icon
+                              className="w-6 h-6 text-white"
+                              aria-hidden="true"
+                            />
+                          </div>
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-semibold tracking-widest uppercase ${tone.tone}`}
+                          >
+                            {tone.label}
+                          </span>
+                        </div>
+                        <h3 className="mt-5 text-2xl font-semibold text-brand-indigo">
+                          {service.title}
+                        </h3>
+                        <p className="mt-2 text-sm text-text-secondary leading-relaxed line-clamp-3">
+                          {service.description}
+                        </p>
+                        <div className="mt-auto pt-6 flex items-center gap-2 text-sm font-semibold text-brand-indigo">
+                          {cardCtaCopy}
+                          {!isCardDisabled && (
+                            <span className="transition-transform duration-300 group-hover:translate-x-1 text-brand-almond">
+                              →
+                            </span>
+                          )}
+                        </div>
+                        <div className="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-brand-almond/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      </button>
+                    );
+                  })}
+              </div>
+            </section>
+
+            <aside className="space-y-6">
+              <div className="rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card">
+                {currentUser ? (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">
+                        Вы уже авторизованы
+                      </h3>
+                      <p className="mt-3 text-sm text-text-secondary">
+                        Все данные синхронизированы.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="lg"
+                        className="w-full h-14 sm:h-16 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-500 text-white text-lg font-semibold shadow-[0_18px_40px_rgba(16,185,129,0.35)] hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(16,185,129,0.45)] focus-visible:ring-2 focus-visible:ring-emerald-300"
+                        onClick={() => onNavigate('/profile')}
+                      >
+                        Перейти в профиль
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <AuthForm variant="embedded" />
+                  </>
                 )}
               </div>
-            </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              {services
-                .filter(service => !service.requiredRole || currentUser?.role === service.requiredRole)
-                .map(service => {
-                const tone = statusMap[service.status];
-                const Icon = service.Icon;
-                const isComingSoon = service.status === 'soon';
-                const isCardDisabled = isComingSoon;
-                const cardCtaCopy = isComingSoon ? 'Готовим к запуску' : 'Перейти в сервис';
-
-                const handleServiceClick = () => {
-                  if (isComingSoon) {
-                    return;
-                  }
-                  onNavigate(service.path);
-                };
-                return (
-                  <button
-                    key={service.id}
-                    type="button"
-                    disabled={isCardDisabled}
-                    onClick={handleServiceClick}
-                    className={`group relative overflow-hidden rounded-[28px] border border-border-subtle bg-white p-6 text-left text-text-primary shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(16,185,129,0.25)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-almond/30 ${
-                      isCardDisabled ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${service.iconAccent} text-white shadow-[0_18px_35px_rgba(16,185,129,0.35)]`}>
-                        <Icon className="w-6 h-6 text-white" aria-hidden="true" />
-                      </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold tracking-widest uppercase ${tone.tone}`}>
-                        {tone.label}
-                      </span>
-                    </div>
-                    <h3 className="mt-5 text-2xl font-semibold text-brand-indigo">{service.title}</h3>
-                    <p className="mt-2 text-sm text-text-secondary leading-relaxed line-clamp-3">
-                      {service.description}
-                    </p>
-                    <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-brand-indigo">
-                      {cardCtaCopy}
-                      {!isCardDisabled && (
-                        <span className="transition-transform duration-300 group-hover:translate-x-1 text-brand-almond">→</span>
-                      )}
-                    </div>
-                    <div className="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-brand-almond/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <aside className="space-y-6">
-            <div className="rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card">
-              {currentUser ? (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="mt-2 text-2xl font-semibold text-brand-indigo">Вы уже авторизованы</h3>
-                    <p className="mt-3 text-sm text-text-secondary">
-                       Все данные синхронизированы.
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="lg"
-                      className="w-full shadow-brand-card hover:-translate-y-0.5"
-                      onClick={() => onNavigate('/profile')}
-                    >
-                      Перейти в профиль
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <AuthForm variant="embedded" />
-                </>
-              )}
-            </div>
-
-            <div className="rounded-3xl border border-border-subtle bg-white p-6 shadow-brand-card">
-              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">дорожная карта</p>
-              <h3 className="mt-2 text-xl font-semibold text-brand-indigo">Новые сервисы появятся поэтапно</h3>
-              <ul className="mt-4 space-y-3 text-sm text-text-secondary">
-                <li>• Q1 2025 — запуск уведомлений и мобильных пушей</li>
-                <li>• Q2 2025 — общий чат и поддержка</li>
-                <li>• Q3 2025 — маркетплейс услуг сотрудников</li>
-                <li>• Q4 2025 — афиша мероприятий</li>
-              </ul>
-            </div>
-          </aside>
-        </div>
+              <div className="rounded-3xl border border-border-subtle bg-white p-6 shadow-brand-card">
+                <p className="text-xs uppercase tracking-[0.4em] text-text-muted">
+                  дорожная карта
+                </p>
+                <h3 className="mt-2 text-xl font-semibold text-brand-indigo">
+                  Новые сервисы появятся поэтапно
+                </h3>
+                <ul className="mt-4 space-y-3 text-sm text-text-secondary">
+                  <li>• Q1 2025 — запуск уведомлений и мобильных пушей</li>
+                  <li>• Q2 2025 — общий чат и поддержка</li>
+                  <li>• Q3 2025 — маркетплейс услуг сотрудников</li>
+                  <li>• Q4 2025 — афиша мероприятий</li>
+                </ul>
+              </div>
+            </aside>
+          </div>
         </div>
       </main>
     </div>

@@ -365,6 +365,7 @@ export const HomePage: React.FC = () => {
                   onClick={() => handleNavigation('/login')}
                   variant="primary"
                   size="md"
+                  className="px-7 text-base font-semibold shadow-brand-card hover:-translate-y-0.5"
                 >
                   Войти
                 </Button>

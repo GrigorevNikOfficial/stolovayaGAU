@@ -1,22 +1,29 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
 const eventParticipantSchema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     registeredAt: { type: Date, default: Date.now },
     checkedIn: { type: Boolean, default: false },
     checkedInAt: { type: Date, default: null },
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
+    },
+    approvalAt: { type: Date, default: null },
+    approvalBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },
   { _id: false }
 );
 
 const eventReviewSchema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
-    comment: { type: String, trim: true, default: '' },
+    comment: { type: String, trim: true, default: "" },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false }
@@ -37,7 +44,14 @@ const eventSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ['seminar', 'hackathon', 'party', 'workshop', 'conference', 'other'],
+      enum: [
+        "seminar",
+        "hackathon",
+        "party",
+        "workshop",
+        "conference",
+        "other",
+      ],
       required: true,
       index: true,
     },
@@ -57,7 +71,7 @@ const eventSchema = new Schema(
     },
     organizer: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
@@ -82,8 +96,8 @@ const eventSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'published', 'ongoing', 'completed', 'cancelled'],
-      default: 'draft',
+      enum: ["draft", "published", "ongoing", "completed", "cancelled"],
+      default: "draft",
       index: true,
     },
     qrCode: {
@@ -93,7 +107,7 @@ const eventSchema = new Schema(
     },
     chatId: {
       type: Schema.Types.ObjectId,
-      ref: 'Chat',
+      ref: "Chat",
       default: null,
     },
     image: {
@@ -111,6 +125,16 @@ const eventSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    reminders: {
+      fifteenMinutesSent: {
+        type: Boolean,
+        default: false,
+      },
+      startSent: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   {
     timestamps: true,
@@ -118,20 +142,21 @@ const eventSchema = new Schema(
 );
 
 // Indexes for search and filtering
-eventSchema.index({ title: 'text', description: 'text' });
+eventSchema.index({ title: "text", description: "text" });
 eventSchema.index({ startDate: 1, type: 1 });
 eventSchema.index({ status: 1, startDate: 1 });
-eventSchema.index({ 'participants.user': 1 });
+eventSchema.index({ "participants.user": 1 });
 
 // Methods
 eventSchema.methods.isUserRegistered = function (userId) {
-  return this.participants.some(
-    (p) => p.user.toString() === userId.toString()
-  );
+  return this.participants.some((p) => p.user.toString() === userId.toString());
 };
 
 eventSchema.methods.hasCapacity = function () {
-  return this.participants.length < this.capacity;
+  const activeParticipants = this.participants.filter(
+    (p) => p.approvalStatus !== "rejected"
+  );
+  return activeParticipants.length < this.capacity;
 };
 
 eventSchema.methods.updateAverageRating = function () {
@@ -149,4 +174,4 @@ eventSchema.statics.generateQRCode = function () {
   return `EVT-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 };
 
-export const Event = mongoose.model('Event', eventSchema);
+export const Event = mongoose.model("Event", eventSchema);

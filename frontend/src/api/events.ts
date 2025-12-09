@@ -10,10 +10,14 @@ export interface EventParticipant {
       key: string;
       url: string;
     };
+    phone?: string;
   };
   registeredAt: string;
   checkedIn: boolean;
   checkedInAt?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvalAt?: string | null;
+  approvalBy?: string | null;
 }
 
 export interface EventReview {
@@ -57,7 +61,7 @@ export interface Event {
   averageRating: number;
   reviewCount: number;
   status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
-  qrCode: string;
+  userApprovalStatus?: 'pending' | 'approved' | 'rejected' | null;
   chatId: string | null;
   image?: {
     key: string;
@@ -66,6 +70,7 @@ export interface Event {
   requiresApproval: boolean;
   createdAt: string;
   updatedAt: string;
+  isRegistered?: boolean;
 }
 
 export interface EventsResponse {
@@ -94,7 +99,13 @@ export interface CreateEventPayload {
 export interface UpdateEventPayload {
   title?: string;
   description?: string;
-  type?: 'seminar' | 'hackathon' | 'party' | 'workshop' | 'conference' | 'other';
+  type?:
+    | 'seminar'
+    | 'hackathon'
+    | 'party'
+    | 'workshop'
+    | 'conference'
+    | 'other';
   startDate?: string;
   endDate?: string;
   location?: string;
@@ -118,11 +129,16 @@ export interface EventFilters {
 
 export const eventsApi = {
   async createEvent(payload: CreateEventPayload) {
-    return httpClient.post<{ message: string; event: Event }>('/events', payload);
+    return httpClient.post<{ message: string; event: Event }>(
+      '/events',
+      payload
+    );
   },
 
   async getEvents(filters?: EventFilters) {
-    return httpClient.get<EventsResponse>('/events', { params: filters as any });
+    return httpClient.get<EventsResponse>('/events', {
+      params: filters as any,
+    });
   },
 
   async getEventById(eventId: string) {
@@ -130,7 +146,10 @@ export const eventsApi = {
   },
 
   async updateEvent(eventId: string, payload: UpdateEventPayload) {
-    return httpClient.put<{ message: string; event: Event }>(`/events/${eventId}`, payload);
+    return httpClient.put<{ message: string; event: Event }>(
+      `/events/${eventId}`,
+      payload
+    );
   },
 
   async deleteEvent(eventId: string) {
@@ -138,22 +157,44 @@ export const eventsApi = {
   },
 
   async registerForEvent(eventId: string) {
-    return httpClient.post<{ message: string; event: Event }>(`/events/${eventId}/register`);
+    return httpClient.post<{ message: string; event: Event }>(
+      `/events/${eventId}/register`
+    );
   },
 
   async unregisterFromEvent(eventId: string) {
-    return httpClient.post<{ message: string; event: Event }>(`/events/${eventId}/unregister`);
+    return httpClient.post<{ message: string; event: Event }>(
+      `/events/${eventId}/unregister`
+    );
+  },
+
+  async approveParticipant(eventId: string, participantId: string) {
+    return httpClient.post<{ message: string; event: Event }>(
+      `/events/${eventId}/participants/${participantId}/approve`
+    );
+  },
+
+  async rejectParticipant(eventId: string, participantId: string) {
+    return httpClient.post<{ message: string; event: Event }>(
+      `/events/${eventId}/participants/${participantId}/reject`
+    );
   },
 
   async checkInToEvent(qrCode: string) {
-    return httpClient.post<{ message: string; event: Event }>('/events/checkin', { qrCode });
+    return httpClient.post<{ message: string; event: Event }>(
+      '/events/checkin',
+      { qrCode }
+    );
   },
 
   async addEventReview(eventId: string, rating: number, comment?: string) {
-    return httpClient.post<{ message: string; event: Event }>(`/events/${eventId}/review`, {
-      rating,
-      comment,
-    });
+    return httpClient.post<{ message: string; event: Event }>(
+      `/events/${eventId}/review`,
+      {
+        rating,
+        comment,
+      }
+    );
   },
 
   async getMyEvents(params?: { status?: string; upcoming?: boolean }) {

@@ -5,6 +5,7 @@ import {
   type Event,
   type EventFilters,
   type CreateEventPayload,
+  type UpdateEventPayload,
 } from '../../api/events';
 import Button from '../../components/layout/Button/Button';
 import Footer from '../../components/layout/Footer/Footer';
@@ -36,9 +37,35 @@ const EventsPage: React.FC = () => {
   });
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const isAdmin = currentUser?.role === 'admin';
+  const sortEventsByPhase = (list: Event[]) => {
+    const now = new Date().getTime();
+    const phase = (event: Event) => {
+      const start = new Date(event.startDate).getTime();
+      const end = new Date(event.endDate).getTime();
+      if (start <= now && end >= now) return 0; // ongoing
+      if (start > now) return 1; // upcoming
+      return 2; // past
+    };
+
+    return [...list].sort((a, b) => {
+      const pa = phase(a);
+      const pb = phase(b);
+      if (pa !== pb) return pa - pb;
+
+      const aStart = new Date(a.startDate).getTime();
+      const bStart = new Date(b.startDate).getTime();
+
+      if (pa === 0 || pa === 1) {
+        return aStart - bStart; // earlier first
+      }
+      return bStart - aStart; // past: recent first
+    });
+  };
   const viewTabs = useMemo(() => {
     const tabs: { id: ViewMode; label: string }[] = [
       { id: 'all', label: 'Все события' },
@@ -54,14 +81,14 @@ const EventsPage: React.FC = () => {
     setLoading(true);
     try {
       if (viewMode === 'my') {
-        const response = await eventsApi.getMyEvents({ upcoming: true });
-        setEvents(response.events);
+        const response = await eventsApi.getMyEvents();
+        setEvents(sortEventsByPhase(response.events));
       } else if (viewMode === 'organized') {
         const response = await eventsApi.getOrganizedEvents();
-        setEvents(response.events);
+        setEvents(sortEventsByPhase(response.events));
       } else {
         const response = await eventsApi.getEvents(filters);
-        setEvents(response.events);
+        setEvents(sortEventsByPhase(response.events));
       }
     } catch (error) {
       showToast({ message: 'Ошибка при загрузке событий', type: 'error' });
@@ -164,7 +191,10 @@ const EventsPage: React.FC = () => {
   };
 
   const isUserRegistered = (event: Event) => {
-    return event.participants.some(p => p.user._id === currentUser?._id);
+    if (typeof event.isRegistered === 'boolean') {
+      return event.isRegistered;
+    }
+    return event.participants.some(p => p.user?._id === currentUser?._id);
   };
 
   const canRegister = (event: Event) => {
@@ -189,6 +219,36 @@ const EventsPage: React.FC = () => {
     }
   };
 
+  const canEditEvent = (event: Event) => {
+    if (!currentUser) return false;
+    return isAdmin || event.organizer?._id === currentUser._id;
+  };
+
+  const handleOpenEdit = (event: Event) => {
+    // Close details modal if it is open to avoid stacked overlays
+    setShowDetailsModal(false);
+    setSelectedEvent(event);
+    setEditingEvent(event);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateEvent = async (data: UpdateEventPayload) => {
+    if (!editingEvent) return;
+    try {
+      await eventsApi.updateEvent(editingEvent._id, data);
+      showToast({ message: 'Событие обновлено', type: 'success' });
+      setShowEditModal(false);
+      setEditingEvent(null);
+      loadEvents();
+    } catch (error: any) {
+      showToast({
+        message:
+          error?.response?.data?.error || 'Ошибка при обновлении события',
+        type: 'error',
+      });
+    }
+  };
+
   const handleAddReview = async (rating: number, comment: string) => {
     if (!selectedEvent) return;
     try {
@@ -205,9 +265,64 @@ const EventsPage: React.FC = () => {
     }
   };
 
+  const handleApproveParticipant = async (participantId: string) => {
+    if (!selectedEvent) return;
+    try {
+      await eventsApi.approveParticipant(selectedEvent._id, participantId);
+      showToast({ message: 'Участник подтвержден', type: 'success' });
+      const response = await eventsApi.getEventById(selectedEvent._id);
+      setSelectedEvent(response.event);
+      loadEvents();
+    } catch (error: any) {
+      showToast({
+        message:
+          error?.response?.data?.error || 'Ошибка при подтверждении участника',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleRejectParticipant = async (participantId: string) => {
+    if (!selectedEvent) return;
+    try {
+      await eventsApi.rejectParticipant(selectedEvent._id, participantId);
+      showToast({ message: 'Участник отклонен', type: 'success' });
+      const response = await eventsApi.getEventById(selectedEvent._id);
+      setSelectedEvent(response.event);
+      loadEvents();
+    } catch (error: any) {
+      showToast({
+        message:
+          error?.response?.data?.error || 'Ошибка при отклонении участника',
+        type: 'error',
+      });
+    }
+  };
+
   const handleNavigate = (path: string) => {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    const confirmed = window.confirm(
+      'Удалить событие? Это действие нельзя отменить.'
+    );
+    if (!confirmed) return;
+    try {
+      await eventsApi.deleteEvent(eventId);
+      showToast({ message: 'Событие удалено', type: 'success' });
+      setShowDetailsModal(false);
+      setSelectedEvent(null);
+      setShowEditModal(false);
+      setEditingEvent(null);
+      loadEvents();
+    } catch (error: any) {
+      showToast({
+        message: error?.response?.data?.error || 'Ошибка при удалении события',
+        type: 'error',
+      });
+    }
   };
 
   const renderHeaderTabs = (className = '') => (
@@ -403,21 +518,32 @@ const EventsPage: React.FC = () => {
             {events.map(event => (
               <div
                 key={event._id}
-                className="group relative overflow-hidden rounded-[28px] border border-border-subtle bg-white p-6 shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(16,185,129,0.22)]"
+                className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-border-subtle bg-white p-6 shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(16,185,129,0.22)]"
               >
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-4 gap-3">
                   <div>
-                    <h3 className="text-xl font-semibold text-text-primary mb-2">
+                    <h3 className="text-xl font-semibold text-text-primary mb-2 break-words">
                       {event.title}
                     </h3>
                     <p className="text-sm text-text-muted">
                       {getEventTypeLabel(event.type)}
                     </p>
                   </div>
-                  {getStatusBadge(event.status)}
+                  <div className="flex flex-col items-end gap-2 text-right">
+                    {getStatusBadge(event.status)}
+                    {canEditEvent(event) && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(event)}
+                        className="self-end rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                      >
+                        Редактировать
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <p className="text-text-secondary mb-4 line-clamp-3 leading-relaxed">
+                <p className="text-text-secondary mb-4 line-clamp-3 leading-relaxed break-words">
                   {event.description}
                 </p>
 
@@ -443,31 +569,35 @@ const EventsPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col space-y-2">
-                  <button
+                <div className="mt-auto flex flex-col space-y-2">
+                  <Button
                     onClick={() => {
                       setSelectedEvent(event);
                       setShowDetailsModal(true);
                     }}
-                    className="w-full px-4 py-2 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl font-semibold shadow-[0_18px_35px_rgba(16,185,129,0.35)] transition-all duration-200 hover:-translate-y-0.5"
+                    className="w-full justify-center shadow-brand-card hover:-translate-y-0.5"
+                    size="md"
                   >
                     Подробнее
-                  </button>
+                  </Button>
                   {canRegister(event) && (
-                    <button
+                    <Button
                       onClick={() => handleRegister(event._id)}
-                      className="w-full px-4 py-2 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl font-semibold shadow-[0_18px_35px_rgba(16,185,129,0.35)] transition-all duration-200 hover:-translate-y-0.5"
+                      className="w-full justify-center shadow-brand-card hover:-translate-y-0.5"
+                      size="md"
                     >
                       Регистрация
-                    </button>
+                    </Button>
                   )}
                   {isUserRegistered(event) && (
-                    <button
+                    <Button
                       onClick={() => handleUnregister(event._id)}
-                      className="w-full px-4 py-2 bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl font-semibold shadow-[0_18px_35px_rgba(244,63,94,0.35)] transition-all duration-200 hover:-translate-y-0.5"
+                      variant="secondary"
+                      className="w-full justify-center hover:-translate-y-0.5"
+                      size="md"
                     >
                       Отменить регистрацию
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -483,7 +613,17 @@ const EventsPage: React.FC = () => {
       <EventFormModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSave={handleCreateEvent}
+        onSave={data => handleCreateEvent(data as CreateEventPayload)}
+      />
+
+      <EventFormModal
+        event={editingEvent}
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingEvent(null);
+        }}
+        onSave={data => handleUpdateEvent(data as UpdateEventPayload)}
       />
 
       <EventDetailsModal
@@ -510,6 +650,27 @@ const EventsPage: React.FC = () => {
         }
         isRegistered={selectedEvent ? isUserRegistered(selectedEvent) : false}
         canRegister={selectedEvent ? canRegister(selectedEvent) : false}
+        canEdit={selectedEvent ? canEditEvent(selectedEvent) : false}
+        onEdit={
+          selectedEvent && canEditEvent(selectedEvent)
+            ? () => handleOpenEdit(selectedEvent)
+            : undefined
+        }
+        onDelete={
+          selectedEvent && canEditEvent(selectedEvent)
+            ? () => handleDeleteEvent(selectedEvent._id)
+            : undefined
+        }
+        onApproveParticipant={
+          selectedEvent && canEditEvent(selectedEvent)
+            ? participantId => handleApproveParticipant(participantId)
+            : undefined
+        }
+        onRejectParticipant={
+          selectedEvent && canEditEvent(selectedEvent)
+            ? participantId => handleRejectParticipant(participantId)
+            : undefined
+        }
       />
     </div>
   );

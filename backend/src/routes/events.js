@@ -1,5 +1,5 @@
-import express from 'express';
-import { authenticateToken, requireAdmin } from '../controllers/auth.js';
+import express from "express";
+import { authenticateToken, requireAdmin } from "../controllers/auth.js";
 import {
   createEvent,
   getEvents,
@@ -12,7 +12,9 @@ import {
   addEventReview,
   getMyEvents,
   getOrganizedEvents,
-} from '../controllers/eventController.js';
+  approveParticipant,
+  rejectParticipant,
+} from "../controllers/eventController.js";
 
 const router = express.Router();
 
@@ -20,22 +22,29 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Event CRUD
-router.post('/', createEvent);
-router.get('/', getEvents);
-router.get('/my', getMyEvents);
-router.get('/organized', getOrganizedEvents);
-router.get('/:eventId', getEventById);
-router.put('/:eventId', updateEvent);
-router.delete('/:eventId', deleteEvent);
+router.post("/", createEvent);
+router.get("/", getEvents);
+router.get("/my", getMyEvents);
+router.get("/organized", getOrganizedEvents);
+router.get("/:eventId", getEventById);
+router.put("/:eventId", updateEvent);
+router.delete("/:eventId", deleteEvent);
+
+// Approvals
+router.post(
+  "/:eventId/participants/:participantId/approve",
+  approveParticipant
+);
+router.post("/:eventId/participants/:participantId/reject", rejectParticipant);
 
 // Registration
-router.post('/:eventId/register', registerForEvent);
-router.post('/:eventId/unregister', unregisterFromEvent);
+router.post("/:eventId/register", registerForEvent);
+router.post("/:eventId/unregister", unregisterFromEvent);
 
 // Check-in
-router.post('/checkin', checkInToEvent);
+router.post("/checkin", checkInToEvent);
 
 // Reviews
-router.post('/:eventId/review', addEventReview);
+router.post("/:eventId/review", addEventReview);
 
 export { router };

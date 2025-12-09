@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import type { Event } from '../../api/events';
 import Button from '../layout/Button/Button';
 
@@ -12,6 +11,11 @@ interface EventDetailsModalProps {
   onAddReview?: (rating: number, comment: string) => void;
   isRegistered?: boolean;
   canRegister?: boolean;
+  onEdit?: () => void;
+  canEdit?: boolean;
+  onDelete?: () => void;
+  onApproveParticipant?: (participantUserId: string) => void;
+  onRejectParticipant?: (participantUserId: string) => void;
 }
 
 export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
@@ -23,6 +27,11 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   onAddReview,
   isRegistered,
   canRegister,
+  onEdit,
+  canEdit,
+  onDelete,
+  onApproveParticipant,
+  onRejectParticipant,
 }) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [rating, setRating] = useState(5);
@@ -62,13 +71,13 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl border border-gray-100 bg-white shadow-2xl">
+        <div className="p-5 sm:p-7">
           {/* Header */}
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2 break-words">
                 {event.title}
               </h2>
               <p className="text-lg text-gray-600">
@@ -149,7 +158,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
               Описание
             </h3>
-            <p className="text-gray-600 whitespace-pre-wrap">
+            <p className="text-gray-600 whitespace-pre-wrap break-words">
               {event.description}
             </p>
           </div>
@@ -171,20 +180,74 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             </div>
           )}
 
-          {/* QR Code */}
-          {isRegistered && event.qrCode && (
+          {/* Approval status for participant */}
+          {isRegistered && event.userApprovalStatus && (
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                QR-код для входа
+                Статус заявки
               </h3>
-              <p className="text-gray-600 mb-2">
-                Покажите этот код на входе для регистрации посещения
-              </p>
-              <div className="bg-gray-100 p-4 rounded flex flex-col items-center gap-3">
-                <QRCodeSVG value={event.qrCode} size={192} includeMargin />
-                <p className="text-xs text-gray-500 break-all">
-                  {event.qrCode}
-                </p>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-sm font-semibold text-gray-800">
+                {event.userApprovalStatus === 'approved'
+                  ? 'Подтверждено'
+                  : event.userApprovalStatus === 'pending'
+                    ? 'Ожидает подтверждения организатора'
+                    : 'Отклонено'}
+              </div>
+            </div>
+          )}
+
+          {/* Organizer approval tools */}
+          {canEdit && event.participants.length > 0 && (
+            <div className="mb-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Заявки участников
+                </h3>
+              </div>
+
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {event.participants.map(part => (
+                  <div
+                    key={part.user._id}
+                    className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-800">
+                        {part.user.first_name} {part.user.last_name}
+                      </span>
+                      {part.user.phone && (
+                        <span className="text-xs text-gray-600">
+                          Телефон: {part.user.phone}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-600">
+                        Статус: {part.approvalStatus || 'approved'}
+                      </span>
+                    </div>
+                    {part.approvalStatus === 'pending' && (
+                      <div className="flex gap-2">
+                        {onApproveParticipant && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => onApproveParticipant(part.user._id)}
+                          >
+                            Подтвердить
+                          </Button>
+                        )}
+                        {onRejectParticipant && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onRejectParticipant(part.user._id)}
+                          >
+                            Отклонить
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -295,26 +358,38 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           )}
 
           {/* Actions */}
-          <div className="flex space-x-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:space-x-4">
+            {canEdit && onEdit && (
+              <Button onClick={onEdit} className="flex-1" variant="secondary">
+                Редактировать
+              </Button>
+            )}
+            {canEdit && onDelete && (
+              <Button
+                onClick={onDelete}
+                className="flex-1 border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300"
+                variant="outline"
+              >
+                Удалить
+              </Button>
+            )}
             {canRegister && onRegister && (
               <Button onClick={onRegister} className="flex-1">
                 Зарегистрироваться
               </Button>
             )}
             {isRegistered && onUnregister && (
-              <button
+              <Button
                 onClick={onUnregister}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                className="flex-1"
+                variant="outline"
               >
                 Отменить регистрацию
-              </button>
+              </Button>
             )}
-            <button
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
-            >
+            <Button onClick={onClose} className="flex-1" variant="outline">
               Закрыть
-            </button>
+            </Button>
           </div>
         </div>
       </div>
