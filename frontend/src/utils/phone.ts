@@ -25,6 +25,10 @@ export const formatPhoneDisplay = (value: string): string => {
     return '';
   }
 
+  if (digits.length <= 1) {
+    return '+7';
+  }
+
   const tail = digits.slice(1);
   let formatted = '+7';
 

@@ -7,7 +7,7 @@ import { HomePage } from './pages/HomePage';
 import { NavigationPage } from './pages/NavigationPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ChatPage } from './pages/services/chat/ChatPage.tsx';
-import { EventsServicePage } from './pages/services/ServicePlaceholderPages.tsx';
+import EventsPage from './pages/services/EventsPage';
 import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
 import { AdminPanelPage } from './pages/AdminPanelPage';
 
@@ -150,7 +150,7 @@ function App() {
     }
 
     if (currentPath === '/services/events') {
-      return <EventsServicePage />;
+      return renderProtectedPage(<EventsPage />);
     }
 
     if (currentPath === '/admin') {

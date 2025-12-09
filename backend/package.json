@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false app.ts",
     "build": "tsc --project tsconfig.json",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "create-admin": "node scripts/createAdminUser.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.927.0",
@@ -20,8 +21,11 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
     "@types/node": "^24.10.0",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.2",
