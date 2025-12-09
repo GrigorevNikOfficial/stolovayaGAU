@@ -13,10 +13,7 @@ import type {
   NotificationPreferences,
 } from '../../types/notification';
 
-const CATEGORY_LABELS: Record<
-  NotificationCategory,
-  { title: string; description: string; emoji: string }
-> = {
+const CATEGORY_LABELS: Record<NotificationCategory, { title: string; description: string; emoji: string }> = {
   orders: {
     title: 'Заказы столовой',
     description: 'Готовность блюд, задержки и статусы доставки',
@@ -47,17 +44,9 @@ const CATEGORY_LABELS: Record<
     description: 'Статусы запросов на увеличение лимитов',
     emoji: '📥',
   },
-  events: {
-    title: 'События',
-    description: 'Напоминания о старте и обновления афиши',
-    emoji: '🎫',
-  },
 };
 
-const CHANNEL_LABELS: Record<
-  keyof NotificationPreferences['channels'],
-  { title: string; description: string; status: 'live' | 'soon' }
-> = {
+const CHANNEL_LABELS: Record<keyof NotificationPreferences['channels'], { title: string; description: string; status: 'live' | 'soon' }> = {
   inApp: {
     title: 'Колокольчик и центр',
     description: 'Показываем мгновенно в интерфейсе',
@@ -97,7 +86,6 @@ const createBasePreferences = (): NotificationPreferences => ({
     chat: true,
     balance: true,
     topups: true,
-    events: true,
   },
   channels: {
     inApp: true,
@@ -112,15 +100,10 @@ const createBasePreferences = (): NotificationPreferences => ({
     to: '08:00',
   },
   mutedUntil: null,
-  timezone:
-    typeof Intl !== 'undefined'
-      ? Intl.DateTimeFormat().resolvedOptions().timeZone
-      : 'UTC',
+  timezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC',
 });
 
-const mergeWithDefaults = (
-  incoming?: NotificationPreferences | null
-): NotificationPreferences => {
+const mergeWithDefaults = (incoming?: NotificationPreferences | null): NotificationPreferences => {
   const base = createBasePreferences();
   if (!incoming) {
     return base;
@@ -157,22 +140,22 @@ const formatTimestamp = (iso: string | null) => {
 };
 
 const NotificationSettings: React.FC = () => {
-  const { preferences, isPending, fetchPreferences, savePreferences } = useUnit(
-    {
-      preferences: $notificationPreferences,
-      isPending: $notificationPreferencesPending,
-      fetchPreferences: loadNotificationPreferences,
-      savePreferences: updateNotificationPreferences,
-    }
-  );
+  const {
+    preferences,
+    isPending,
+    fetchPreferences,
+    savePreferences,
+  } = useUnit({
+    preferences: $notificationPreferences,
+    isPending: $notificationPreferencesPending,
+    fetchPreferences: loadNotificationPreferences,
+    savePreferences: updateNotificationPreferences,
+  });
 
-  const [formState, setFormState] = React.useState<NotificationPreferences>(
-    () => createBasePreferences()
-  );
+  const [formState, setFormState] = React.useState<NotificationPreferences>(() => createBasePreferences());
   const [isDirty, setIsDirty] = React.useState(false);
   const [lastSavedAt, setLastSavedAt] = React.useState<string | null>(null);
-  const [activeSettingsTab, setActiveSettingsTab] =
-    React.useState<SettingsTab>('categories');
+  const [activeSettingsTab, setActiveSettingsTab] = React.useState<SettingsTab>('categories');
   const hasRequestedRef = React.useRef(false);
   const submittedRef = React.useRef(false);
 
@@ -205,9 +188,7 @@ const NotificationSettings: React.FC = () => {
     setIsDirty(true);
   };
 
-  const handleChannelToggle = (
-    channel: keyof NotificationPreferences['channels']
-  ) => {
+  const handleChannelToggle = (channel: keyof NotificationPreferences['channels']) => {
     if (channel !== 'inApp') {
       return;
     }
@@ -237,8 +218,8 @@ const NotificationSettings: React.FC = () => {
   const helperText = isPending
     ? 'Сохраняем обновления...'
     : lastSavedAt
-      ? `Настройки синхронизированы в ${formatTimestamp(lastSavedAt)}`
-      : 'Работаем поверх реальных событий — тестируйте сейчас.';
+    ? `Настройки синхронизированы в ${formatTimestamp(lastSavedAt)}`
+    : 'Работаем поверх реальных событий — тестируйте сейчас.';
 
   const settingsTabIndex = Math.max(
     SETTINGS_TABS.findIndex(tab => tab.id === activeSettingsTab),
@@ -250,9 +231,7 @@ const NotificationSettings: React.FC = () => {
       <section className="rounded-[32px] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 px-6 py-6 shadow-[0_25px_60px_rgba(16,185,129,0.15)]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-3xl font-semibold text-emerald-900">
-              Контроль каналов связи
-            </h2>
+            <h2 className="text-3xl font-semibold text-emerald-900">Контроль каналов связи</h2>
             <p className="mt-2 text-sm text-emerald-800/80">{helperText}</p>
             <ul className="mt-4 space-y-2 text-sm text-emerald-900/80">
               {WORKING_TRIGGERS.map(trigger => (
@@ -264,12 +243,9 @@ const NotificationSettings: React.FC = () => {
             </ul>
           </div>
           <div className="rounded-3xl border border-emerald-200 bg-white/80 px-5 py-4 text-sm text-emerald-900 shadow-inner">
-            <p className="text-sm font-semibold text-emerald-900">
-              Режим тестирования
-            </p>
+            <p className="text-sm font-semibold text-emerald-900">Режим тестирования</p>
             <p className="mt-2 text-sm leading-relaxed text-emerald-800">
-              Каналы подключаем поэтапно. Сейчас активно только отображение
-              внутри сервиса, email и push выйдут позже.
+              Каналы подключаем поэтапно. Сейчас активно только отображение внутри сервиса, email и push выйдут позже.
             </p>
           </div>
         </div>
@@ -279,9 +255,7 @@ const NotificationSettings: React.FC = () => {
             activeTab={settingsTabIndex}
             onTabChange={index => {
               const nextTab = SETTINGS_TABS[index];
-              setActiveSettingsTab(
-                (nextTab?.id as SettingsTab) ?? 'categories'
-              );
+              setActiveSettingsTab((nextTab?.id as SettingsTab) ?? 'categories');
             }}
             variant="marketplace"
             wrap={false}
@@ -289,20 +263,18 @@ const NotificationSettings: React.FC = () => {
           />
         </div>
       </section>
+
       {activeSettingsTab === 'categories' ? (
         <section className="space-y-4">
           <div />
           <div className="grid gap-4 md:grid-cols-2">
             {Object.entries(CATEGORY_LABELS).map(([category, meta]) => {
-              const isActive =
-                formState.categories[category as NotificationCategory];
+              const isActive = formState.categories[category as NotificationCategory];
               return (
                 <button
                   key={category}
                   type="button"
-                  onClick={() =>
-                    handleCategoryToggle(category as NotificationCategory)
-                  }
+                  onClick={() => handleCategoryToggle(category as NotificationCategory)}
                   className={`group flex items-start gap-4 rounded-3xl border px-5 py-4 text-left transition-all duration-200 ${
                     isActive
                       ? 'border-emerald-400 bg-white shadow-[0_20px_45px_rgba(16,185,129,0.15)]'
@@ -313,19 +285,13 @@ const NotificationSettings: React.FC = () => {
                     {meta.emoji}
                   </div>
                   <div className="flex-1">
-                    <p className="text-base font-semibold text-emerald-900">
-                      {meta.title}
-                    </p>
-                    <p className="text-sm text-emerald-800/80">
-                      {meta.description}
-                    </p>
-                    <span
-                      className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] ${
-                        isActive
-                          ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                          : 'border-emerald-100 text-emerald-500'
-                      }`}
-                    >
+                    <p className="text-base font-semibold text-emerald-900">{meta.title}</p>
+                    <p className="text-sm text-emerald-800/80">{meta.description}</p>
+                    <span className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] ${
+                      isActive
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                        : 'border-emerald-100 text-emerald-500'
+                    }`}>
                       {isActive ? 'Включено' : 'Выключено'}
                     </span>
                   </div>
@@ -338,11 +304,7 @@ const NotificationSettings: React.FC = () => {
         <section className="space-y-4">
           <div />
           <div className="grid gap-4 md:grid-cols-3">
-            {(
-              Object.keys(CHANNEL_LABELS) as Array<
-                keyof NotificationPreferences['channels']
-              >
-            ).map(channel => {
+            {(Object.keys(CHANNEL_LABELS) as Array<keyof NotificationPreferences['channels']>).map(channel => {
               const meta = CHANNEL_LABELS[channel];
               const isActive = Boolean(formState.channels[channel]);
               const isDisabled = meta.status === 'soon';
@@ -354,18 +316,12 @@ const NotificationSettings: React.FC = () => {
                       ? 'border-emerald-400 bg-white shadow-[0_18px_35px_rgba(16,185,129,0.18)]'
                       : 'border-emerald-100 bg-emerald-50/60'
                   } ${
-                    isDisabled
-                      ? 'opacity-70 cursor-not-allowed'
-                      : 'cursor-pointer hover:border-emerald-300'
+                    isDisabled ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:border-emerald-300'
                   }`}
                   onClick={() => !isDisabled && handleChannelToggle(channel)}
                 >
-                  <p className="text-base font-semibold text-emerald-900">
-                    {meta.title}
-                  </p>
-                  <p className="mt-2 flex-1 text-sm text-emerald-800/80">
-                    {meta.description}
-                  </p>
+                  <p className="text-base font-semibold text-emerald-900">{meta.title}</p>
+                  <p className="mt-2 flex-1 text-sm text-emerald-800/80">{meta.description}</p>
                   <span
                     className={`mt-4 inline-flex w-full items-center justify-center rounded-2xl border px-3 py-2 text-sm font-semibold ${
                       isActive
@@ -373,11 +329,7 @@ const NotificationSettings: React.FC = () => {
                         : 'border-emerald-200 text-emerald-600'
                     }`}
                   >
-                    {isDisabled
-                      ? 'В разработке'
-                      : isActive
-                        ? 'Включено'
-                        : 'Отключено'}
+                    {isDisabled ? 'В разработке' : isActive ? 'Включено' : 'Отключено'}
                   </span>
                   {isDisabled && (
                     <span className="absolute top-4 right-4 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-600">
@@ -410,11 +362,7 @@ const NotificationSettings: React.FC = () => {
         >
           Сбросить изменения
         </Button>
-        {isPending && (
-          <span className="text-sm text-emerald-800">
-            Синхронизируем с сервером...
-          </span>
-        )}
+        {isPending && <span className="text-sm text-emerald-800">Синхронизируем с сервером...</span>}
       </div>
     </div>
   );

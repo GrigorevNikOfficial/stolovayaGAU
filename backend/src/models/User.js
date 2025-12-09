@@ -39,7 +39,6 @@ const userSchema = new mongoose.Schema(
         "canteenManager",
         "cateenManager",
         "storeManager",
-        "eventAdmin",
       ],
       default: "user",
     },

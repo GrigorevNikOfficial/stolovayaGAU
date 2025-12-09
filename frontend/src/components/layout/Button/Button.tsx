@@ -5,7 +5,6 @@ interface ButtonProps {
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
-  form?: string;
   className?: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'icon';
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -18,7 +17,6 @@ export const Button: React.FC<ButtonProps> = ({
   onClick,
   type = 'button',
   disabled = false,
-  form,
   className = '',
   variant = 'primary',
   size = 'md',
@@ -65,7 +63,6 @@ export const Button: React.FC<ButtonProps> = ({
         type={type}
         onClick={onClick}
         disabled={disabled}
-        form={form}
         className={classes}
       >
         {avatarUrl || initials ? (
@@ -94,7 +91,6 @@ export const Button: React.FC<ButtonProps> = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      form={form}
       className={classes}
     >
       {children}

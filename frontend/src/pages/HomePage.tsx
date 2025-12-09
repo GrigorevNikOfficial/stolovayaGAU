@@ -7,7 +7,6 @@ import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
 import CartModal from '../components/Modal/CardModal.tsx';
 import { OrdersList } from '../components/Orders/OrdersList.tsx';
-import { Settings } from '../components/Settings/Settings.tsx';
 import LogoSAU from '../images/logo.jpg';
 import { $cart } from '../models/cart';
 import {
@@ -52,14 +51,6 @@ const deliveryMethodLabels: Record<string, string> = {
   delivery: 'Доставка',
 };
 
-type HomeTab = {
-  id: string;
-  label: string;
-  roles: string[];
-  icon?: React.ReactNode;
-  badge?: string;
-};
-
 export const HomePage: React.FC = () => {
   const {
     currentUser,
@@ -89,8 +80,7 @@ export const HomePage: React.FC = () => {
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
-    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() ||
-      'U'
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
     : 'U';
 
   const handleNavigation = (path: string) => {
@@ -99,8 +89,8 @@ export const HomePage: React.FC = () => {
   };
 
   // Определяем видимые табы для текущего пользователя
-  const getVisibleTabs = (user: any): HomeTab[] => {
-    const allTabs: HomeTab[] = [
+  const getVisibleTabs = (user: any) => {
+    const allTabs = [
       {
         id: 'menu',
         label: 'Меню',
@@ -125,12 +115,6 @@ export const HomePage: React.FC = () => {
           'user',
         ],
       },
-      {
-        id: 'settings',
-        label: 'Настройки',
-        icon: '⚙️',
-        roles: ['admin'],
-      },
     ];
 
     if (user) {
@@ -138,13 +122,7 @@ export const HomePage: React.FC = () => {
         id: 'profile',
         label: 'Профиль',
         icon: '👤',
-        roles: [
-          'admin',
-          'canteenManager',
-          'cateenManager',
-          'storeManager',
-          'user',
-        ],
+        roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
       });
     }
 
@@ -171,8 +149,7 @@ export const HomePage: React.FC = () => {
   }, [orders, currentUser]);
 
   const activeOrdersCount = activeOrders.length;
-  const ordersBadge =
-    activeOrdersCount > 0 ? String(Math.min(activeOrdersCount, 99)) : undefined;
+  const ordersBadge = activeOrdersCount > 0 ? String(Math.min(activeOrdersCount, 99)) : undefined;
 
   const visibleTabs = useMemo(() => {
     const tabs = getVisibleTabs(currentUser);
@@ -183,12 +160,8 @@ export const HomePage: React.FC = () => {
   }, [currentUser, ordersBadge]);
 
   const profileTabIndex = visibleTabs.findIndex(tab => tab.id === 'profile');
-  const profileTabActive =
-    profileTabIndex !== -1 && activeTab === profileTabIndex;
-  const mainTabs =
-    profileTabIndex === -1
-      ? visibleTabs
-      : visibleTabs.filter(tab => tab.id !== 'profile');
+  const profileTabActive = profileTabIndex !== -1 && activeTab === profileTabIndex;
+  const mainTabs = profileTabIndex === -1 ? visibleTabs : visibleTabs.filter(tab => tab.id !== 'profile');
   const activeMainTabIndex = mainTabs.findIndex(
     tab => tab.id === visibleTabs[activeTab]?.id
   );
@@ -258,8 +231,8 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col overflow-x-hidden">
-      {/* Шапка */}
-      <header className="fixed top-0 left-0 right-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
+        {/* Шапка */}
+        <header className="fixed top-0 left-0 right-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
         <div className="px-3 sm:px-4 lg:px-6">
           {/* Вся навигация в одной строке */}
           <div className="flex items-center justify-between py-3 sm:py-4 gap-4 min-h-[72px]">
@@ -273,7 +246,7 @@ export const HomePage: React.FC = () => {
               <img
                 src={LogoSAU}
                 alt="Логотип столовой ГАУ"
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
+                className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
               />
               <div className="leading-tight">
                 <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
@@ -282,9 +255,7 @@ export const HomePage: React.FC = () => {
                     MI
                   </span>
                 </h1>
-                <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">
-                  еда
-                </p>
+                <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">еда</p>
               </div>
             </button>
 
@@ -311,9 +282,7 @@ export const HomePage: React.FC = () => {
                     className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 text-emerald-700 font-semibold text-sm shadow-inner transition-colors hover:bg-emerald-100"
                     aria-label="Пополнить баланс"
                   >
-                    <span className="text-base sm:text-lg">
-                      {formatBalance(currentUser.balance)}
-                    </span>
+                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
                     <span className="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-500 text-white text-base leading-none shadow-sm">
                       +
                     </span>
@@ -365,7 +334,7 @@ export const HomePage: React.FC = () => {
                   onClick={() => handleNavigation('/login')}
                   variant="primary"
                   size="md"
-                  className="px-7 text-base font-semibold shadow-brand-card hover:-translate-y-0.5"
+                  className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
                 >
                   Войти
                 </Button>
@@ -373,10 +342,10 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </header>
+        </header>
 
-      {/* Основной контент */}
-      <div className="flex-1 px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-[88px] sm:mt-[96px] lg:mt-[104px]">
+        {/* Основной контент */}
+        <div className="flex-1 px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-[88px] sm:mt-[96px] lg:mt-[104px]">
         <div className="h-full">
           {/* Мобильное меню */}
           <div
@@ -412,8 +381,7 @@ export const HomePage: React.FC = () => {
                             режим гостя
                           </p>
                           <p className="text-base text-text-secondary">
-                            Вы можете изучить меню, но оформление заказа
-                            доступно только после входа.
+                            Вы можете изучить меню, но оформление заказа доступно только после входа.
                           </p>
                         </div>
                         <Button
@@ -431,9 +399,7 @@ export const HomePage: React.FC = () => {
                       <div className="mb-5">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.35em] text-text-muted">
-                              активные заказы
-                            </p>
+                            <p className="text-xs uppercase tracking-[0.35em] text-text-muted">активные заказы</p>
                             <p className="text-sm text-text-secondary">
                               {activeOrdersCount === 1
                                 ? 'Есть заказ в работе'
@@ -451,17 +417,13 @@ export const HomePage: React.FC = () => {
                         <div className="-mx-1 px-1 overflow-x-auto pb-2">
                           <div className="flex gap-3 min-w-full">
                             {activeOrders.map(order => {
-                              const statusMeta = orderStatusMeta[
-                                order.status
-                              ] ?? {
+                              const statusMeta = orderStatusMeta[order.status] ?? {
                                 label: order.status,
                                 color: 'text-text-secondary',
                               };
                               const readyTime = formatTime(order.ready_time);
                               const createdTime = formatTime(order.created_at);
-                              const methodLabel =
-                                deliveryMethodLabels[order.delivery_method] ??
-                                'Заказ';
+                              const methodLabel = deliveryMethodLabels[order.delivery_method] ?? 'Заказ';
                               return (
                                 <button
                                   key={order._id}
@@ -473,9 +435,7 @@ export const HomePage: React.FC = () => {
                                     <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
                                       #{order.order_number}
                                     </span>
-                                    <span
-                                      className={`text-xs font-semibold ${statusMeta.color}`}
-                                    >
+                                    <span className={`text-xs font-semibold ${statusMeta.color}`}>
                                       {statusMeta.label}
                                     </span>
                                   </div>
@@ -486,15 +446,12 @@ export const HomePage: React.FC = () => {
                                     {readyTime
                                       ? `Готово к ${readyTime}`
                                       : createdTime
-                                        ? `Создан в ${createdTime}`
-                                        : 'Обрабатываем заказ'}
+                                      ? `Создан в ${createdTime}`
+                                      : 'Обрабатываем заказ'}
                                   </p>
                                   <div className="flex items-center justify-between">
                                     <span className="text-lg font-bold text-brand-indigo">
-                                      {order.total_amount.toLocaleString(
-                                        'ru-RU'
-                                      )}{' '}
-                                      ₽
+                                      {order.total_amount.toLocaleString('ru-RU')} ₽
                                     </span>
                                     <span className="text-xs text-text-muted">
                                       Tap, чтобы открыть
@@ -518,9 +475,7 @@ export const HomePage: React.FC = () => {
                 <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                   <div className="flex items-center justify-between ">
                     <div className="lg:hidden flex items-center gap-2 text-sm text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
-                      {visibleTabs[activeTab]?.icon ? (
-                        <span>{visibleTabs[activeTab].icon}</span>
-                      ) : null}
+                      <span>{visibleTabs[activeTab].icon}</span>
                       <span>{visibleTabs[activeTab].label}</span>
                     </div>
                   </div>
@@ -534,9 +489,7 @@ export const HomePage: React.FC = () => {
                 <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
                   <div className="flex items-center justify-between">
                     <div className="lg:hidden flex items-center gap-2 text-sm text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
-                      {visibleTabs[activeTab]?.icon ? (
-                        <span>{visibleTabs[activeTab].icon}</span>
-                      ) : null}
+                      <span>{visibleTabs[activeTab].icon}</span>
                       <span>{visibleTabs[activeTab].label}</span>
                     </div>
                   </div>
@@ -546,21 +499,6 @@ export const HomePage: React.FC = () => {
                 </div>
               )}
 
-              {visibleTabs[activeTab].id === 'settings' && (
-                <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
-                      {visibleTabs[activeTab]?.icon ? (
-                        <span>{visibleTabs[activeTab].icon}</span>
-                      ) : null}
-                      <span>{visibleTabs[activeTab].label}</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <Settings />
-                  </div>
-                </div>
-              )}
 
               {visibleTabs[activeTab].id === 'profile' && currentUser && (
                 <div className="h-full">
@@ -635,9 +573,7 @@ export const HomePage: React.FC = () => {
                     {ordersBadge}
                   </span>
                 )}
-                {tab.icon ? (
-                  <span className="text-lg mb-1">{tab.icon}</span>
-                ) : null}
+                <span className="text-lg mb-1">{tab.icon}</span>
                 <span className="text-xs font-medium truncate max-w-[60px]">
                   {tab.label}
                 </span>

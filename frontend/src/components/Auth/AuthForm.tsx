@@ -2,11 +2,11 @@
 import { useUnit } from 'effector-react';
 import React, { useMemo, useState } from 'react';
 import {
-  $authError,
-  $currentUser,
-  $isLoading,
-  login,
-  register,
+    $authError,
+    $currentUser,
+    $isLoading,
+    login,
+    register,
 } from '../../models/users';
 import { normalizePhoneDigits, phoneToApiFormat } from '../../utils/phone';
 import Button from '../layout/Button/Button.tsx';
@@ -82,10 +82,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
     const preparedPhone = phoneToApiFormat(formData.phone);
 
     if (!preparedPhone) {
-      setFormErrors(prev => ({
-        ...prev,
-        phone: 'Введите номер в формате +7 (999) 123 45-67',
-      }));
+      setFormErrors(prev => ({ ...prev, phone: 'Введите номер в формате +7 (999) 123 45-67' }));
       return;
     }
 
@@ -163,23 +160,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
   const successContent = (
     <div className="text-center bg-white border border-border-soft rounded-3xl shadow-brand-card p-10 w-full">
       <div className="w-20 h-20 bg-brand-seashell border border-brand-indigo/30 rounded-3xl flex items-center justify-center mx-auto mb-6 text-brand-indigo">
-        <svg
-          className="w-10 h-10"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M5 13l4 4L19 7"
-          />
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-3xl font-bold text-text-primary mb-3">
-        Успешная авторизация
-      </h2>
+      <h2 className="text-3xl font-bold text-text-primary mb-3">Успешная авторизация</h2>
       <p className="text-text-secondary mb-8">
         Добро пожаловать,
         <span className="font-semibold text-text-primary">
@@ -188,20 +173,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
         </span>
       </p>
       <div className="space-y-3">
-        <Button
-          onClick={() => (window.location.href = '/')}
-          variant="primary"
-          size="lg"
-          className="w-full"
-        >
+        <Button onClick={() => (window.location.href = '/')} variant="primary" size="lg" className="w-full">
           Перейти на главную
         </Button>
-        <Button
-          onClick={() => window.location.reload()}
-          variant="outline"
-          size="md"
-          className="w-full"
-        >
+        <Button onClick={() => window.location.reload()} variant="outline" size="md" className="w-full">
           Остаться на странице
         </Button>
       </div>
@@ -221,15 +196,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
   }
 
   const formCard = (
-    <div className="bg-white/98 rounded-[32px] p-6 sm:p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] ring-1 ring-emerald-50/70 backdrop-blur">
+    <div className="bg-white border border-border-soft rounded-3xl p-6 sm:p-8 shadow-brand-card backdrop-blur-lg">
       <div className="mb-8 text-center space-y-3">
         <p className="text-sm uppercase tracking-[0.3em] text-text-muted">
           {isLogin ? 'Вход' : 'Регистрация'}
         </p>
         <h1 className="text-3xl font-bold text-text-primary">
-          {isLogin
-            ? 'Рады видеть вас снова'
-            : 'Добро пожаловать в столовую ГАУ'}
+          {isLogin ? 'Рады видеть вас снова' : 'Добро пожаловать в столовую ГАУ'}
         </h1>
         <p className="text-text-secondary">
           {isLogin
@@ -252,16 +225,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
                 type="text"
                 placeholder="Имя"
                 value={formData.firstName}
-                onChange={value =>
-                  setFormData({ ...formData, firstName: value })
-                }
+                onChange={value => setFormData({ ...formData, firstName: value })}
                 className={formErrors.firstName ? 'border-red-500/70' : ''}
               />
-              {formErrors.firstName && (
-                <p className="text-red-300 text-xs mt-2">
-                  {formErrors.firstName}
-                </p>
-              )}
+              {formErrors.firstName && <p className="text-red-300 text-xs mt-2">{formErrors.firstName}</p>}
             </div>
 
             <div>
@@ -269,16 +236,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
                 type="text"
                 placeholder="Фамилия"
                 value={formData.lastName}
-                onChange={value =>
-                  setFormData({ ...formData, lastName: value })
-                }
+                onChange={value => setFormData({ ...formData, lastName: value })}
                 className={formErrors.lastName ? 'border-red-500/70' : ''}
               />
-              {formErrors.lastName && (
-                <p className="text-red-300 text-xs mt-2">
-                  {formErrors.lastName}
-                </p>
-              )}
+              {formErrors.lastName && <p className="text-red-300 text-xs mt-2">{formErrors.lastName}</p>}
             </div>
 
             <div>
@@ -289,9 +250,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
                 onChange={value => setFormData({ ...formData, email: value })}
                 className={formErrors.email ? 'border-red-500/70' : ''}
               />
-              {formErrors.email && (
-                <p className="text-red-300 text-xs mt-2">{formErrors.email}</p>
-              )}
+              {formErrors.email && <p className="text-red-300 text-xs mt-2">{formErrors.email}</p>}
             </div>
           </div>
         )}
@@ -303,11 +262,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
               placeholder="Телефон (+7 (999) 123 45-67)"
               value={formData.phone}
               onChange={value => setFormData({ ...formData, phone: value })}
+              onFocus={() => {
+                if (!formData.phone) {
+                  setFormData({ ...formData, phone: '+7' });
+                }
+              }}
               className={formErrors.phone ? 'border-red-500/70' : ''}
             />
-            {formErrors.phone && (
-              <p className="text-red-300 text-xs mt-2">{formErrors.phone}</p>
-            )}
+            {formErrors.phone && <p className="text-red-300 text-xs mt-2">{formErrors.phone}</p>}
           </div>
 
           <div>
@@ -321,9 +283,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
               onIconClick={() => setShowPassword(prev => !prev)}
               iconAriaLabel={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
             />
-            {formErrors.password && (
-              <p className="text-red-300 text-xs mt-2">{formErrors.password}</p>
-            )}
+            {formErrors.password && <p className="text-red-300 text-xs mt-2">{formErrors.password}</p>}
           </div>
 
           {!isLogin && (
@@ -332,34 +292,20 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Подтвердите пароль"
                 value={formData.confirmPassword}
-                onChange={value =>
-                  setFormData({ ...formData, confirmPassword: value })
-                }
-                className={
-                  formErrors.confirmPassword ? 'border-red-500/70' : ''
-                }
+                onChange={value => setFormData({ ...formData, confirmPassword: value })}
+                className={formErrors.confirmPassword ? 'border-red-500/70' : ''}
                 icon={showConfirmPassword ? eyeIcon : eyeOffIcon}
                 onIconClick={() => setShowConfirmPassword(prev => !prev)}
-                iconAriaLabel={
-                  showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'
-                }
+                iconAriaLabel={showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'}
               />
               {formErrors.confirmPassword && (
-                <p className="text-red-300 text-xs mt-2">
-                  {formErrors.confirmPassword}
-                </p>
+                <p className="text-red-300 text-xs mt-2">{formErrors.confirmPassword}</p>
               )}
             </div>
           )}
         </div>
 
-        <Button
-          type="submit"
-          disabled={isLoading}
-          variant="primary"
-          size="lg"
-          className="w-full"
-        >
+        <Button type="submit" disabled={isLoading} variant="primary" size="lg" className="w-full">
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -378,9 +324,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
             onClick={switchMode}
             className="text-brand-indigo hover:text-brand-grape font-semibold transition-colors"
           >
-            {isLogin
-              ? 'Нет аккаунта? Зарегистрироваться'
-              : 'Уже есть аккаунт? Войти'}
+            {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
           </button>
         </div>
       </form>
@@ -392,7 +336,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
   }
 
   return (
-    <div className="text-text-primary flex justify-center py-10 px-4 sm:px-6 bg-surface-base">
+    <div className="min-h-screen text-text-primary flex items-center justify-center py-10 px-4 sm:px-6">
       <div className="w-full max-w-xl">{formCard}</div>
     </div>
   );

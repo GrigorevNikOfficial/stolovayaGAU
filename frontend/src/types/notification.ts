@@ -1,11 +1,4 @@
-export type NotificationCategory =
-  | 'orders'
-  | 'marketplace'
-  | 'system'
-  | 'chat'
-  | 'balance'
-  | 'topups'
-  | 'events';
+export type NotificationCategory = 'orders' | 'marketplace' | 'system' | 'chat' | 'balance' | 'topups';
 export type NotificationSeverity = 'info' | 'success' | 'warning' | 'danger';
 
 export type NotificationItem = {
@@ -60,9 +53,7 @@ export type NotificationSummary = {
   latest?: NotificationItem | null;
 };
 
-export type UpdateNotificationPreferencesPayload = Partial<
-  Omit<NotificationPreferences, 'categories' | 'channels'>
-> & {
+export type UpdateNotificationPreferencesPayload = Partial<Omit<NotificationPreferences, 'categories' | 'channels'>> & {
   categories?: Partial<Record<NotificationCategory, boolean>>;
   channels?: Partial<Record<'inApp' | 'email' | 'push', boolean>>;
 };
