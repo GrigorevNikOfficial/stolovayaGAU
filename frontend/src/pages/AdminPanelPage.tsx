@@ -430,7 +430,7 @@ export const AdminPanelPage: React.FC = () => {
     const result = addServiceTagToStorage(tagDraft);
     if (!result.success) {
       if (result.reason === 'exists') {
-        showToast({ message: 'Такой тег уже есть в подсказках', type: 'info' });
+        showToast({ message: 'Такой тег уже есть в подсказках', type: 'error' });
       } else {
         showToast({ message: 'Введите название тега', type: 'error' });
       }
