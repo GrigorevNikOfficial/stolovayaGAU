@@ -2,28 +2,20 @@ import { useUnit } from 'effector-react';
 import React from 'react';
 import { marketplaceApi } from '../../api/services';
 import { serviceRequestsApi } from '../../api/service-requests';
+import { uploadsApi, type MarketplaceUploadResponse } from '../../api/uploads';
 import Button from '../../components/layout/Button/Button';
 import Input from '../../components/layout/Input/Input';
 import Select from '../../components/layout/Select/Select';
 import TopUpRequestModal from '../../components/Modal/TopUpRequestModal';
-import {
-  BookIcon,
-  CheckIcon,
-  EyeIcon,
-  LeafIcon,
-  LaptopIcon,
-  PenIcon,
-  PieChartIcon,
-  SparklesIcon,
-  TargetIcon,
-  ToolkitIcon,
-} from '../../components/icons/ServiceIcons.tsx';
+import { CheckIcon, EyeIcon, LeafIcon } from '../../components/icons/ServiceIcons.tsx';
 import NotificationBell from '../../components/Notifications/NotificationBell.tsx';
 import { showToast } from '../../components/layout/Toast/stores/toastStore';
 import LogoSAU from '../../images/logo.jpg';
-import { $currentUser, logout } from '../../models/users';
+import { $currentUser, getMeFx, logout } from '../../models/users';
 import { onSocketEvent } from '../../lib/socket';
 import { formatBalance } from '../../utils/formatBalance';
+import { isAuthPath, markAuthRedirect } from '../../utils/authRedirect';
+import { getStoredServiceTags, SERVICE_TAG_STORAGE_KEY } from '../../utils/serviceTags';
 import type {
   MarketplaceListingMode,
   ServiceListing,
@@ -46,13 +38,18 @@ type FiltersState = {
   mode: MarketplaceListingMode;
 };
 
-type CreateServiceFormValues = {
+type UploadedAttachment = MarketplaceUploadResponse;
+
+type CreateServiceFormFields = {
   title: string;
   description: string;
-  category: string;
   pricingType: ServiceListing['pricingType'];
   price: string;
   tagsInput: string;
+};
+
+type CreateServiceFormValues = CreateServiceFormFields & {
+  attachments: UploadedAttachment[];
 };
 
 type RequestStatusAction = UpdateServiceRequestStatusPayload['status'];
@@ -68,6 +65,8 @@ const DEFAULT_FILTERS: FiltersState = {
   page: 1,
   mode: 'request',
 };
+
+const MAX_MARKETPLACE_ATTACHMENTS = 5;
 
 const priceFormatter = new Intl.NumberFormat('ru-RU', {
   style: 'currency',
@@ -140,6 +139,23 @@ const sanitizeSocketRequest = (payload?: SocketRequestPayload | null): ServiceRe
   } as ServiceRequest;
 };
 
+const collectTagsFromListings = (list: ServiceListing[]): string[] => {
+  const deduped = new Map<string, string>();
+  list.forEach(service => {
+    (service.tags ?? []).forEach(tag => {
+      const trimmed = tag.trim();
+      if (!trimmed) {
+        return;
+      }
+      const key = trimmed.toLowerCase();
+      if (!deduped.has(key)) {
+        deduped.set(key, trimmed);
+      }
+    });
+  });
+  return Array.from(deduped.values());
+};
+
 const mapFiltersToQuery = (filters: FiltersState): ServiceListQuery => {
   const query: ServiceListQuery = {
     page: filters.page,
@@ -209,12 +225,12 @@ const MARKETPLACE_TABS: MarketplaceTab[] = [
   },
   {
     id: 'manage',
-    label: 'Мои объявления',
+    label: 'Создать',
     roles: ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
   },
   {
     id: 'requests',
-    label: 'Заявки',
+    label: 'Уведомления',
     roles: ['user', 'admin', 'canteenManager', 'cateenManager', 'storeManager'],
   },
 ];
@@ -262,15 +278,126 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   );
 };
 
-const CATEGORY_OPTIONS = [
-  { label: 'Все категории', value: '' },
-  { label: 'Обучение и наставничество', value: 'education' },
-  { label: 'IT и цифровые сервисы', value: 'it' },
-  { label: 'Дизайн и медиа', value: 'design' },
-  { label: 'Организация мероприятий', value: 'events' },
-  { label: 'Бытовые услуги', value: 'lifestyle' },
-  { label: 'Консалтинг и аналитика', value: 'consulting' },
-];
+const DEFAULT_CATEGORY_VALUE = 'general';
+
+const formatFileSize = (bytes?: number) => {
+  if (!bytes || Number.isNaN(bytes)) {
+    return '';
+  }
+  if (bytes < 1024) {
+    return `${bytes.toFixed(0)} Б`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} КБ`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+};
+
+const resolveAttachmentName = (source: string, fallback: string) => {
+  if (!source) {
+    return fallback;
+  }
+
+  try {
+    const url = new URL(source);
+    const raw = url.pathname.split('/').pop() || fallback;
+    const clean = raw.split('?')[0];
+    const decoded = decodeURIComponent(clean);
+    return decoded || fallback;
+  } catch {
+    const plain = source.split('/').pop() || fallback;
+    try {
+      return decodeURIComponent(plain.split('?')[0] || fallback);
+    } catch {
+      return plain || fallback;
+    }
+  }
+};
+
+type AttachmentFieldProps = {
+  label: string;
+  description: string;
+  attachments: UploadedAttachment[];
+  isUploading: boolean;
+  onSelectFiles: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveAttachment: (key: string) => void;
+  maxAttachments?: number;
+};
+
+const AttachmentField: React.FC<AttachmentFieldProps> = ({
+  label,
+  description,
+  attachments,
+  isUploading,
+  onSelectFiles,
+  onRemoveAttachment,
+  maxAttachments = MAX_MARKETPLACE_ATTACHMENTS,
+}) => {
+  const isLimitReached = attachments.length >= maxAttachments;
+  const buttonLabel = isUploading
+    ? 'Загружаем...'
+    : isLimitReached
+    ? 'Лимит файлов достигнут'
+    : 'Прикрепить файлы';
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold text-text-primary">{label}</p>
+        <p className="text-xs text-text-secondary">{description}</p>
+      </div>
+      <label
+        className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-border-soft px-4 py-3 text-sm font-semibold transition-colors ${
+          isLimitReached
+            ? 'cursor-not-allowed bg-surface-muted/60 text-text-secondary'
+            : 'bg-surface-muted text-brand-indigo hover:border-brand-indigo'
+        } ${isUploading ? 'animate-pulse' : ''}`}
+      >
+        <input
+          type="file"
+          className="hidden"
+          multiple
+          onChange={onSelectFiles}
+          disabled={isUploading || isLimitReached}
+        />
+        {buttonLabel}
+      </label>
+      {attachments.length > 0 ? (
+        <ul className="space-y-2 text-sm text-text-secondary">
+          {attachments.map(attachment => (
+            <li
+              key={attachment.key}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border-soft bg-white px-4 py-2"
+            >
+              <div className="flex flex-col">
+                <a
+                  href={attachment.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-indigo hover:underline"
+                >
+                  {attachment.name || attachment.key}
+                </a>
+                {attachment.size ? (
+                  <span className="text-xs text-text-muted">{formatFileSize(attachment.size)}</span>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => onRemoveAttachment(attachment.key)}
+                className="text-xs font-semibold text-text-secondary hover:text-brand-indigo"
+              >
+                Удалить
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-text-secondary">Форматы: PDF, PNG, JPG, DOCX. До {maxAttachments} файлов.</p>
+      )}
+    </div>
+  );
+};
 
 const PRICING_OPTIONS = [
   { label: 'Любой формат оплаты', value: '' },
@@ -300,33 +427,44 @@ const MODE_PRIMARY_ACTION: Record<MarketplaceListingMode, string> = {
   offer: 'Заказать услугу',
 };
 
-const CategoryIcon: React.FC<{ category: string }> = ({ category }) => {
-  const iconClass = 'w-5 h-5';
-  if (category === 'education') {
-    return <BookIcon className={iconClass} aria-hidden="true" />;
-  }
-  if (category === 'it') {
-    return <LaptopIcon className={iconClass} aria-hidden="true" />;
-  }
-  if (category === 'design') {
-    return <PenIcon className={iconClass} aria-hidden="true" />;
-  }
-  if (category === 'events') {
-    return <TargetIcon className={iconClass} aria-hidden="true" />;
-  }
-  if (category === 'lifestyle') {
-    return <SparklesIcon className={iconClass} aria-hidden="true" />;
-  }
-  if (category === 'consulting') {
-    return <PieChartIcon className={iconClass} aria-hidden="true" />;
-  }
-  return <ToolkitIcon className={iconClass} aria-hidden="true" />;
-};
+const DEFAULT_SERVICE_TAGS = [
+  'дизайн',
+  'фотография',
+  'монтаж видео',
+  'копирайтинг',
+  'перевод',
+  'репетиторство',
+  'frontend',
+  'backend',
+  'презентации',
+  'smm',
+  'таргет',
+  'аналитика данных',
+  'excel',
+  'python',
+  'figma',
+  'иллюстрация',
+  '3d-моделирование',
+  'черчение',
+  'курсовая',
+  'контрольная',
+  'event',
+  'маркетинг',
+  'crm',
+  'юридическая помощь',
+  'финансы',
+  'логистика',
+  'ремонт техники',
+  'доставка',
+  'автосервис',
+  'фандрайзинг',
+  'психология',
+];
 
-const createInitialServiceFormValues = (): CreateServiceFormValues => ({
+
+const createInitialServiceFormFields = (): CreateServiceFormFields => ({
   title: '',
   description: '',
-  category: '',
   pricingType: 'fixed',
   price: '',
   tagsInput: '',
@@ -338,25 +476,107 @@ const CreateServiceModal: React.FC<{
   onSubmit: (payload: CreateServiceFormValues) => void | Promise<void>;
   isSubmitting: boolean;
   mode: MarketplaceListingMode;
-}> = ({ isOpen, onClose, onSubmit, isSubmitting, mode }) => {
-  const [formState, setFormState] = React.useState<CreateServiceFormValues>(() => createInitialServiceFormValues());
+  availableTags: string[];
+}> = ({ isOpen, onClose, onSubmit, isSubmitting, mode, availableTags = [] }) => {
+  const [formState, setFormState] = React.useState<CreateServiceFormFields>(() => createInitialServiceFormFields());
+  const [attachments, setAttachments] = React.useState<UploadedAttachment[]>([]);
+  const [isUploadingAttachment, setIsUploadingAttachment] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
-      setFormState(createInitialServiceFormValues());
+      setFormState(createInitialServiceFormFields());
+      setAttachments([]);
     }
   }, [isOpen]);
 
-  const updateField = (field: keyof CreateServiceFormValues, value: string) => {
+  const updateField = (field: keyof CreateServiceFormFields, value: string) => {
     setFormState(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSubmit(formState);
+    onSubmit({
+      ...formState,
+      attachments,
+    });
   };
 
-  const categoryOptions = CATEGORY_OPTIONS.filter(option => option.value);
+  const handleAttachmentsSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const filesList = event.target.files;
+    if (!filesList?.length) {
+      return;
+    }
+
+    const availableSlots = MAX_MARKETPLACE_ATTACHMENTS - attachments.length;
+    if (availableSlots <= 0) {
+      showToast({ message: `Можно прикрепить до ${MAX_MARKETPLACE_ATTACHMENTS} файлов`, type: 'error' });
+      event.target.value = '';
+      return;
+    }
+
+    const filesToUpload = Array.from(filesList).slice(0, availableSlots);
+    setIsUploadingAttachment(true);
+    try {
+      const uploaded: UploadedAttachment[] = [];
+      for (const file of filesToUpload) {
+        const result = await uploadsApi.uploadMarketplaceAttachment(file);
+        uploaded.push(result);
+      }
+      setAttachments(prev => [...prev, ...uploaded]);
+    } catch (error: any) {
+      showToast({ message: error.message || 'Не удалось загрузить файл', type: 'error' });
+    } finally {
+      setIsUploadingAttachment(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleAttachmentRemove = (key: string) => {
+    setAttachments(prev => prev.filter(attachment => attachment.key !== key));
+  };
+
+  const parseTags = (rawValue: string): string[] =>
+    rawValue
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(Boolean);
+
+  const selectedTags = React.useMemo(() => parseTags(formState.tagsInput), [formState.tagsInput]);
+  const normalizedSelected = React.useMemo(
+    () => selectedTags.map(tag => tag.toLowerCase()),
+    [selectedTags]
+  );
+
+  const activeTagQuery = React.useMemo(() => {
+    const parts = formState.tagsInput.split(',');
+    return parts[parts.length - 1]?.trim().toLowerCase() ?? '';
+  }, [formState.tagsInput]);
+
+  const tagSuggestions = React.useMemo(() => {
+    const pool = availableTags || [];
+    const base = pool.filter(tag => !normalizedSelected.includes(tag.toLowerCase()));
+    if (!activeTagQuery) {
+      return base.slice(0, 10);
+    }
+    return base.filter(tag => tag.toLowerCase().includes(activeTagQuery)).slice(0, 10);
+  }, [availableTags, normalizedSelected, activeTagQuery]);
+
+  const updateTagsField = (tags: string[]) => {
+    updateField('tagsInput', tags.join(', '));
+  };
+
+  const handleAppendTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed || normalizedSelected.includes(trimmed.toLowerCase())) {
+      return;
+    }
+    updateTagsField([...selectedTags, trimmed]);
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    const next = selectedTags.filter(item => item.toLowerCase() !== tag.toLowerCase());
+    updateTagsField(next);
+  };
 
   const modeCopy =
     mode === 'request'
@@ -376,18 +596,11 @@ const CreateServiceModal: React.FC<{
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={modeCopy.title}>
       <form className="space-y-5" onSubmit={handleSubmit}>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Input
-            value={formState.title}
-            onChange={value => updateField('title', value)}
-            placeholder="Заголовок объявления"
-          />
-          <Select
-            value={formState.category}
-            onChange={value => updateField('category', value)}
-            options={categoryOptions}
-          />
-        </div>
+        <Input
+          value={formState.title}
+          onChange={value => updateField('title', value)}
+          placeholder="Заголовок объявления"
+        />
         <textarea
           value={formState.description}
           onChange={event => updateField('description', event.target.value)}
@@ -398,7 +611,7 @@ const CreateServiceModal: React.FC<{
           {modeCopy.info}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <Select
             value={formState.pricingType}
             onChange={value => updateField('pricingType', value)}
@@ -411,12 +624,61 @@ const CreateServiceModal: React.FC<{
             onChange={value => updateField('price', value)}
             placeholder="Стоимость"
           />
+        </div>
+
+        <div className="space-y-3">
           <Input
             value={formState.tagsInput}
             onChange={value => updateField('tagsInput', value)}
-            placeholder="Теги через запятую"
+            placeholder="Введите теги через запятую"
           />
+
+          {selectedTags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedTags.map(tag => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-2 rounded-full border border-border-soft bg-white px-3 py-1 text-sm text-text-primary"
+                >
+                  #{tag}
+                  <button
+                    type="button"
+                    aria-label={`Удалить тег ${tag}`}
+                    onClick={() => handleRemoveTag(tag)}
+                    className="text-text-secondary hover:text-brand-indigo"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {tagSuggestions.length > 0 && (
+            <div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {tagSuggestions.map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleAppendTag(tag)}
+                    className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100"
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+        <AttachmentField
+          label="Материалы к объявлению"
+          description="Прикрепите ТЗ, примеры работ или дополнительные инструкции (до 5 файлов)."
+          attachments={attachments}
+          isUploading={isUploadingAttachment}
+          onSelectFiles={handleAttachmentsSelect}
+          onRemoveAttachment={handleAttachmentRemove}
+        />
         <div className="flex justify-end gap-3">
           <Button variant="outline" size="md" onClick={onClose} type="button">
             Отмена
@@ -434,18 +696,21 @@ const RequestModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   service: ServiceListing | null;
-  onSubmit: (payload: { message?: string }) => void | Promise<void>;
+  onSubmit: (payload: { message?: string; files?: string[] }) => void | Promise<void>;
   isSubmitting: boolean;
 }> = ({ isOpen, onClose, service, onSubmit, isSubmitting }) => {
   const [formState, setFormState] = React.useState({
     message: '',
   });
+  const [attachments, setAttachments] = React.useState<UploadedAttachment[]>([]);
+  const [isUploadingAttachment, setIsUploadingAttachment] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
       setFormState({
         message: '',
       });
+      setAttachments([]);
     }
   }, [isOpen, service]);
 
@@ -457,7 +722,42 @@ const RequestModal: React.FC<{
     event.preventDefault();
     onSubmit({
       message: formState.message.trim() || undefined,
+      files: attachments.map(attachment => attachment.url),
     });
+  };
+
+  const handleAttachmentsSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const filesList = event.target.files;
+    if (!filesList?.length) {
+      return;
+    }
+
+    const availableSlots = MAX_MARKETPLACE_ATTACHMENTS - attachments.length;
+    if (availableSlots <= 0) {
+      showToast({ message: `Можно прикрепить до ${MAX_MARKETPLACE_ATTACHMENTS} файлов`, type: 'error' });
+      event.target.value = '';
+      return;
+    }
+
+    const filesToUpload = Array.from(filesList).slice(0, availableSlots);
+    setIsUploadingAttachment(true);
+    try {
+      const uploaded: UploadedAttachment[] = [];
+      for (const file of filesToUpload) {
+        const result = await uploadsApi.uploadMarketplaceAttachment(file);
+        uploaded.push(result);
+      }
+      setAttachments(prev => [...prev, ...uploaded]);
+    } catch (error: any) {
+      showToast({ message: error.message || 'Не удалось загрузить файл', type: 'error' });
+    } finally {
+      setIsUploadingAttachment(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleAttachmentRemove = (key: string) => {
+    setAttachments(prev => prev.filter(attachment => attachment.key !== key));
   };
 
   const requestMode: MarketplaceListingMode = service?.mode ?? 'request';
@@ -495,6 +795,14 @@ const RequestModal: React.FC<{
               <p className="mt-2 text-xs text-text-secondary">{paymentDescription}</p>
             </div>
           </div>
+          <AttachmentField
+            label="Материалы к заявке"
+            description="Прикрепите бриф, договор или другие файлы (до 5 вложений)."
+            attachments={attachments}
+            isUploading={isUploadingAttachment}
+            onSelectFiles={handleAttachmentsSelect}
+            onRemoveAttachment={handleAttachmentRemove}
+          />
           <div className="flex justify-end gap-3">
             <Button variant="outline" size="md" onClick={onClose} type="button">
               Отмена
@@ -579,6 +887,42 @@ const ServiceDetailsModal: React.FC<{
           </div>
         )}
 
+        {service.attachments?.length ? (
+          <div className="rounded-2xl border border-border-soft bg-surface-muted px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.4em] text-text-muted">материалы</p>
+            <div className="mt-3 flex flex-col gap-2">
+              {service.attachments.map((fileUrl, index) => (
+                <a
+                  key={`${fileUrl}-${index}`}
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-brand-indigo hover:underline"
+                >
+                  <span
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-indigo/10 text-brand-indigo"
+                    aria-hidden
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 5v14" />
+                      <path d="M5 12l7 7 7-7" />
+                    </svg>
+                  </span>
+                  {resolveAttachmentName(fileUrl, `Вложение ${index + 1}`)}
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="rounded-2xl border border-dashed border-border-soft bg-surface-muted/70 px-4 py-3 text-sm text-text-secondary">
           {flowHint}
         </div>
@@ -636,11 +980,7 @@ const ServiceCard: React.FC<{
       isActive ? 'border-brand-indigo shadow-brand-card' : 'border-border-soft'
     }`}
   >
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-seashell text-brand-indigo shadow-inner" aria-hidden>
-          <CategoryIcon category={service.category} />
-        </span>
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-text-primary">{service.title}</h3>
           <p className="line-clamp-2 text-sm text-text-secondary">{service.description}</p>
@@ -650,7 +990,6 @@ const ServiceCard: React.FC<{
             </p>
           ) : null}
         </div>
-      </div>
       <span className="text-base font-semibold text-brand-indigo">
         {priceFormatter.format(service.price)}
       </span>
@@ -797,6 +1136,25 @@ const RequestCard: React.FC<{
         </p>
       )}
 
+      {request.files?.length ? (
+        <div className="mt-3 rounded-2xl border border-dashed border-border-soft bg-surface-muted/70 px-4 py-3">
+          <p className="text-xs uppercase tracking-[0.35em] text-text-muted">вложения</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {request.files.map((fileUrl, index) => (
+              <a
+                key={`${fileUrl}-${index}`}
+                href={fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-border-soft px-3 py-1 text-xs font-semibold text-brand-indigo hover:border-brand-indigo hover:bg-white"
+              >
+                {resolveAttachmentName(fileUrl, `Файл ${index + 1}`)}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-4 flex flex-wrap gap-3">
         {canAccept && (
           <Button
@@ -848,9 +1206,10 @@ const RequestCard: React.FC<{
 };
 
 export const MarketplacePage: React.FC = () => {
-  const { currentUser, handleLogout } = useUnit({
+  const { currentUser, handleLogout, refreshCurrentUser } = useUnit({
     currentUser: $currentUser,
     handleLogout: logout,
+    refreshCurrentUser: getMeFx,
   });
   const currentUserId = currentUser?._id;
   const [activeTab, setActiveTab] = React.useState(0);
@@ -878,9 +1237,27 @@ export const MarketplacePage: React.FC = () => {
   const [myServicesReloadKey, setMyServicesReloadKey] = React.useState(0);
   const [requestsReloadKey, setRequestsReloadKey] = React.useState(0);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = React.useState(false);
+  const [isGuestAlertVisible, setIsGuestAlertVisible] = React.useState(true);
   const [incomingRequests, setIncomingRequests] = React.useState<ServiceRequest[]>([]);
   const [isLoadingIncomingRequests, setIsLoadingIncomingRequests] = React.useState(false);
   const [areFiltersVisible, setAreFiltersVisible] = React.useState(false);
+  const [customTags, setCustomTags] = React.useState<string[]>(() => getStoredServiceTags());
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== SERVICE_TAG_STORAGE_KEY) {
+        return;
+      }
+      setCustomTags(getStoredServiceTags());
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   const handleRealtimeRequestUpsert = React.useCallback(
     (payload: ServiceRequest | null) => {
@@ -928,6 +1305,7 @@ export const MarketplacePage: React.FC = () => {
   const safeActiveTabIndex = availableTabs.length === 0 ? 0 : Math.min(activeTab, availableTabs.length - 1);
   const activeTabId = availableTabs[safeActiveTabIndex]?.id ?? 'catalog_request';
   const isCatalogTab = activeTabId === 'catalog_request' || activeTabId === 'catalog_offer';
+  const shouldShowGuestAlert = !currentUser && isGuestAlertVisible && isCatalogTab;
 
   const openRequestsInbox = React.useCallback(() => {
     const targetIndex = availableTabs.findIndex(tab => tab.id === 'requests');
@@ -944,6 +1322,9 @@ export const MarketplacePage: React.FC = () => {
   const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
 
   const handleNavigate = React.useCallback((path: string) => {
+    if (isAuthPath(path)) {
+      markAuthRedirect('/services/marketplace');
+    }
     const nextUrl = new URL(path, window.location.origin);
     window.history.pushState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -1240,12 +1621,33 @@ export const MarketplacePage: React.FC = () => {
     return count;
   }, [filters]);
 
+  const serviceTags = React.useMemo(
+    () => collectTagsFromListings([...services, ...myServices]),
+    [services, myServices]
+  );
+
+  const availableTags = React.useMemo(() => {
+    const deduped = new Map<string, string>();
+    [...DEFAULT_SERVICE_TAGS, ...serviceTags, ...customTags].forEach(tag => {
+      const trimmed = tag.trim();
+      if (!trimmed) {
+        return;
+      }
+      const key = trimmed.toLowerCase();
+      if (!deduped.has(key)) {
+        deduped.set(key, trimmed);
+      }
+    });
+    return Array.from(deduped.values());
+  }, [serviceTags, customTags]);
+
+
   const headerTabs = React.useMemo(() => availableTabs, [availableTabs]);
   const mobileHeaderTabs = React.useMemo(() => availableTabs.filter(tab => !tab.disabled), [availableTabs]);
 
   const renderHeaderTabs = React.useCallback(
     (className = '') => (
-      <div className={`flex w-full gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`} role="tablist">
+      <div className={`flex w-full justify-center gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`} role="tablist">
         {headerTabs.map((tab, index) => {
           const isActive = safeActiveTabIndex === index;
           const isDisabled = Boolean(tab.disabled);
@@ -1336,11 +1738,11 @@ export const MarketplacePage: React.FC = () => {
 
     const title = payload.title.trim();
     const description = payload.description.trim();
-    const category = payload.category.trim();
+    const category = DEFAULT_CATEGORY_VALUE;
     const price = Number(payload.price);
 
-    if (!title || !description || !category) {
-      showToast({ message: 'Заполните заголовок, описание и выберите категорию', type: 'error' });
+    if (!title || !description) {
+      showToast({ message: 'Заполните заголовок и описание', type: 'error' });
       return;
     }
 
@@ -1348,6 +1750,10 @@ export const MarketplacePage: React.FC = () => {
       showToast({ message: 'Укажите стоимость больше 0 баллов', type: 'error' });
       return;
     }
+
+    const attachmentUrls = (payload.attachments || [])
+      .map(file => file.url)
+      .filter(Boolean);
 
     const formattedPayload = {
       title,
@@ -1357,11 +1763,13 @@ export const MarketplacePage: React.FC = () => {
       pricingType: payload.pricingType,
       tags,
       skills: tags,
+      attachments: attachmentUrls,
       mode,
     } as const;
 
     try {
       await marketplaceApi.createService(formattedPayload);
+      await refreshCurrentUser().catch(() => undefined);
       showToast({ message: 'Услуга опубликована', type: 'success' });
       refreshListings();
       refreshMyServices();
@@ -1409,6 +1817,7 @@ export const MarketplacePage: React.FC = () => {
     try {
       setPendingDeleteId(serviceId);
       await marketplaceApi.deleteService(serviceId);
+      await refreshCurrentUser().catch(() => undefined);
       showToast({ message: 'Услуга удалена', type: 'success' });
       refreshListings();
       refreshMyServices();
@@ -1421,6 +1830,7 @@ export const MarketplacePage: React.FC = () => {
 
   const handleCreateRequest = async (payload: {
     message?: string;
+    files?: string[];
   }) => {
     if (!currentUser || !requestModalService) {
       showToast({ message: 'Авторизуйтесь, чтобы отправлять заявки', type: 'error' });
@@ -1432,6 +1842,7 @@ export const MarketplacePage: React.FC = () => {
       await serviceRequestsApi.createRequest({
         serviceId: requestModalService.id,
         message: payload.message,
+        files: payload.files,
       });
       const successMessage =
         requestModalService.mode === 'offer'
@@ -1456,6 +1867,7 @@ export const MarketplacePage: React.FC = () => {
     try {
       setPendingRequestActionId(requestId);
       await serviceRequestsApi.updateRequestStatus(requestId, { status });
+      await refreshCurrentUser().catch(() => undefined);
       showToast({ message: 'Статус заявки обновлён', type: 'success' });
       refreshRequests();
     } catch (error: any) {
@@ -1555,9 +1967,32 @@ export const MarketplacePage: React.FC = () => {
               )}
             </div>
           </div>
-          
+          <div className="pb-2 lg:hidden">
+            {renderHeaderTabs()}
+          </div>
         </div>
       </header>
+
+      {shouldShowGuestAlert && (
+        <div className="fixed left-1/2 top-[6.25rem] z-30 w-full max-w-2xl -translate-x-1/2 px-4 sm:top-[6.75rem] sm:px-0">
+          <div className="relative mx-auto rounded-[28px] border border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 px-5 py-4 text-emerald-900 shadow-[0_25px_70px_rgba(16,185,129,0.25)]">
+            <button
+              type="button"
+              onClick={() => setIsGuestAlertVisible(false)}
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200/70 bg-white/80 text-emerald-800 transition hover:bg-white"
+              aria-label="Скрыть уведомление"
+            >
+              ×
+            </button>
+            <div className="text-center sm:text-left">
+              <p className="text-base font-semibold leading-snug sm:text-lg">Войдите для оформления заказа.</p>
+              <p className="mt-1 text-sm font-normal text-emerald-800">
+                Авторизуйтесь, чтобы отправлять отклики, вести переписку и завершать сделки.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="w-full flex-1 pb-28 sm:pb-32 lg:pb-0">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -1600,11 +2035,6 @@ export const MarketplacePage: React.FC = () => {
                             value={filters.search}
                             onChange={value => handleFilterChange('search', value)}
                             placeholder="Поиск по названию или тегам"
-                          />
-                          <Select
-                            value={filters.category}
-                            onChange={value => handleFilterChange('category', value)}
-                            options={CATEGORY_OPTIONS}
                           />
                           <Select
                             value={filters.pricingType}
@@ -1706,8 +2136,8 @@ export const MarketplacePage: React.FC = () => {
                               onClick={() => handleFilterChange('page', pageNumber)}
                               className={`rounded-full px-3 py-1 text-sm font-semibold transition-colors ${
                                 isActivePage
-                                  ? 'bg-brand-indigo text-white shadow-sm'
-                                  : 'border border-border-soft bg-white text-text-secondary hover:border-brand-indigo/60 hover:text-brand-indigo'
+                                  ? 'bg-emerald-500 text-white shadow-[0_12px_30px_rgba(16,185,129,0.35)]'
+                                  : 'border border-emerald-200 bg-white text-emerald-700 hover:border-emerald-400 hover:bg-emerald-50'
                               }`}
                             >
                               {pageNumber}
@@ -1773,8 +2203,8 @@ export const MarketplacePage: React.FC = () => {
 
           {activeTabId === 'manage' && (
             <div className="space-y-8">
-              <section className="grid gap-6 lg:grid-cols-[1.5fr_0.7fr]">
-                <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+              <section className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+                <div className="flex h-full flex-col rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <h3 className="text-2xl font-semibold text-brand-indigo">Управляйте своими услугами</h3>
@@ -1799,59 +2229,60 @@ export const MarketplacePage: React.FC = () => {
                     </div>
                   </div>
                   {currentUser ? (
-                    <div className="mt-5 space-y-3">
-                      {isFetchingMyServices ? (
-                        <div className="flex items-center gap-3 rounded-2xl border border-border-soft px-4 py-3 text-sm text-text-secondary">
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo"></div>
-                          Загружаем ваши объявления...
-                        </div>
-                      ) : myServices.length === 0 ? (
-                        <EmptyState
-                          title="Пока нет активных объявлений"
-                          description="Создайте первое предложение и получите первых заказчиков из университета."
-                        />
-                      ) : (
-                        myServices.slice(0, 4).map(service => (
-                          <div key={service.id} className="rounded-2xl border border-border-soft px-5 py-4">
-                            <div className="flex items-center justify-between text-sm">
-                              <div>
-                                <p className="font-medium text-text-primary">{service.title}</p>
-                                <p className="text-xs text-text-secondary">
-                                  Обновлено {new Date(service.updatedAt).toLocaleDateString('ru-RU')}
-                                </p>
-                              </div>
-                              <span
-                                className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] ${
-                                  service.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-border-soft text-text-muted'
-                                }`}
-                              >
-                                {service.isActive ? 'активно' : 'скрыто'}
-                              </span>
-                            </div>
-                            <span
-                              className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${MODE_BADGE_STYLES[service.mode]}`}
-                            >
-                              {service.mode === 'request' ? 'заказ с предоплатой' : 'предложение исполнителя'}
-                            </span>
-                            <div className="mt-3 flex flex-wrap gap-4 text-xs text-text-secondary">
-                              <span>{priceFormatter.format(service.price)}</span>
-                              <span>Просмотров {service.views}</span>
-                              <span>Заявок {service.completedOrders}</span>
-                            </div>
-                            <div className="mt-4 flex flex-wrap gap-3">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={pendingDeleteId === service.id}
-                                onClick={() => handleDeleteService(service.id)}
-                              >
-                                {pendingDeleteId === service.id ? 'Удаляем...' : 'Удалить'}
-                              </Button>
-                            </div>
+                    <>
+                      <div className="mt-5 space-y-3">
+                        {isFetchingMyServices ? (
+                          <div className="flex items-center gap-3 rounded-2xl border border-border-soft px-4 py-3 text-sm text-text-secondary">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo"></div>
+                            Загружаем ваши объявления...
                           </div>
-                        ))
-                      )}
-                    </div>
+                        ) : myServices.length === 0 ? (
+                          <EmptyState
+                            title="Пока нет активных объявлений"
+                            description="Создайте первое предложение и получите первых заказчиков из университета."
+                          />
+                        ) : (
+                          myServices.slice(0, 4).map(service => {
+                            const listingOwnerLabel = MODE_OWNER_LABEL[service.mode];
+                            return (
+                              <div key={service.id} className="rounded-2xl border border-border-soft px-5 py-4">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex flex-col gap-1">
+                                    <h3 className="text-lg font-semibold text-text-primary">{service.title}</h3>
+                                    <p className="line-clamp-2 text-sm text-text-secondary">{service.description}</p>
+                                    {service.owner ? (
+                                      <p className="mt-1 text-xs text-text-muted">
+                                        {listingOwnerLabel}: {service.owner.firstName} {service.owner.lastName}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                  <span
+                                    className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${MODE_BADGE_STYLES[service.mode]}`}
+                                  >
+                                    {service.mode === 'request' ? 'заказ с предоплатой' : 'предложение исполнителя'}
+                                  </span>
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-4 text-xs text-text-secondary">
+                                  <span>{priceFormatter.format(service.price)}</span>
+                                  <span>Просмотров {service.views}</span>
+                                  <span>Заявок {service.completedOrders}</span>
+                                </div>
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={pendingDeleteId === service.id}
+                                    onClick={() => handleDeleteService(service.id)}
+                                  >
+                                    {pendingDeleteId === service.id ? 'Удаляем...' : 'Удалить'}
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </>
                   ) : (
                     <div className="mt-4 text-sm text-text-secondary">
                       Войдите в систему, чтобы публиковать услуги и управлять заказами.
@@ -1859,21 +2290,37 @@ export const MarketplacePage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="space-y-6 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.4em] text-text-muted">Как это работает</p>
-                  <ul className="space-y-3 text-sm text-text-secondary">
-                    <li>Обновляйте описание и стоимость, чтобы чаще попадать в подборки.</li>
-                    <li>Добавляйте до пяти тегов — система выделит популярные навыки.</li>
-                    <li>Скрывайте услуги, когда заняты: клиенты увидят статус в карточке.</li>
-                    <li>Удалить объявление можно, пока по нему нет активных заявок (принятых или в работе)</li>
-                  </ul>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <DetailStat label="Активные заказы" value={activeRequestsCount} />
-                    <DetailStat label="Активные предложения" value={activeOffersCount} />
+                <div className="flex h-full flex-col gap-6 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-text-muted">Как это работает</p>
+                    <ol className="mt-4 space-y-4 text-sm text-text-secondary">
+                      <li>
+                        <strong className="text-text-primary">1. Создайте заказ или предложение.</strong> Переключитесь в режим
+                        «Нужен исполнитель» для задач или «Предлагаю услугу», если готовы выполнять сами.
+                      </li>
+                      <li>
+                        <strong className="text-text-primary">2. Ждите отклики внутри системы.</strong> Исполнители отвечают на ваши заказы,
+                        а студенты-заказчики подтверждают бронь на ваши услуги.
+                      </li>
+                      <li>
+                        <strong className="text-text-primary">3. Бюджет резервируется автоматически.</strong> Для заказов блокируем сумму у автора до
+                        завершения, для предложений — списываем с покупателя при подтверждении.
+                      </li>
+                    </ol>
+                    <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                      Комиссия платформы управляется администратором и автоматически списывается при оплате.
+                    </div>
                   </div>
-                  <p className="text-xs text-text-muted">Скрытые позиции: {hiddenMyServicesCount}</p>
-                  <div className="rounded-2xl border border-brand-indigo/20 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
-                    Создавайте разные форматы (фикс, почасово, пакеты) — клиенты видят это в фильтрах.
+                  <div className="rounded-2xl border border-border-soft bg-surface-muted/60 px-4 py-4 text-sm text-text-secondary">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <DetailStat label="Активные заказы" value={activeRequestsCount} />
+                      <DetailStat label="Активные предложения" value={activeOffersCount} />
+                    </div>
+                    <p className="mt-4 text-xs uppercase tracking-[0.35em] text-text-muted">статус портфолио</p>
+                    <p className="text-sm text-text-secondary">Скрытые позиции: {hiddenMyServicesCount}</p>
+                    <div className="mt-3 rounded-2xl border border-brand-indigo/20 bg-brand-indigo/5 px-4 py-3 text-sm text-brand-indigo">
+                      Создавайте разные форматы (фикс, почасово, пакеты) — клиенты видят это в фильтрах.
+                    </div>
                   </div>
                 </div>
               </section>
@@ -1882,11 +2329,11 @@ export const MarketplacePage: React.FC = () => {
 
           {activeTabId === 'requests' && (
             <div className="space-y-8">
-              <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+              <section className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+                <div className="flex h-full flex-col rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-2xl font-semibold text-brand-indigo">Управление заказами</h3>
+                      <h3 className="text-2xl font-semibold text-brand-indigo">Уведомления</h3>
                     </div>
                     <div className="flex gap-2 rounded-2xl border border-border-soft bg-surface-muted p-1">
                       {(['customer', 'provider'] as const).map(scope => (
@@ -1937,7 +2384,7 @@ export const MarketplacePage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="space-y-6 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+                <div className="flex h-full flex-col gap-6 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                   <p className="text-xs uppercase tracking-[0.4em] text-text-muted">как это работает</p>
                   <ol className="space-y-4 text-sm text-text-secondary">
                     <li>
@@ -1996,6 +2443,7 @@ export const MarketplacePage: React.FC = () => {
         onSubmit={handleCreateRequestListing}
         isSubmitting={isSubmittingRequestListing}
         mode="request"
+        availableTags={availableTags}
       />
       <CreateServiceModal
         isOpen={isCreateOfferModalOpen}
@@ -2003,6 +2451,7 @@ export const MarketplacePage: React.FC = () => {
         onSubmit={handleCreateOfferListing}
         isSubmitting={isSubmittingOfferListing}
         mode="offer"
+        availableTags={availableTags}
       />
       <ServiceDetailsModal
         service={selectedService}

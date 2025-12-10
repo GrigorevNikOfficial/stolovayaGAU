@@ -121,6 +121,7 @@ export interface ServiceRequestQuery {
 export interface CreateServiceRequestPayload {
   serviceId: string;
   message?: string;
+  files?: string[];
 }
 
 export interface UpdateServiceRequestStatusPayload {

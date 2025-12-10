@@ -1,9 +1,42 @@
 // components/layout/Footer/Footer.tsx
 import React from 'react';
 
-const SERVICES = ['Главная', 'Маркетплейс', 'События', 'Заказ еды', 'Расписание', 'Контакты'];
+type FooterProps = {
+  onNavigate?: (path: string) => void;
+};
 
-export const Footer: React.FC = () => {
+const FOOTER_SERVICE_LINKS = [
+  { label: 'Еда', path: '/services/cafeteria' },
+  { label: 'Услуги', path: '/services/marketplace' },
+  { label: 'Работа', path: '/services/marketplace?tab=catalog_offer' },
+  { label: 'Расписание', path: '/services/events' },
+  { label: 'Контакты', path: '/services/chat' },
+  { label: 'Личный кабинет', path: '/profile' },
+];
+
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const navigateTo = React.useCallback(
+    (path: string) => {
+      if (!path) {
+        return;
+      }
+
+      if (onNavigate) {
+        onNavigate(path);
+        return;
+      }
+
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const nextUrl = new URL(path, window.location.origin);
+      window.history.pushState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    },
+    [onNavigate]
+  );
+
   return (
     <footer className="bg-[#0c1011] text-white border-t border-white/10">
       <div className="px-4 sm:px-6 lg:px-8 py-12">
@@ -19,11 +52,17 @@ export const Footer: React.FC = () => {
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-white mb-4">Сервисы</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                {SERVICES.map(item => (
-                  <li key={item} className="hover:text-white transition-colors cursor-pointer">
-                    {item}
+              <p className="text-xs uppercase tracking-[0.35em] text-emerald-200">для студентов и бизнеса</p>
+              <ul className="mt-4 space-y-2 text-sm text-gray-400">
+                {FOOTER_SERVICE_LINKS.map(link => (
+                  <li key={link.label}>
+                    <button
+                      type="button"
+                      onClick={() => navigateTo(link.path)}
+                      className="w-full rounded-xl px-2 py-1 text-left transition-colors duration-200 hover:text-white"
+                    >
+                      {link.label}
+                    </button>
                   </li>
                 ))}
               </ul>

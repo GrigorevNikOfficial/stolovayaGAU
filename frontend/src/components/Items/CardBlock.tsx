@@ -18,6 +18,7 @@ import { $currentUser } from '../../models/users.ts';
 import Button from '../layout/Button/Button.tsx';
 import Select from '../layout/Select/Select.tsx';
 import { CartIcon, ClockIcon } from '../icons/ServiceIcons';
+import { markAuthRedirect } from '../../utils/authRedirect';
 
 const formatCurrency = (value: number) =>
   Number.isInteger(value) ? value.toString() : value.toFixed(2);
@@ -183,6 +184,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const handleSubmitOrder = async () => {
     if (!currentUser) {
       alert('Для оформления заказа необходимо войти в систему');
+      markAuthRedirect('/services/cafeteria');
       window.location.href = '/login';
       return;
     }

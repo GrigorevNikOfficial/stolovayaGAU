@@ -20,6 +20,7 @@ import { $orders, loadOrders } from '../models/orders';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal.tsx';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
 import { formatBalance } from '../utils/formatBalance';
+import { isAuthPath, markAuthRedirect } from '../utils/authRedirect';
 import { CartIcon } from '../components/icons/ServiceIcons';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 
@@ -76,6 +77,7 @@ export const HomePage: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
+  const [isGuestPromptVisible, setIsGuestPromptVisible] = useState(!currentUser);
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
@@ -83,6 +85,9 @@ export const HomePage: React.FC = () => {
     : 'U';
 
   const handleNavigation = (path: string) => {
+    if (isAuthPath(path)) {
+      markAuthRedirect('/services/cafeteria');
+    }
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
@@ -204,6 +209,12 @@ export const HomePage: React.FC = () => {
     setIsMobileMenuOpen(false);
   }, [activeTab]);
 
+  useEffect(() => {
+    if (currentUser) {
+      setIsGuestPromptVisible(false);
+    }
+  }, [currentUser]);
+
   const mobileTabs = mainTabs;
   const handleCartOrderCreated = () => {
     selectTabById('orders');
@@ -226,6 +237,8 @@ export const HomePage: React.FC = () => {
       minute: '2-digit',
     });
   };
+
+  const shouldShowGuestPrompt = !currentUser && isGuestPromptVisible;
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col overflow-x-hidden">
@@ -598,6 +611,29 @@ export const HomePage: React.FC = () => {
           )}
         </div>
       </div>
+      {shouldShowGuestPrompt && (
+        <div className="fixed left-1/2 z-40 w-full max-w-xl -translate-x-1/2 px-4 sm:px-0 top-[6.5rem] sm:top-[7rem]">
+          <div className="mx-auto rounded-[24px] border border-emerald-200/80 bg-emerald-50/95 px-4 py-3 text-emerald-900 shadow-[0_25px_60px_rgba(16,185,129,0.25)]">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 text-center sm:text-left">
+                <h2 className="text-base font-semibold leading-snug sm:text-lg">Войдите для оформления заказа.</h2>
+                <p className="mt-1 text-xs text-emerald-800 sm:text-sm">Авторизуйтесь, чтобы добавлять блюда в корзину и завершать покупки.</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Скрыть подсказку"
+                onClick={() => setIsGuestPromptVisible(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-600 transition hover:bg-emerald-100"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -116,7 +116,6 @@ export const Achievements: React.FC<AchievementsProps> = ({ stats }) => {
     <div className="space-y-6">
       <div className="rounded-3xl border border-border-soft bg-white px-5 py-6 shadow-brand-card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-3xl font-semibold text-brand-indigo">{unlockedCount} / {achievements.length}</p>
-        <p className="text-sm text-text-secondary">Прогресс обновляется автоматически после действий в маркетплейсе.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

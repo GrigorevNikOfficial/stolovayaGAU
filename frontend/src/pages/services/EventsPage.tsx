@@ -326,7 +326,7 @@ const EventsPage: React.FC = () => {
 
   const renderHeaderTabs = (className = '') => (
     <div
-      className={`flex w-full gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`}
+      className={`flex w-full justify-center gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`}
       role="tablist"
     >
       {viewTabs.map(tab => {
@@ -431,12 +431,12 @@ const EventsPage: React.FC = () => {
             </div>
           </div>
           <div className="lg:hidden pb-2">
-            {renderHeaderTabs('justify-start')}
+            {renderHeaderTabs('justify-center')}
           </div>
         </div>
       </header>
 
-      <main className={`${PAGE_CONTAINER} flex-1 py-10`}>
+      <main className={`${PAGE_CONTAINER} flex-1 py-10 pb-28 lg:pb-10`}>
         {/* Filters */}
         {viewMode === 'all' && (
           <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card mb-6">
@@ -605,6 +605,30 @@ const EventsPage: React.FC = () => {
           </div>
         )}
       </main>
+      {viewTabs.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 p-3 shadow-lg backdrop-blur z-40">
+          <div className="flex items-center justify-around">
+            {viewTabs.map(tab => {
+              const isActive = viewMode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setViewMode(tab.id)}
+                  className={`relative flex min-w-[80px] flex-col items-center gap-1 rounded-2xl border px-3 py-2 text-center text-xs font-medium transition-all duration-300 ${
+                    isActive
+                      ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
+                      : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
+                  }`}
+                >
+                  <span className="whitespace-normal leading-tight">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Modals */}
       <EventFormModal
         isOpen={showCreateModal}

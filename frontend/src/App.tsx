@@ -10,6 +10,7 @@ import { ChatPage } from './pages/services/chat/ChatPage.tsx';
 import { EventsServicePage } from './pages/services/ServicePlaceholderPages.tsx';
 import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
 import { AdminPanelPage } from './pages/AdminPanelPage';
+import { consumeAuthRedirect, isAuthPath, markAuthRedirect } from './utils/authRedirect';
 
 const PROTECTED_PATHS = new Set(['/profile', '/services/chat', '/admin']);
 
@@ -56,6 +57,10 @@ function App() {
 
   // Функция для навигации
   const navigate = React.useCallback((path: string) => {
+    if (isAuthPath(path)) {
+      markAuthRedirect();
+    }
+
     const nextUrl = new URL(path, window.location.origin);
     const relativeUrl = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
     window.history.pushState({}, '', relativeUrl);
@@ -69,12 +74,15 @@ function App() {
     const isProtected = PROTECTED_PATHS.has(currentPath);
 
     if (isAuthPage && currentUser) {
-      navigate('/');
+      const target = consumeAuthRedirect();
+      const safeTarget = target && !isAuthPath(target) ? target : '/';
+      navigate(safeTarget);
       return;
     }
 
     if (isProtected && !currentUser && !token) {
-      navigate(currentPath === '/services/chat' ? '/login' : '/');
+      markAuthRedirect(currentPath);
+      navigate('/login');
     }
   }, [currentPath, currentUser, navigate]);
 

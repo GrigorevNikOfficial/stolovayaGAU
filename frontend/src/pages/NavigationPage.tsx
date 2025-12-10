@@ -278,7 +278,7 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
         </div>
       </main>
 
-      <Footer />
+      <Footer onNavigate={onNavigate} />
 
       {isServicePromptVisible && (
         <div className="fixed left-1/2 z-40 w-full max-w-xl -translate-x-1/2 px-4 sm:px-0 top-[6.5rem] sm:top-[7rem]">

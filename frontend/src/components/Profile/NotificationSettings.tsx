@@ -71,13 +71,6 @@ const SETTINGS_TABS = [
 
 type SettingsTab = 'categories' | 'channels';
 
-const WORKING_TRIGGERS = [
-  'Статусы заказов столовой',
-  'Отклики на заявки услуг',
-  'Обновления статусов заявок',
-  'Одобрение пополнения баланса',
-];
-
 const createBasePreferences = (): NotificationPreferences => ({
   categories: {
     orders: true,
@@ -219,7 +212,7 @@ const NotificationSettings: React.FC = () => {
     ? 'Сохраняем обновления...'
     : lastSavedAt
     ? `Настройки синхронизированы в ${formatTimestamp(lastSavedAt)}`
-    : 'Работаем поверх реальных событий — тестируйте сейчас.';
+    : 'Выбирайте, какие события напоминать и какими каналами.';
 
   const settingsTabIndex = Math.max(
     SETTINGS_TABS.findIndex(tab => tab.id === activeSettingsTab),
@@ -231,16 +224,8 @@ const NotificationSettings: React.FC = () => {
       <section className="rounded-[32px] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 px-6 py-6 shadow-[0_25px_60px_rgba(16,185,129,0.15)]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-3xl font-semibold text-emerald-900">Контроль каналов связи</h2>
+            <h2 className="text-3xl font-semibold text-emerald-900">Настройки уведомлений</h2>
             <p className="mt-2 text-sm text-emerald-800/80">{helperText}</p>
-            <ul className="mt-4 space-y-2 text-sm text-emerald-900/80">
-              {WORKING_TRIGGERS.map(trigger => (
-                <li key={trigger} className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  {trigger}
-                </li>
-              ))}
-            </ul>
           </div>
           <div className="rounded-3xl border border-emerald-200 bg-white/80 px-5 py-4 text-sm text-emerald-900 shadow-inner">
             <p className="text-sm font-semibold text-emerald-900">Режим тестирования</p>

@@ -35,6 +35,7 @@ import { $currentUser, logout } from '../../../models/users';
 import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
 import LogoSAU from '../../../images/logo.jpg';
 import { formatBalance } from '../../../utils/formatBalance';
+import { isAuthPath, markAuthRedirect } from '../../../utils/authRedirect';
 import type { ChatMessage, ChatParticipant, ChatSummary, ParticipantRole } from '../../../types/chat';
 import type { Friendship } from '../../../types/friend';
 import type { UserPreview } from '../../../types/user';
@@ -886,6 +887,9 @@ export const ChatPage: React.FC = () => {
   };
 
   const handleNavigation = (path: string) => {
+    if (isAuthPath(path)) {
+      markAuthRedirect('/services/chat');
+    }
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
@@ -967,17 +971,13 @@ export const ChatPage: React.FC = () => {
                     </svg>
                   </button>
                 </>
-              ) : (
-                <Button variant="primary" size="md" onClick={() => handleNavigation('/login')}>
-                  Войти
-                </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 w-full overflow-hidden min-h-0">
+      <main className="flex-1 w-full overflow-hidden min-h-0 pb-28 lg:pb-0">
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:py-8 lg:px-8 min-h-0">
           {showMobileChatList && (
             <div className="lg:hidden rounded-3xl border border-border-soft bg-white p-5 shadow-brand-card">
@@ -1004,6 +1004,7 @@ export const ChatPage: React.FC = () => {
                   placeholder={sidebarTab === 'chats' ? 'Поиск чата' : 'Поиск друга'}
                   value={sidebarFilter}
                   onChange={setSidebarFilter}
+                  className="text-sm"
                 />
               </div>
               <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto pr-1 styled-scrollbar">
@@ -1057,6 +1058,7 @@ export const ChatPage: React.FC = () => {
                     placeholder={sidebarTab === 'chats' ? 'Поиск чата' : 'Поиск друга'}
                     value={sidebarFilter}
                     onChange={setSidebarFilter}
+                    className="text-sm"
                   />
                 </div>
                 <div className="mt-4 flex-1 w-full space-y-2 overflow-y-auto pr-1 styled-scrollbar">
@@ -1287,14 +1289,38 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
       </main>
+      {SIDEBAR_TABS.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 p-3 shadow-lg backdrop-blur z-40">
+          <div className="flex items-center justify-around">
+            {SIDEBAR_TABS.map(tab => {
+              const isActive = sidebarTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setSidebarTab(tab.id)}
+                  className={`relative flex min-w-[80px] flex-col items-center gap-1 rounded-2xl border px-3 py-2 text-center text-xs font-medium transition-all duration-300 ${
+                    isActive
+                      ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
+                      : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
+                  }`}
+                >
+                  <span className="whitespace-normal leading-tight">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
       {isCreateChatModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={closeCreateChatModal} />
-          <div className="relative z-10 w-full max-w-lg rounded-3xl border border-border-soft bg-white p-6 shadow-brand-card">
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-border-soft bg-white p-5 sm:p-6 shadow-brand-card">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-2xl font-semibold text-text-primary">Новый чат</h3>
+                <h3 className="text-xl font-semibold text-text-primary">Новый чат</h3>
               </div>
               <button
                 type="button"
@@ -1308,7 +1334,7 @@ export const ChatPage: React.FC = () => {
                 </svg>
               </button>
             </div>
-            <div className="mt-6 flex gap-3">
+            <div className="mt-5 flex gap-3">
               {(
                 [
                   { key: 'group', label: 'Общий чат' },

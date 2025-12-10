@@ -20,14 +20,13 @@ export const Select: React.FC<SelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = 'Выберите опцию',
+  placeholder,
   className = '',
   disabled = false,
   icon,
   required = false,
 }) => {
-  const hasEmptyOption = options.some(option => option.value === '');
-  const shouldRenderPlaceholder = Boolean(placeholder) && !hasEmptyOption;
+  const shouldRenderPlaceholder = typeof placeholder === 'string' && placeholder.length > 0;
 
   return (
     <div className="relative">

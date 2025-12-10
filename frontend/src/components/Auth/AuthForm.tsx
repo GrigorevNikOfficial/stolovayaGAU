@@ -11,6 +11,7 @@ import {
 import { normalizePhoneDigits, phoneToApiFormat } from '../../utils/phone';
 import Button from '../layout/Button/Button.tsx';
 import Input from '../layout/Input/Input.tsx';
+import { consumeAuthRedirect, isAuthPath } from '../../utils/authRedirect';
 
 type AuthFormProps = {
   variant?: 'full' | 'embedded';
@@ -173,7 +174,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
         </span>
       </p>
       <div className="space-y-3">
-        <Button onClick={() => (window.location.href = '/')} variant="primary" size="lg" className="w-full">
+        <Button
+          onClick={() => {
+            const target = consumeAuthRedirect();
+            const safeTarget = target && !isAuthPath(target) ? target : '/';
+            window.location.href = safeTarget;
+          }}
+          variant="primary"
+          size="lg"
+          className="w-full"
+        >
           Перейти на главную
         </Button>
         <Button onClick={() => window.location.reload()} variant="outline" size="md" className="w-full">
@@ -198,9 +208,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
   const formCard = (
     <div className="bg-white border border-border-soft rounded-3xl p-6 sm:p-8 shadow-brand-card backdrop-blur-lg">
       <div className="mb-8 text-center space-y-3">
-        <p className="text-sm uppercase tracking-[0.3em] text-text-muted">
-          {isLogin ? 'Вход' : 'Регистрация'}
-        </p>
         <h1 className="text-3xl font-bold text-text-primary">
           {isLogin ? 'Войдите в систему' : 'Добро пожаловать в столовую ГАУ'}
         </h1>
@@ -262,11 +269,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
               placeholder="Телефон (+7 999 123-45-67)"
               value={formData.phone}
               onChange={value => setFormData({ ...formData, phone: value })}
-              onFocus={() => {
-                if (!formData.phone) {
-                  setFormData({ ...formData, phone: '+7' });
-                }
-              }}
               className={formErrors.phone ? 'border-red-500/70' : ''}
             />
             {formErrors.phone && <p className="text-red-300 text-xs mt-2">{formErrors.phone}</p>}

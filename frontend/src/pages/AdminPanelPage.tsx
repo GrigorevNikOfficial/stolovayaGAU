@@ -2,6 +2,7 @@ import { useUnit } from 'effector-react';
 import React from 'react';
 import { settingsApi } from '../api/settings';
 import Button from '../components/layout/Button/Button';
+import Input from '../components/layout/Input/Input';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import { Settings } from '../components/Settings/Settings';
 import { UserBalances } from '../components/Settings/UserBalances';
@@ -12,6 +13,7 @@ import LogoSAU from '../images/logo.jpg';
 import { $currentUser, logout } from '../models/users';
 import type { MarketplaceSettings } from '../types/settings';
 import { formatBalance } from '../utils/formatBalance';
+import { addServiceTagToStorage, getStoredServiceTags, SERVICE_TAG_STORAGE_KEY } from '../utils/serviceTags';
 
 type AdminSectionId = 'marketplace' | 'cafeteria' | 'finances';
 
@@ -23,7 +25,7 @@ type AdminSection = {
 const ADMIN_SECTIONS: AdminSection[] = [
   {
     id: 'marketplace',
-    label: 'Маркетплейс',
+    label: 'Услуги',
   },
   {
     id: 'cafeteria',
@@ -62,6 +64,8 @@ export const AdminPanelPage: React.FC = () => {
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
   const [commissionInput, setCommissionInput] = React.useState('');
   const [financeTab, setFinanceTab] = React.useState<FinanceTabId>('balances');
+  const [customTags, setCustomTags] = React.useState<string[]>(() => getStoredServiceTags());
+  const [tagDraft, setTagDraft] = React.useState('');
 
   const handleNavigate = React.useCallback((path: string) => {
     const nextUrl = new URL(path, window.location.origin);
@@ -115,6 +119,22 @@ export const AdminPanelPage: React.FC = () => {
       isActive = false;
     };
   }, [isAdmin]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== SERVICE_TAG_STORAGE_KEY) {
+        return;
+      }
+      setCustomTags(getStoredServiceTags());
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!isAdmin) {
@@ -172,6 +192,21 @@ export const AdminPanelPage: React.FC = () => {
     }
   };
 
+  const handleAddCustomTag = React.useCallback(() => {
+    const result = addServiceTagToStorage(tagDraft);
+    if (!result.success) {
+      if (result.reason === 'exists') {
+        showToast({ message: 'Такой тег уже есть в подсказках', type: 'info' });
+      } else {
+        showToast({ message: 'Введите название тега', type: 'error' });
+      }
+      return;
+    }
+    setCustomTags(result.tags);
+    setTagDraft('');
+    showToast({ message: 'Тег добавлен', type: 'success' });
+  }, [tagDraft]);
+
   const commissionValue = Number(commissionInput);
   const isCommissionValid = !Number.isNaN(commissionValue) && commissionValue >= 0 && commissionValue <= 100;
   const isCommissionDirty = marketplaceSettings
@@ -187,7 +222,7 @@ export const AdminPanelPage: React.FC = () => {
 
   const renderMarketplaceSection = () => (
     <div className="space-y-8">
-      <section className="rounded-[36px] border border-brand-indigo/20 bg-gradient-to-br from-brand-indigo/5 via-white to-brand-grape/10 p-6 shadow-brand-card">
+      <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-brand-card">
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-brand-indigo/70">баланс платформы</p>
@@ -197,11 +232,11 @@ export const AdminPanelPage: React.FC = () => {
             </p>
           </div>
           <div className="grid gap-3 text-sm text-brand-indigo">
-            <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
+            <div className="rounded-2xl border border-border-soft bg-surface-muted/60 px-4 py-3 shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">онлайн-синхронизация</p>
               <p className="mt-1 text-base font-semibold text-brand-indigo">WebSocket активен</p>
             </div>
-            <div className="rounded-2xl border border-brand-indigo/30 bg-white/70 px-4 py-3 shadow-sm">
+            <div className="rounded-2xl border border-border-soft bg-surface-muted/60 px-4 py-3 shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.35em] text-brand-indigo/60">операции</p>
               <p className="mt-1 text-base font-semibold text-brand-indigo">
                 {marketplaceSettings ? 'Комиссии удерживаются автоматически' : 'Данные недоступны'}
@@ -294,6 +329,45 @@ export const AdminPanelPage: React.FC = () => {
             Если баланс изменился неожиданно, проверьте историю заявок: каждая операция оставляет запись в Transaction.
           </div>
         </div>
+      </section>
+
+      <section className="rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.4em] text-emerald-700">панель администратора</p>
+            <h3 className="mt-2 text-2xl font-semibold text-emerald-900">Теги услуг</h3>
+            <p className="mt-1 text-sm text-emerald-900/80">Добавляйте новые подсказки, чтобы авто-поле быстрее предлагало свежие навыки.</p>
+          </div>
+          <span className="rounded-full border border-emerald-400 px-3 py-1 text-xs font-semibold text-emerald-800">Видно только администраторам</span>
+        </div>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <Input value={tagDraft} onChange={setTagDraft} placeholder="Например, Product design" />
+          <Button
+            type="button"
+            variant="primary"
+            className="sm:min-w-[180px]"
+            onClick={handleAddCustomTag}
+            disabled={!tagDraft.trim()}
+          >
+            Добавить тег
+          </Button>
+        </div>
+        {customTags.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {customTags.map(tag => (
+              <span
+                key={tag}
+                className="inline-flex items-center rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-sm font-medium text-emerald-800"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-emerald-900/80">Пока нет пользовательских тегов. Добавьте первый тег, чтобы коллеги увидели его в подсказках.</p>
+        )}
+        <p className="mt-4 text-xs uppercase tracking-[0.35em] text-emerald-700">синхронизация</p>
+        <p className="text-sm text-emerald-900/80">Список автоматически появится в разделе «Услуги» у всех пользователей после обновления страницы.</p>
       </section>
     </div>
   );
