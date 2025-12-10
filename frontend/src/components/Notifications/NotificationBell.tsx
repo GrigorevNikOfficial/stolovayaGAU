@@ -1,6 +1,6 @@
 import { useUnit } from 'effector-react';
 import React from 'react';
-import { BellIcon, CheckIcon } from '../icons/ServiceIcons';
+import { BellIcon } from '../icons/ServiceIcons';
 import {
   $notificationMeta,
   $notifications,

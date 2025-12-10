@@ -11,7 +11,6 @@ interface ProfileContentProps {
   isAvatarUploading: boolean;
   isProfileUpdating: boolean;
   layout?: 'standalone' | 'embedded';
-  showHeader?: boolean;
 }
 
 export const ProfileContent: React.FC<ProfileContentProps> = ({
@@ -22,7 +21,6 @@ export const ProfileContent: React.FC<ProfileContentProps> = ({
   isAvatarUploading,
   isProfileUpdating,
   layout = 'standalone',
-  showHeader = true,
 }) => {
   const avatarUrl = currentUser.avatar?.url;
   const userInitials = `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`

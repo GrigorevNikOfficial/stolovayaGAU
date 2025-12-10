@@ -404,7 +404,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
                   isAvatarUploading={isAvatarUploading}
                   isProfileUpdating={isProfileUpdating}
                   layout="embedded"
-                  showHeader={false}
                 />
               )}
 

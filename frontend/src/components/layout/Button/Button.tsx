@@ -10,6 +10,7 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   avatarUrl?: string;
   initials?: string;
+  form?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -22,6 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
   size = 'md',
   avatarUrl,
   initials,
+  form,
 }) => {
   const baseClasses =
     'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-almond/35 focus:ring-offset-brand-seashell';
@@ -63,6 +65,7 @@ export const Button: React.FC<ButtonProps> = ({
         type={type}
         onClick={onClick}
         disabled={disabled}
+        form={form}
         className={classes}
       >
         {avatarUrl || initials ? (
@@ -91,6 +94,7 @@ export const Button: React.FC<ButtonProps> = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      form={form}
       className={classes}
     >
       {children}
