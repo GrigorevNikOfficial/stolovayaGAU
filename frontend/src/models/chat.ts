@@ -64,6 +64,8 @@ export const requestGroupChat = createEvent<{
 export const requestMessages = createEvent<string>();
 export const postMessage = createEvent<{ chatId: string; content: string }>();
 export const joinChatByCode = createEvent<string>();
+export const acceptChatInvite = createEvent<string>();
+export const declineChatInvite = createEvent<string>();
 export const loadFriends = createEvent();
 export const loadFriendRequests = createEvent();
 export const searchFriends = createEvent<string>();
@@ -74,11 +76,23 @@ export const leaveChat = createEvent<string>();
 export const addParticipantsToChat = createEvent<{ chatId: string; participantIds: string[] }>();
 
 export const incomingSocketMessage = createEvent<ChatMessage>();
+export const incomingChatUpdate = createEvent<ChatSummary>();
 
 onSocketEvent('chat:message', payload => {
   if (payload && typeof payload === 'object') {
     incomingSocketMessage(payload as ChatMessage);
   }
+});
+
+onSocketEvent('chat:updated', payload => {
+  if (payload && typeof payload === 'object') {
+    incomingChatUpdate(payload as ChatSummary);
+  }
+});
+
+onSocketEvent('friends:updated', () => {
+  loadFriends();
+  loadFriendRequests();
 });
 
 export const loadChatsFx = createEffect(async () => {
@@ -123,6 +137,15 @@ export const addParticipantsToChatFx = createEffect(async ({ chatId, participant
   return response.chat;
 });
 
+export const acceptChatInviteFx = createEffect(async (chatId: string) => {
+  const response = await chatApi.acceptInvite(chatId);
+  return response.chat;
+});
+
+export const declineChatInviteFx = createEffect(async (chatId: string) => {
+  return chatApi.declineInvite(chatId);
+});
+
 export const loadFriendsFx = createEffect(async () => {
   const response = await friendsApi.getFriends();
   return response.friends;
@@ -161,8 +184,11 @@ export const $chats = createStore<ChatSummary[]>([])
   .on(createGroupChatFx.doneData, (state, chat) => upsertChat(state, chat))
   .on(joinByCodeFx.doneData, (state, chat) => upsertChat(state, chat))
   .on(addParticipantsToChatFx.doneData, (state, chat) => upsertChat(state, chat))
+  .on(acceptChatInviteFx.doneData, (state, chat) => upsertChat(state, chat))
+  .on(declineChatInviteFx.doneData, (state, payload) => state.filter(chat => chat._id !== payload.chatId))
   .on(sendMessageFx.doneData, (state, message) => updateChatPreview(state, message))
   .on(incomingSocketMessage, (state, message) => updateChatPreview(state, message))
+  .on(incomingChatUpdate, (state, chat) => upsertChat(state, chat))
   .on(leaveChatFx.doneData, (state, chatId) => state.filter(chat => chat._id !== chatId));
 
 export const $activeChatId = createStore<string | null>(null)
@@ -171,7 +197,8 @@ export const $activeChatId = createStore<string | null>(null)
   .on(createDirectChatFx.doneData, (_, chat) => chat._id)
   .on(createGroupChatFx.doneData, (_, chat) => chat._id)
   .on(joinByCodeFx.doneData, (_, chat) => chat._id)
-  .on(leaveChatFx.doneData, (state, chatId) => (state === chatId ? null : state));
+  .on(leaveChatFx.doneData, (state, chatId) => (state === chatId ? null : state))
+  .on(declineChatInviteFx.doneData, (state, payload) => (state === payload.chatId ? null : state));
 
 export const $messagesByChat = createStore<Record<string, ChatMessage[]>>({})
   .on(loadMessagesFx.doneData, (state, { chatId, messages }) => setMessages(state, chatId, messages))
@@ -180,6 +207,11 @@ export const $messagesByChat = createStore<Record<string, ChatMessage[]>>({})
   .on(leaveChatFx.doneData, (state, chatId) => {
     const next = { ...state };
     delete next[chatId];
+    return next;
+  })
+  .on(declineChatInviteFx.doneData, (state, payload) => {
+    const next = { ...state };
+    delete next[payload.chatId];
     return next;
   });
 
@@ -228,6 +260,16 @@ sample({
 sample({
   clock: joinChatByCode,
   target: joinByCodeFx,
+});
+
+sample({
+  clock: acceptChatInvite,
+  target: acceptChatInviteFx,
+});
+
+sample({
+  clock: declineChatInvite,
+  target: declineChatInviteFx,
 });
 
 sample({
@@ -313,6 +355,30 @@ sample({
 sample({
   clock: addParticipantsToChatFx.done,
   fn: () => ({ message: 'Участники добавлены', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: acceptChatInviteFx.done,
+  fn: () => ({ message: 'Приглашение принято', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: acceptChatInviteFx.fail,
+  fn: ({ error }) => ({ message: error.message || 'Не удалось принять приглашение', type: 'error' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: declineChatInviteFx.done,
+  fn: () => ({ message: 'Приглашение отклонено', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: declineChatInviteFx.fail,
+  fn: ({ error }) => ({ message: error.message || 'Не удалось отклонить приглашение', type: 'error' as const }),
   target: showToast,
 });
 

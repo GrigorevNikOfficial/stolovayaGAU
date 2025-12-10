@@ -247,6 +247,14 @@ const emitNotificationToUser = (event: string, payload: AnyPayload, userId?: str
   io.to(`user:${userId}`).emit(event, payload);
 };
 
+const emitChatUpdateToUser = (payload: AnyPayload, userId?: string) => {
+  if (!io || !userId) {
+    return;
+  }
+
+  io.to(`user:${userId}`).emit('chat:updated', payload);
+};
+
 export const emitMarketplaceRequestCreated = (request: AnyPayload) => {
   emitRequestEvent('marketplace:requests:created', request);
 };
@@ -285,6 +293,18 @@ export const emitNotificationCreated = (payload: AnyPayload, userId?: string) =>
 
 export const emitNotificationUpdated = (payload: AnyPayload, userId?: string) => {
   emitNotificationToUser('notifications:updated', payload, userId);
+};
+
+export const emitChatUpdated = (payload: AnyPayload, userId?: string) => {
+  emitChatUpdateToUser(payload, userId);
+};
+
+export const emitFriendsUpdated = (userId: string, payload: AnyPayload = {}) => {
+  if (!io || !userId) {
+    return;
+  }
+
+  io.to(`user:${userId}`).emit('friends:updated', payload);
 };
 
 export const emitChatMessage = (

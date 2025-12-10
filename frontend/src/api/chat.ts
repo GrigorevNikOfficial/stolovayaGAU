@@ -35,6 +35,14 @@ export const chatApi = {
     return httpClient.post<{ chat: ChatSummary }>(`/chats/${chatId}/participants`, { participantIds });
   },
 
+  async acceptInvite(chatId: string) {
+    return httpClient.post<{ chat: ChatSummary }>(`/chats/${chatId}/invitations/accept`);
+  },
+
+  async declineInvite(chatId: string) {
+    return httpClient.post<{ removed: boolean; chatId: string }>(`/chats/${chatId}/invitations/decline`);
+  },
+
   async getChatMessages(chatId: string, params?: { limit?: number; before?: string }) {
     return httpClient.get<PaginatedMessages>(`/chats/${chatId}/messages`, { params });
   },

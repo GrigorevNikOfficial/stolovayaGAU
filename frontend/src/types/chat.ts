@@ -3,11 +3,15 @@ import type { UserPreview } from './user';
 export type ChatVisibility = 'public' | 'private';
 export type ChatType = 'direct' | 'group';
 export type ParticipantRole = 'owner' | 'admin' | 'member';
+export type ParticipantStatus = 'active' | 'pending';
 
 export interface ChatParticipant {
   _id: string;
   role: ParticipantRole;
+  status: ParticipantStatus;
   joinedAt?: string;
+  invitedAt?: string | null;
+  invitedBy?: UserPreview | null;
   user: UserPreview;
 }
 
@@ -29,6 +33,10 @@ export interface ChatSummary {
     key: string;
     url: string;
   } | null;
+  membershipStatus: ParticipantStatus;
+  membershipRole: ParticipantRole;
+  membershipSince?: string;
+  membershipInvitedAt?: string | null;
 }
 
 export interface ChatMessage {

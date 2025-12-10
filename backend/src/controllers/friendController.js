@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import { Friendship } from '../models/Friendship.js';
 import { User } from '../models/User.js';
+import { emitFriendsUpdated } from '../services/socketService.js';
+import { createUserNotification } from '../services/notificationService.js';
 import { DEFAULT_PROFILE_PICTURE_KEY, buildPublicUrl } from '../services/storageService.js';
 
 const normalizeId = (value) => new mongoose.Types.ObjectId(value);
@@ -47,6 +49,18 @@ const fetchFriendshipBetween = async (userA, userB) =>
       { requester: userB, addressee: userA },
     ],
   });
+
+const notifyFriendshipParticipants = (friendship) => {
+  if (!friendship) {
+    return;
+  }
+
+  const participants = [friendship.requester, friendship.addressee]
+    .map((participant) => participant?._id?.toString?.() ?? participant?.toString?.())
+    .filter(Boolean);
+
+  participants.forEach((userId) => emitFriendsUpdated(userId, { scope: 'friendships' }));
+};
 
 export const searchPeople = async (req, res) => {
   try {
@@ -159,6 +173,7 @@ export const sendFriendRequest = async (req, res) => {
 
     if (friendship) {
       if (friendship.status === 'accepted') {
+        notifyFriendshipParticipants(friendship);
         return res.status(200).json({ friendship: mapFriendship(friendship, req.user._id) });
       }
 
@@ -167,9 +182,11 @@ export const sendFriendRequest = async (req, res) => {
         friendship.acceptedAt = new Date();
         await friendship.save();
         await friendship.populate('requester addressee', 'first_name last_name avatar role');
+        notifyFriendshipParticipants(friendship);
         return res.status(200).json({ friendship: mapFriendship(friendship, req.user._id) });
       }
 
+      notifyFriendshipParticipants(friendship);
       return res.status(200).json({ friendship: mapFriendship(friendship, req.user._id) });
     }
 
@@ -179,6 +196,26 @@ export const sendFriendRequest = async (req, res) => {
     });
 
     await friendship.populate('requester addressee', 'first_name last_name avatar role');
+    notifyFriendshipParticipants(friendship);
+
+    // create a notification for the addressee
+    try {
+      const inviterName = `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim() || 'Коллега';
+      await createUserNotification({
+        userId: targetUserId,
+        title: 'Приглашение в друзья',
+        body: `${inviterName} отправил вам запрос в друзья.`,
+        category: 'chat',
+        severity: 'info',
+        type: 'friend_request',
+        icon: '🤝',
+        actionLabel: 'Открыть',
+        actionUrl: `/services/friends`,
+        metadata: { requesterId: req.user._id?.toString?.() ?? req.user._id },
+      });
+    } catch (err) {
+      console.error('Failed to create friend notification:', err);
+    }
 
     res.status(201).json({ friendship: mapFriendship(friendship, req.user._id) });
   } catch (error) {
@@ -210,12 +247,14 @@ export const respondToFriendRequest = async (req, res) => {
       friendship.status = 'accepted';
       friendship.acceptedAt = new Date();
       await friendship.save();
+      notifyFriendshipParticipants(friendship);
       return res.json({ friendship: mapFriendship(friendship, req.user._id) });
     }
 
     if (action === 'decline') {
       friendship.status = 'declined';
       await friendship.save();
+      notifyFriendshipParticipants(friendship);
       return res.json({ friendship: mapFriendship(friendship, req.user._id) });
     }
 
@@ -242,6 +281,7 @@ export const removeFriendship = async (req, res) => {
       return res.status(404).json({ error: 'Связь не найдена' });
     }
 
+    notifyFriendshipParticipants(friendship);
     res.json({ message: 'Пользователь удален из друзей' });
   } catch (error) {
     console.error('removeFriendship error:', error);

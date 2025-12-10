@@ -7,19 +7,30 @@ import {
   $activeChatId,
   $chats,
   $friends,
+  $friendRequests,
   $messagesByChat,
+  acceptChatInvite,
   addParticipantsToChat,
+  declineChatInvite,
   leaveChat,
   loadChats,
   loadFriends,
+  loadFriendRequests,
   postMessage,
   requestDirectChat,
   requestGroupChat,
   requestMessages,
+  respondToRequest,
   selectChat,
   sendFriendRequest,
 } from '../../../models/chat';
-import { addParticipantsToChatFx, sendFriendRequestFx } from '../../../models/chat';
+import {
+  acceptChatInviteFx,
+  addParticipantsToChatFx,
+  declineChatInviteFx,
+  respondFriendRequestFx,
+  sendFriendRequestFx,
+} from '../../../models/chat';
 import { $currentUser, logout } from '../../../models/users';
 import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
 import LogoSAU from '../../../images/logo.jpg';
@@ -127,6 +138,21 @@ const SIDEBAR_TABS: Array<{ id: 'chats' | 'friends'; label: string }> = [
   { id: 'friends', label: 'Друзья' },
 ];
 
+const sortChatsByPriority = (list: ChatSummary[]) => {
+  const copy = [...list];
+  copy.sort((a, b) => {
+    const aPending = a.membershipStatus && a.membershipStatus !== 'active';
+    const bPending = b.membershipStatus && b.membershipStatus !== 'active';
+    if (aPending !== bPending) {
+      return aPending ? -1 : 1;
+    }
+    const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return bTime - aTime;
+  });
+  return copy;
+};
+
 const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster }) => (
   <div className={`flex flex-col gap-1 ${cluster.isOwn ? 'items-end' : 'items-start'}`}>
     {!cluster.isOwn && (
@@ -154,63 +180,126 @@ const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster })
   </div>
 );
 
-const ChatPreviewButton: React.FC<{ chat: ChatSummary; active: boolean; onSelect: () => void }> = ({ chat, active, onSelect }) => (
-  <button
-    type="button"
-    onClick={onSelect}
-    className={`w-full rounded-lg border px-2.5 py-2 text-left text-xs sm:text-sm transition-all ${
-      active
-        ? 'border-brand-indigo/40 bg-white shadow-brand-card'
-        : 'border-border-subtle/80 bg-transparent hover:border-brand-indigo/30'
-    }`}
-  >
-    <div className="flex items-center justify-between gap-2">
-      <p className="text-xs font-semibold text-text-primary line-clamp-1 sm:text-sm">{chat.name}</p>
-      <span className="text-[9px] uppercase tracking-[0.35em] text-text-muted sm:text-[10px]">
-        {formatTime(chat.lastMessageAt)}
-      </span>
-    </div>
-    <p className="mt-1 text-[11px] text-text-secondary line-clamp-2 sm:text-xs">
-      {chat.lastMessagePreview || 'Будьте первым, кто напишет сообщение'}
-    </p>
-  </button>
-);
+const ChatPreviewButton: React.FC<{
+  chat: ChatSummary;
+  active: boolean;
+  pending?: boolean;
+  onSelect: () => void;
+}> = ({ chat, active, pending, onSelect }) => {
+  const isPending = Boolean(pending);
+  const baseClasses = [
+    'w-full rounded-2xl border px-3 py-2 text-left text-xs sm:text-sm transition-all duration-200',
+    active ? 'border-brand-indigo/40 bg-white shadow-brand-card' : 'border-border-subtle bg-transparent hover:border-brand-indigo/30',
+    isPending ? 'border-amber-200 bg-amber-50/70 shadow-brand-card/40' : '',
+  ].join(' ');
 
-const FriendListCard: React.FC<{ friendship: Friendship; onClick?: (userId: string) => void }> = ({ friendship, onClick }) => {
+  return (
+    <button type="button" onClick={onSelect} className={baseClasses}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="truncate text-xs font-semibold text-text-primary sm:text-sm">{chat.name}</p>
+          {isPending && (
+            <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-700">
+              приглашение
+            </span>
+          )}
+        </div>
+        <span className="text-[9px] uppercase tracking-[0.35em] text-text-muted sm:text-[10px]">
+          {formatTime(chat.lastMessageAt)}
+        </span>
+      </div>
+      <p className="mt-1 text-[11px] text-text-secondary line-clamp-2 sm:text-xs">
+        {chat.lastMessagePreview || 'Будьте первым, кто напишет сообщение'}
+      </p>
+    </button>
+  );
+};
+
+const FriendListCard: React.FC<{
+  friendship: Friendship;
+  onClick?: (userId: string) => void;
+  pending?: boolean;
+  onAccept?: () => void;
+  onDecline?: () => void;
+  actionPending?: boolean;
+}> = ({ friendship, onClick, pending, onAccept, onDecline, actionPending }) => {
   const user = friendship.user;
   if (!user) {
     return null;
   }
   const initials = `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.trim().toUpperCase() || 'U';
 
+  const isPending = Boolean(pending);
+
   const handleClick = () => {
-    if (onClick) {
-      onClick(user._id);
+    if (isPending) {
+      return;
+    }
+    onClick?.(user._id);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isPending) {
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleClick();
     }
   };
 
+  const wrapperClasses = [
+    'flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all duration-200',
+    isPending
+      ? 'border-amber-200 bg-amber-50/70 shadow-brand-card focus-within:ring-2 focus-within:ring-amber-200'
+      : 'cursor-pointer border-border-soft bg-white hover:border-brand-indigo/40 hover:shadow-brand-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30',
+  ].join(' ');
+
   return (
-    <button
-      type="button"
+    <div
+      role={isPending ? undefined : 'button'}
+      tabIndex={isPending ? -1 : 0}
+      aria-disabled={isPending}
       onClick={handleClick}
-      className="flex w-full items-center gap-3 rounded-2xl border border-border-soft bg-white px-3 py-2 text-left transition-all duration-200 hover:border-brand-indigo/40 hover:shadow-brand-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
+      onKeyDown={handleKeyDown}
+      className={wrapperClasses}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-surface-muted text-sm font-semibold text-text-primary">
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-surface-muted text-sm font-semibold text-text-primary">
         {user.avatar?.url ? (
           <img src={user.avatar.url} alt="Аватар" className="h-full w-full rounded-2xl object-cover" />
         ) : (
           initials
         )}
       </div>
-      <div className="flex-1 text-left">
+      <div className="flex flex-1 flex-col leading-tight">
         <p className="text-sm font-semibold text-text-primary">
           {user.first_name} {user.last_name}
         </p>
-        {friendship.status && (
-          <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">{friendship.status}</p>
+        {isPending && (
+          <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-700">приглашение в друзья</span>
         )}
       </div>
-    </button>
+      {isPending && (
+        <div className="flex flex-shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={onAccept}
+            disabled={actionPending}
+            className="rounded-full bg-emerald-500/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white disabled:opacity-60"
+          >
+            Принять
+          </button>
+          <button
+            type="button"
+            onClick={onDecline}
+            disabled={actionPending}
+            className="rounded-full border border-border-soft bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-secondary hover:border-red-300 hover:text-red-600 disabled:opacity-60"
+          >
+            Отклонить
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -249,9 +338,11 @@ export const ChatPage: React.FC = () => {
     activeChatId,
     messagesByChat,
     friends,
+    friendRequests,
     currentUser,
     handleLoadChats,
     handleLoadFriends,
+    handleLoadFriendRequests,
     handleSelectChat,
     handleRequestMessages,
     handleRequestDirectChat,
@@ -260,15 +351,20 @@ export const ChatPage: React.FC = () => {
     handleLeaveChat,
     handleAddParticipants,
     handleSendFriendRequest,
+    handleRespondFriendRequest,
+    handleAcceptChatInvite,
+    handleDeclineChatInvite,
     handleLogout,
   } = useUnit({
     chats: $chats,
     activeChatId: $activeChatId,
     messagesByChat: $messagesByChat,
     friends: $friends,
+    friendRequests: $friendRequests,
     currentUser: $currentUser,
     handleLoadChats: loadChats,
     handleLoadFriends: loadFriends,
+    handleLoadFriendRequests: loadFriendRequests,
     handleSelectChat: selectChat,
     handleRequestMessages: requestMessages,
     handleRequestDirectChat: requestDirectChat,
@@ -277,11 +373,17 @@ export const ChatPage: React.FC = () => {
     handleLeaveChat: leaveChat,
     handleAddParticipants: addParticipantsToChat,
     handleSendFriendRequest: sendFriendRequest,
+    handleRespondFriendRequest: respondToRequest,
+    handleAcceptChatInvite: acceptChatInvite,
+    handleDeclineChatInvite: declineChatInvite,
     handleLogout: logout,
   });
 
   const isAddingParticipants = useUnit(addParticipantsToChatFx.pending);
   const isFriendRequestPending = useUnit(sendFriendRequestFx.pending);
+  const isRespondingFriendRequest = useUnit(respondFriendRequestFx.pending);
+  const isAcceptingInvite = useUnit(acceptChatInviteFx.pending);
+  const isDecliningInvite = useUnit(declineChatInviteFx.pending);
 
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const currentUserId = currentUser?._id ?? '';
@@ -354,8 +456,16 @@ export const ChatPage: React.FC = () => {
   }, [handleLoadFriends]);
 
   useEffect(() => {
-    if (!activeChatId && chats.length && !isMobileLayout) {
-      handleSelectChat(chats[0]._id);
+    handleLoadFriendRequests();
+  }, [handleLoadFriendRequests]);
+
+  useEffect(() => {
+    if (activeChatId || !chats.length || isMobileLayout) {
+      return;
+    }
+    const prioritized = sortChatsByPriority(chats);
+    if (prioritized[0]?._id) {
+      handleSelectChat(prioritized[0]._id);
     }
   }, [activeChatId, chats, handleSelectChat, isMobileLayout]);
 
@@ -375,11 +485,20 @@ export const ChatPage: React.FC = () => {
     }
   }, [chats, handleSelectChat, isMobileLayout]);
 
+  const activeChat = chats.find(chat => chat._id === activeChatId) || null;
+  const activeMessages = (activeChatId && messagesByChat[activeChatId]) || [];
+  const chatInviteCode = activeChat?.inviteCode || activeChat?._id || '';
+  const isMembershipPending = Boolean(activeChat && activeChat.membershipStatus !== 'active');
+  const canManageParticipants = activeChat?.type === 'group';
+  const pendingFriendRequests = friendRequests?.incoming ?? [];
+  const canSendMessages = Boolean(activeChat && !isMembershipPending);
+  const inviteActionDisabled = isAcceptingInvite || isDecliningInvite;
+
   useEffect(() => {
-    if (activeChatId) {
+    if (activeChatId && !isMembershipPending) {
       handleRequestMessages(activeChatId);
     }
-  }, [activeChatId, handleRequestMessages]);
+  }, [activeChatId, isMembershipPending, handleRequestMessages]);
 
   useEffect(() => {
     if (!isParticipantsModalOpen) {
@@ -395,9 +514,6 @@ export const ChatPage: React.FC = () => {
     }
   }, [isAddFriendModalOpen]);
 
-  const activeChat = chats.find(chat => chat._id === activeChatId) || null;
-  const activeMessages = (activeChatId && messagesByChat[activeChatId]) || [];
-  const chatInviteCode = activeChat?.inviteCode || activeChat?._id || '';
   const friendList = friends ?? [];
   const activeParticipantIds = useMemo(() => {
     if (!activeChat?.participants) {
@@ -429,7 +545,7 @@ export const ChatPage: React.FC = () => {
       return `${first} ${last}`.toLowerCase().includes(term);
     });
   }, [availableFriends, participantFilter]);
-  const filteredFriends = useMemo(() => {
+  const filteredAcceptedFriends = useMemo(() => {
     if (!friendList.length) {
       return [] as Friendship[];
     }
@@ -443,6 +559,26 @@ export const ChatPage: React.FC = () => {
       return `${first} ${last}`.toLowerCase().includes(term);
     });
   }, [friendList, sidebarFilter]);
+
+  const filteredPendingFriends = useMemo(() => {
+    if (!pendingFriendRequests.length) {
+      return [] as Friendship[];
+    }
+    const term = sidebarFilter.trim().toLowerCase();
+    if (!term) {
+      return pendingFriendRequests;
+    }
+    return pendingFriendRequests.filter(request => {
+      const first = request.user?.first_name ?? '';
+      const last = request.user?.last_name ?? '';
+      return `${first} ${last}`.toLowerCase().includes(term);
+    });
+  }, [pendingFriendRequests, sidebarFilter]);
+
+  const combinedFriends = useMemo(
+    () => [...filteredPendingFriends, ...filteredAcceptedFriends],
+    [filteredPendingFriends, filteredAcceptedFriends]
+  );
   const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
 
   const messageGroups = useMemo(() => {
@@ -482,13 +618,15 @@ export const ChatPage: React.FC = () => {
     }
   }, [messageGroups]);
 
+  const sortedChats = useMemo(() => sortChatsByPriority(chats), [chats]);
+
   const filteredChats = useMemo(() => {
     const term = sidebarFilter.trim().toLowerCase();
     if (!term) {
-      return chats;
+      return sortedChats;
     }
-    return chats.filter(chat => chat.name.toLowerCase().includes(term));
-  }, [sidebarFilter, chats]);
+    return sortedChats.filter(chat => chat.name.toLowerCase().includes(term));
+  }, [sidebarFilter, sortedChats]);
 
   const handleCopyUserCode = async () => {
     if (!currentUser?._id || typeof navigator === 'undefined' || !navigator.clipboard) {
@@ -563,7 +701,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const handleOpenParticipantsModal = () => {
-    if (!activeChat) {
+    if (!activeChat || activeChat.type !== 'group') {
       return;
     }
     setIsParticipantsModalOpen(true);
@@ -669,6 +807,38 @@ export const ChatPage: React.FC = () => {
     ]
   );
 
+  const handleAcceptFriendRequest = React.useCallback(
+    (requestId: string) => {
+      handleRespondFriendRequest({ requestId, action: 'accept' });
+    },
+    [handleRespondFriendRequest]
+  );
+
+  const handleDeclineFriendRequest = React.useCallback(
+    (requestId: string) => {
+      handleRespondFriendRequest({ requestId, action: 'decline' });
+    },
+    [handleRespondFriendRequest]
+  );
+
+  const handleAcceptInviteClick = React.useCallback(
+    (chatId: string) => {
+      handleAcceptChatInvite(chatId);
+    },
+    [handleAcceptChatInvite]
+  );
+
+  const handleDeclineInviteClick = React.useCallback(
+    (chatId: string) => {
+      const confirmDecline = window.confirm('Отклонить приглашение в чат?');
+      if (!confirmDecline) {
+        return;
+      }
+      handleDeclineChatInvite(chatId);
+    },
+    [handleDeclineChatInvite]
+  );
+
   const handleBackToChatList = React.useCallback(() => {
     if (isMobileLayout) {
       setIsMobileChatVisible(false);
@@ -694,7 +864,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const handleSendMessage = () => {
-    if (!activeChatId || !messageDraft.trim()) {
+    if (!activeChatId || !messageDraft.trim() || !canSendMessages) {
       return;
     }
     handlePostMessage({ chatId: activeChatId, content: messageDraft.trim() });
@@ -845,21 +1015,30 @@ export const ChatPage: React.FC = () => {
                         chat={chat}
                         active={chat._id === activeChatId}
                         onSelect={() => handleChatPreviewSelect(chat._id)}
+                        pending={chat.membershipStatus !== 'active'}
                       />
                     ))
                   ) : (
                     <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
                   )
-                ) : filteredFriends.length ? (
-                  filteredFriends.map(friendship =>
-                    friendship.user ? (
+                ) : combinedFriends.length ? (
+                  combinedFriends.map(friendship => {
+                    if (!friendship.user) {
+                      return null;
+                    }
+                    const isPendingFriend = friendship.status === 'pending' && friendship.direction === 'incoming';
+                    return (
                       <FriendListCard
                         key={friendship._id}
                         friendship={friendship}
                         onClick={handleFriendClick}
+                        pending={isPendingFriend}
+                        actionPending={isRespondingFriendRequest}
+                        onAccept={isPendingFriend ? () => handleAcceptFriendRequest(friendship._id) : undefined}
+                        onDecline={isPendingFriend ? () => handleDeclineFriendRequest(friendship._id) : undefined}
                       />
-                    ) : null
-                  )
+                    );
+                  })
                 ) : (
                   <p className="text-sm text-text-secondary">Список друзей пуст.</p>
                 )}
@@ -889,21 +1068,30 @@ export const ChatPage: React.FC = () => {
                           chat={chat}
                           active={chat._id === activeChatId}
                           onSelect={() => handleChatPreviewSelect(chat._id)}
+                          pending={chat.membershipStatus !== 'active'}
                         />
                       ))
                     ) : (
                       <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
                     )
-                  ) : filteredFriends.length ? (
-                    filteredFriends.map(friendship =>
-                      friendship.user ? (
+                  ) : combinedFriends.length ? (
+                    combinedFriends.map(friendship => {
+                      if (!friendship.user) {
+                        return null;
+                      }
+                      const isPendingFriend = friendship.status === 'pending' && friendship.direction === 'incoming';
+                      return (
                         <FriendListCard
                           key={friendship._id}
                           friendship={friendship}
                           onClick={handleFriendClick}
+                          pending={isPendingFriend}
+                          actionPending={isRespondingFriendRequest}
+                          onAccept={isPendingFriend ? () => handleAcceptFriendRequest(friendship._id) : undefined}
+                          onDecline={isPendingFriend ? () => handleDeclineFriendRequest(friendship._id) : undefined}
                         />
-                      ) : null
-                    )
+                      );
+                    })
                   ) : (
                     <p className="text-sm text-text-secondary">Список друзей пуст.</p>
                   )}
@@ -935,19 +1123,26 @@ export const ChatPage: React.FC = () => {
               {activeChat ? (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle px-6 py-4 flex-none">
-                    <button
-                      type="button"
-                      onClick={handleOpenParticipantsModal}
-                      className="group text-left"
-                      aria-label="Открыть участников чата"
-                    >
-                      <h2 className="text-2xl font-semibold text-text-primary group-hover:text-brand-indigo transition-colors">
-                        {activeChat.name}
-                      </h2>
-                      <p className="text-sm text-text-secondary group-hover:text-brand-indigo/80">
-                        {activeChat.participantCount} участников
-                      </p>
-                    </button>
+                    {canManageParticipants ? (
+                      <button
+                        type="button"
+                        onClick={handleOpenParticipantsModal}
+                        className="group text-left"
+                        aria-label="Открыть участников чата"
+                      >
+                        <h2 className="text-2xl font-semibold text-text-primary group-hover:text-brand-indigo transition-colors">
+                          {activeChat.name}
+                        </h2>
+                        <p className="text-sm text-text-secondary group-hover:text-brand-indigo/80">
+                          {activeChat.participantCount} участников
+                        </p>
+                      </button>
+                    ) : (
+                      <div className="text-left">
+                        <h2 className="text-2xl font-semibold text-text-primary">{activeChat.name}</h2>
+                        <p className="text-sm text-text-secondary">{activeChat.participantCount} участников</p>
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-2">
                       {isMobileLayout && (
                         <Button
@@ -962,17 +1157,53 @@ export const ChatPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {isMembershipPending && activeChat && (
+                    <div className="mx-6 mt-4 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-4 text-sm text-amber-900">
+                      <p className="text-base font-semibold text-amber-900">Вас пригласили в этот чат</p>
+                      <p className="mt-1 text-amber-800/80">
+                        Подтвердите участие, чтобы читать историю и отправлять сообщения.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleAcceptInviteClick(activeChat._id)}
+                          disabled={inviteActionDisabled}
+                        >
+                          Принять приглашение
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={() => handleDeclineInviteClick(activeChat._id)}
+                          disabled={inviteActionDisabled}
+                        >
+                          Отклонить
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   <div ref={messageListRef} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-4 py-6 styled-scrollbar">
-                    {messageGroups.length === 0 && (
-                      <div className="text-center text-text-secondary text-sm py-10">
-                        Здесь пока пусто. Начните переписку!
+                    {isMembershipPending ? (
+                      <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 px-4 py-6 text-center text-sm text-amber-800">
+                        Примите приглашение, чтобы увидеть историю переписки.
                       </div>
+                    ) : (
+                      <>
+                        {messageGroups.length === 0 && (
+                          <div className="text-center text-text-secondary text-sm py-10">
+                            Здесь пока пусто. Начните переписку!
+                          </div>
+                        )}
+                        {messageGroups.map(group => (
+                          <div key={group.id} className="py-1">
+                            <MessageClusterBlock cluster={group} />
+                          </div>
+                        ))}
+                      </>
                     )}
-                    {messageGroups.map(group => (
-                      <div key={group.id} className="py-1">
-                        <MessageClusterBlock cluster={group} />
-                      </div>
-                    ))}
                   </div>
 
                   <div className="border-t border-border-subtle px-4 py-4 flex-none">
@@ -988,12 +1219,17 @@ export const ChatPage: React.FC = () => {
                           }
                         }}
                         rows={1}
-                        className="flex-1 rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo resize-none min-h-[52px] max-h-32"
+                        disabled={!canSendMessages}
+                        aria-disabled={!canSendMessages}
+                        className="flex-1 rounded-2xl border border-border-soft bg-surface-muted px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo resize-none min-h-[52px] max-h-32 disabled:cursor-not-allowed disabled:opacity-60"
+                        title={
+                          !canSendMessages ? 'Примите приглашение, чтобы отправлять сообщения' : undefined
+                        }
                       />
                       <Button
                         variant="primary"
                         onClick={handleSendMessage}
-                        disabled={!messageDraft.trim()}
+                        disabled={!messageDraft.trim() || !canSendMessages}
                         className="flex h-12 w-12 items-center justify-center rounded-2xl p-0 sm:h-14 sm:w-14"
                         aria-label="Отправить сообщение"
                       >
@@ -1013,13 +1249,39 @@ export const ChatPage: React.FC = () => {
                         <span className="sr-only">Отправить</span>
                       </Button>
                     </div>
+                    {!canSendMessages && (
+                      <p className="mt-2 text-xs text-amber-700">
+                        Примите приглашение, чтобы начать общение в этом чате.
+                      </p>
+                    )}
                   </div>
                 </>
               ) : (
-                <div className="flex flex-1 items-center justify-center p-10 text-center text-text-secondary">
-                  <p>Выберите чат в списке, чтобы начать общение.</p>
-                </div>
-              )}
+                        <div className="flex flex-1 items-center justify-center p-10 text-center text-text-secondary">
+                          {pendingFriendRequests && pendingFriendRequests.length > 0 ? (
+                            <div className="w-full max-w-2xl space-y-4">
+                              <div>
+                                <h3 className="text-2xl font-semibold text-text-primary">Приглашения в друзья</h3>
+                                <p className="text-sm text-text-secondary">Примите или отклоните приглашение, чтобы начать общение.</p>
+                              </div>
+                              <div className="grid gap-3">
+                                {pendingFriendRequests.map(request => (
+                                  <FriendListCard
+                                    key={request._id}
+                                    friendship={request}
+                                    pending
+                                    actionPending={isRespondingFriendRequest}
+                                    onAccept={() => handleAcceptFriendRequest(request._id)}
+                                    onDecline={() => handleDeclineFriendRequest(request._id)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p>Выберите чат в списке, чтобы начать общение.</p>
+                          )}
+                        </div>
+                      )}
               </section>
             )}
           </div>
@@ -1243,7 +1505,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
       )}
-      {isParticipantsModalOpen && activeChat && (
+      {isParticipantsModalOpen && activeChat && activeChat.type === 'group' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/35 backdrop-blur-sm" onClick={handleCloseParticipantsModal} />
           <div className="relative z-10 w-full max-w-4xl rounded-3xl border border-border-soft bg-white p-6 shadow-brand-card">
