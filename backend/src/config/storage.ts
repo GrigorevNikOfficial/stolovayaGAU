@@ -28,6 +28,7 @@ export const S3_REGION = region;
 export const S3_FOLDERS = {
 	PROFILE_PICTURES: "pfps",
 	ITEM_PICTURES: "item-pics",
+	MARKETPLACE_ATTACHMENTS: "marketplace-files",
 } as const;
 
 export const s3Client = new S3Client({

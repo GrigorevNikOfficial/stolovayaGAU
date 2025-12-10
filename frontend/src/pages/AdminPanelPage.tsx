@@ -1,5 +1,6 @@
 import { useUnit } from 'effector-react';
 import React from 'react';
+import { analyticsApi } from '../api/analytics';
 import { settingsApi } from '../api/settings';
 import Button from '../components/layout/Button/Button';
 import Input from '../components/layout/Input/Input';
@@ -13,44 +14,230 @@ import LogoSAU from '../images/logo.jpg';
 import { $currentUser, logout } from '../models/users';
 import type { MarketplaceSettings } from '../types/settings';
 import { formatBalance } from '../utils/formatBalance';
-import { addServiceTagToStorage, getStoredServiceTags, SERVICE_TAG_STORAGE_KEY } from '../utils/serviceTags';
+import {
+  addServiceTagToStorage,
+  getStoredServiceTags,
+  SERVICE_TAG_STORAGE_KEY,
+} from '../utils/serviceTags';
+import type {
+  AdminAnalyticsResponse,
+  AnalyticsModuleId,
+  AnalyticsRangeOption,
+} from '../types/analytics';
 
-type AdminSectionId = 'marketplace' | 'cafeteria' | 'finances';
+type AdminSectionId = 'marketplace' | 'cafeteria' | 'finances' | 'analytics';
+
+type FinanceTabId = 'balances' | 'topups';
 
 type AdminSection = {
   id: AdminSectionId;
   label: string;
 };
 
+type FinanceTab = {
+  id: FinanceTabId;
+  label: string;
+};
+
+type PlaceholderCardProps = {
+  title: string;
+  description: string;
+};
+
+type AnalyticsModuleMeta = {
+  label: string;
+  description: string;
+  accent: string;
+};
+
+type AnalyticsRangeOptionMeta = {
+  label: string;
+  value: AnalyticsRangeOption;
+};
+
+type AnalyticsSparklineProps = {
+  values: number[];
+  accent?: string;
+  height?: number;
+};
+
+type AnalyticsBarChartItem = {
+  id: AnalyticsModuleId;
+  label: string;
+  value: number;
+};
+
+type AnalyticsBarChartProps = {
+  data: AnalyticsBarChartItem[];
+  activeId?: AnalyticsModuleId;
+  onSelect?: (id: AnalyticsModuleId) => void;
+};
+
 const ADMIN_SECTIONS: AdminSection[] = [
-  {
-    id: 'marketplace',
+  { id: 'marketplace', label: 'Маркетплейс' },
+  { id: 'cafeteria', label: 'Еда' },
+  { id: 'finances', label: 'Финансы' },
+  { id: 'analytics', label: 'Аналитика' },
+];
+
+const FINANCE_TABS: FinanceTab[] = [
+  { id: 'balances', label: 'Балансы' },
+  { id: 'topups', label: 'Пополнения' },
+];
+
+const ANALYTICS_RANGE_OPTIONS: AnalyticsRangeOptionMeta[] = [
+  { label: '7 дней', value: 7 },
+  { label: '30 дней', value: 30 },
+];
+
+const ANALYTICS_MODULE_META: Record<AnalyticsModuleId, AnalyticsModuleMeta> = {
+  services: {
     label: 'Услуги',
+    description: 'Заявки и исполнители',
+    accent: '#4F46E5',
   },
-  {
-    id: 'cafeteria',
+  cafeteria: {
     label: 'Еда',
+    description: 'Кафе и витрина',
+    accent: '#10B981',
   },
-  {
-    id: 'finances',
+  finance: {
     label: 'Финансы',
+    description: 'Переводы и пополнения',
+    accent: '#F97316',
   },
-];
+};
 
-type FinanceTabId = 'balances' | 'topups';
+const valueFormatter = new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: 0,
+});
 
-const FINANCE_TABS: Array<{ id: FinanceTabId; label: string }> = [
-  { id: 'balances', label: 'Баланс пользователей' },
-  { id: 'topups', label: 'Заявки на пополнение' },
-];
+const shareFormatter = new Intl.NumberFormat('ru-RU', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 1,
+});
 
-const PlaceholderCard: React.FC<{ title: string; description: string }> = ({ title, description }) => (
-  <div className="rounded-[32px] border-2 border-dashed border-border-soft bg-white/70 p-8 text-center">
-    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">в разработке</p>
-    <h3 className="mt-4 text-2xl font-semibold text-brand-indigo">{title}</h3>
-    <p className="mt-2 text-sm text-text-secondary">{description}</p>
+const formatValue = (value?: number | null) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '—';
+  }
+  return valueFormatter.format(Math.round(value));
+};
+
+const formatShare = (value?: number | null) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '0';
+  }
+  return shareFormatter.format(value);
+};
+
+const formatTimelineDay = (label?: string, fallbackIndex = 0) => {
+  if (label) {
+    const date = new Date(label);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+    }
+  }
+  return `День ${fallbackIndex + 1}`;
+};
+
+const PlaceholderCard: React.FC<PlaceholderCardProps> = ({ title, description }) => (
+  <div className="rounded-3xl border border-dashed border-border-soft bg-surface-muted/50 px-5 py-6 text-center">
+    <p className="text-base font-semibold text-text-primary">{title}</p>
+    <p className="mt-1 text-sm text-text-secondary">{description}</p>
   </div>
 );
+
+const AnalyticsSparkline: React.FC<AnalyticsSparklineProps> = ({ values, accent = '#4F46E5', height = 120 }) => {
+  if (!values.length) {
+    return (
+      <div className="flex h-[120px] items-center justify-center rounded-2xl border border-dashed border-border-soft text-sm text-text-muted">
+        Нет данных для графика
+      </div>
+    );
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const viewportWidth = 100;
+  const viewportHeight = 100;
+  const points = values
+    .map((value, index) => {
+      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * viewportWidth;
+      const normalized = (value - min) / range;
+      const y = viewportHeight - normalized * viewportHeight;
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  const gradientId = React.useId();
+
+  return (
+    <svg viewBox={`0 0 ${viewportWidth} ${viewportHeight}`} height={height} className="w-full">
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={accent} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={accent} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polyline
+        fill="none"
+        stroke={accent}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        points={points}
+      />
+      <polygon
+        fill={`url(#${gradientId})`}
+        stroke="none"
+        points={`${points} ${viewportWidth},${viewportHeight} 0,${viewportHeight}`}
+      />
+    </svg>
+  );
+};
+const AnalyticsBarChart: React.FC<AnalyticsBarChartProps> = ({ data, activeId, onSelect }) => {
+  if (!data.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border-soft px-4 py-3 text-sm text-text-muted">
+        Нет данных для выбранного периода
+      </div>
+    );
+  }
+
+  const max = Math.max(...data.map(item => item.value), 1);
+
+  return (
+    <div className="space-y-3">
+      {data.map(item => {
+        const isActive = activeId ? item.id === activeId : false;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onSelect?.(item.id)}
+            className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-200 ${
+              isActive
+                ? 'border-brand-indigo/50 bg-brand-indigo/5 shadow-[0_10px_30px_rgba(79,70,229,0.15)]'
+                : 'border-border-soft bg-white hover:border-brand-indigo/40'
+            }`}
+          >
+            <div className="flex items-center justify-between text-sm text-text-secondary">
+              <span className="font-semibold text-text-primary">{item.label}</span>
+              <span className="font-semibold text-text-primary">{formatShare(item.value)}%</span>
+            </div>
+            <div className="mt-2 h-2 rounded-full bg-surface-muted">
+              <div
+                className={`h-full rounded-full ${isActive ? 'bg-brand-indigo' : 'bg-brand-indigo/40'}`}
+                style={{ width: `${max === 0 ? 0 : (item.value / max) * 100}%` }}
+              />
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 export const AdminPanelPage: React.FC = () => {
   const { currentUser, handleLogout } = useUnit({
@@ -66,6 +253,12 @@ export const AdminPanelPage: React.FC = () => {
   const [financeTab, setFinanceTab] = React.useState<FinanceTabId>('balances');
   const [customTags, setCustomTags] = React.useState<string[]>(() => getStoredServiceTags());
   const [tagDraft, setTagDraft] = React.useState('');
+  const [analyticsData, setAnalyticsData] = React.useState<AdminAnalyticsResponse | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = React.useState(false);
+  const [analyticsError, setAnalyticsError] = React.useState<string | null>(null);
+  const [activeAnalyticsModule, setActiveAnalyticsModule] = React.useState<AnalyticsModuleId>('services');
+  const [analyticsRange, setAnalyticsRange] = React.useState<AnalyticsRangeOption>(7);
+  const analyticsRequestId = React.useRef(0);
 
   const handleNavigate = React.useCallback((path: string) => {
     const nextUrl = new URL(path, window.location.origin);
@@ -84,6 +277,47 @@ export const AdminPanelPage: React.FC = () => {
     handleNavigate('/profile');
   }, [handleNavigate]);
 
+  const handleAnalyticsModuleSelect = React.useCallback((moduleId: AnalyticsModuleId) => {
+    setActiveAnalyticsModule(prev => (prev === moduleId ? prev : moduleId));
+  }, []);
+
+  const handleAnalyticsRangeChange = React.useCallback((nextRange: AnalyticsRangeOption) => {
+    setAnalyticsRange(prev => (prev === nextRange ? prev : nextRange));
+  }, []);
+
+  const fetchAnalytics = React.useCallback(
+    async (moduleId: AnalyticsModuleId, rangeValue: AnalyticsRangeOption) => {
+      const requestId = ++analyticsRequestId.current;
+      setIsLoadingAnalytics(true);
+      setAnalyticsError(null);
+      try {
+        const response = await analyticsApi.getAdminAnalytics({ module: moduleId, range: rangeValue });
+        if (analyticsRequestId.current !== requestId) {
+          return;
+        }
+        setAnalyticsData(response);
+      } catch (error: any) {
+        if (analyticsRequestId.current !== requestId) {
+          return;
+        }
+        const message = error?.response?.data?.message ?? error?.message ?? 'Не удалось загрузить аналитику';
+        setAnalyticsError(message);
+        showToast({ message, type: 'error' });
+      } finally {
+        if (analyticsRequestId.current === requestId) {
+          setIsLoadingAnalytics(false);
+        }
+      }
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+    fetchAnalytics(activeAnalyticsModule, analyticsRange).catch(() => {});
+  }, [isAdmin, activeAnalyticsModule, analyticsRange, fetchAnalytics]);
   React.useEffect(() => {
     if (!isAdmin) {
       setMarketplaceSettings(null);
@@ -428,6 +662,269 @@ export const AdminPanelPage: React.FC = () => {
     </div>
   );
 
+  const renderAnalyticsSection = () => {
+    const summaryCards = analyticsData?.summaryCards ?? [];
+    const moduleShare = analyticsData?.moduleShare ?? [];
+    const checklist = analyticsData?.checklist ?? [];
+    const timeline = analyticsData?.timeline;
+    const periodMeta = analyticsData?.period;
+    const selectedModulePayload = analyticsData?.selectedModule;
+    const selectedModuleId = selectedModulePayload?.id ?? activeAnalyticsModule;
+    const selectedModuleMeta = ANALYTICS_MODULE_META[selectedModuleId] ?? ANALYTICS_MODULE_META.services;
+    const selectedShare = moduleShare.find(item => item.id === selectedModuleId)?.value ?? 0;
+    const selectedSeries = selectedModulePayload?.timeline ?? [];
+    const selectedTotal = selectedModulePayload?.total ?? 0;
+    const selectedAverage = selectedModulePayload?.averagePerDay ?? 0;
+    const selectedLast =
+      selectedModulePayload?.lastValue ?? (selectedSeries.length ? selectedSeries[selectedSeries.length - 1] : 0);
+    const rangeLabel = ANALYTICS_RANGE_OPTIONS.find(option => option.value === analyticsRange)?.label ?? '7 дней';
+    const showSummarySkeleton = isLoadingAnalytics && !analyticsData;
+    const showErrorState = Boolean(analyticsError) && !analyticsData;
+    const hasData = Boolean(analyticsData);
+
+    const timelineLabels = timeline?.labels ?? [];
+    const servicesTimeline = timeline?.services ?? [];
+    const cafeteriaTimeline = timeline?.cafeteria ?? [];
+    const financeTimeline = timeline?.finance ?? [];
+    const combinedLength = Math.max(
+      timelineLabels.length,
+      servicesTimeline.length,
+      cafeteriaTimeline.length,
+      financeTimeline.length
+    );
+    const recentEntries = Array.from({ length: combinedLength }).map((_, index) => ({
+      label: timelineLabels[index],
+      services: servicesTimeline[index] ?? 0,
+      cafeteria: cafeteriaTimeline[index] ?? 0,
+      finance: financeTimeline[index] ?? 0,
+    }));
+    const lastEntries = recentEntries.slice(-3);
+
+    const formatPeriodDate = (value?: string) => {
+      if (!value) {
+        return '';
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return '';
+      }
+      return date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+    };
+
+    const periodCaption = periodMeta ? `${formatPeriodDate(periodMeta.start)} — ${formatPeriodDate(periodMeta.end)}` : '—';
+
+    return (
+      <div className="space-y-8">
+        <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-brand-card">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">сводка</p>
+              <h3 className="mt-2 text-3xl font-semibold text-brand-indigo">Пульс сервисов</h3>
+              <p className="mt-1 text-sm text-text-secondary">
+                {periodCaption} · {rangeLabel}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center rounded-full border border-border-soft bg-surface-muted/60 p-1 text-xs font-semibold">
+                {ANALYTICS_RANGE_OPTIONS.map(option => {
+                  const isActive = analyticsRange === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleAnalyticsRangeChange(option.value)}
+                      className={`rounded-full px-3 py-1 transition ${
+                        isActive ? 'bg-white text-brand-indigo shadow-sm' : 'text-text-secondary'
+                      }`}
+                      aria-pressed={isActive}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fetchAnalytics(activeAnalyticsModule, analyticsRange)}
+                disabled={isLoadingAnalytics}
+              >
+                {isLoadingAnalytics ? 'Обновляем…' : 'Обновить'}
+              </Button>
+            </div>
+          </div>
+          {analyticsError && analyticsData ? (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Не удалось обновить последние данные: {analyticsError}. Показаны сохранённые значения.
+            </div>
+          ) : null}
+          {showSummarySkeleton ? (
+            <div className="mt-6 flex items-center gap-3 rounded-3xl border border-border-soft px-5 py-4 text-sm text-text-secondary">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo" />
+              Загрузка аналитики…
+            </div>
+          ) : showErrorState ? (
+            <div className="mt-6 rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-800">
+              <p className="text-base font-semibold text-rose-900">Не удалось загрузить аналитику</p>
+              <p className="mt-1">{analyticsError}</p>
+              <Button
+                className="mt-4"
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => fetchAnalytics(activeAnalyticsModule, analyticsRange)}
+              >
+                Повторить попытку
+              </Button>
+            </div>
+          ) : hasData ? (
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              {summaryCards.map(card => {
+                const diffNegative = card.diff.trim().startsWith('-');
+                return (
+                  <div key={card.id} className="rounded-3xl border border-border-soft bg-surface-muted/60 px-5 py-4 shadow-inner">
+                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">{card.title}</p>
+                    <p className="mt-3 text-3xl font-semibold text-brand-indigo">{formatValue(card.value)}</p>
+                    <p className={`text-sm ${diffNegative ? 'text-rose-600' : 'text-emerald-600'}`}>{card.diff}</p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </section>
+
+        {hasData ? (
+          <>
+            <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-5 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">модули</p>
+                    <h4 className="mt-2 text-2xl font-semibold text-brand-indigo">{selectedModuleMeta.label}</h4>
+                    <p className="text-sm text-text-secondary">{selectedModuleMeta.description}</p>
+                  </div>
+                  <span className="rounded-full border border-brand-indigo/20 px-3 py-1 text-xs font-semibold text-brand-indigo">
+                    {formatShare(selectedShare)}% активности
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(ANALYTICS_MODULE_META) as AnalyticsModuleId[]).map(moduleId => {
+                    const meta = ANALYTICS_MODULE_META[moduleId];
+                    const isActive = moduleId === selectedModuleId;
+                    return (
+                      <button
+                        key={moduleId}
+                        type="button"
+                        onClick={() => handleAnalyticsModuleSelect(moduleId)}
+                        className={`rounded-2xl border px-3 py-2 text-left text-sm transition ${
+                          isActive
+                            ? 'border-brand-indigo/60 bg-brand-indigo/5 text-brand-indigo shadow-sm'
+                            : 'border-border-soft text-text-secondary hover:border-brand-indigo/40'
+                        }`}
+                      >
+                        <span className="block font-semibold text-text-primary">{meta.label}</span>
+                        <span className="text-xs text-text-secondary">{meta.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="rounded-[28px] border border-border-soft bg-surface-muted/60 p-4">
+                  <AnalyticsSparkline values={selectedSeries} accent={selectedModuleMeta.accent} />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-border-soft bg-white px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">итого</p>
+                    <p className="text-2xl font-semibold text-brand-indigo">{formatValue(selectedTotal)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border-soft bg-white px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">в день</p>
+                    <p className="text-2xl font-semibold text-brand-indigo">{formatValue(selectedAverage)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border-soft bg-white px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">последние</p>
+                    <p className="text-2xl font-semibold text-brand-indigo">{formatValue(selectedLast)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-5 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">распределение спроса</p>
+                    <h4 className="mt-2 text-xl font-semibold text-brand-indigo">Использование модулей</h4>
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-indigo/70">{rangeLabel}</span>
+                </div>
+                <AnalyticsBarChart data={moduleShare} activeId={selectedModuleId} onSelect={handleAnalyticsModuleSelect} />
+                <div className="rounded-2xl border border-border-soft bg-surface-muted/60 px-4 py-3 text-sm text-text-secondary">
+                  <p>
+                    {selectedModuleMeta.label} удерживает {formatShare(selectedShare)}% активности. Переключитесь по карточкам, чтобы найти узкие места.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">динамика за период</p>
+                  <h4 className="mt-2 text-xl font-semibold text-brand-indigo">Последние дни</h4>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                {lastEntries.map((entry, index) => (
+                  <div
+                    key={`${entry.label ?? 'day'}-${index}`}
+                    className="rounded-2xl border border-border-soft bg-surface-muted/60 px-4 py-3 text-sm"
+                  >
+                    <p className="text-[10px] uppercase tracking-[0.35em] text-text-muted">{formatTimelineDay(entry.label, index)}</p>
+                    <p className="mt-1 text-base font-semibold text-brand-indigo">Услуги: {formatValue(entry.services)}</p>
+                    <p className="text-sm text-text-secondary">Еда: {formatValue(entry.cafeteria)}</p>
+                    <p className="text-sm text-text-secondary">Финансы: {formatValue(entry.finance)}</p>
+                  </div>
+                ))}
+                {!lastEntries.length ? (
+                  <div className="rounded-2xl border border-dashed border-border-soft px-4 py-3 text-center text-sm text-text-muted">
+                    Нет данных за выбранный период
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">оперативный чек-лист</p>
+                  <h4 className="mt-2 text-2xl font-semibold text-brand-indigo">Что проверить сегодня</h4>
+                </div>
+                <span className="rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">{rangeLabel}</span>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                {checklist.map(item => (
+                  <div
+                    key={item.title}
+                    className="rounded-2xl border border-border-soft bg-surface-muted/60 px-4 py-3 text-sm text-text-secondary"
+                  >
+                    <p className="text-base font-semibold text-text-primary">{item.title}</p>
+                    <p className="text-2xl font-bold text-brand-indigo">{formatValue(item.value)}</p>
+                    <p className="text-xs text-text-muted">{item.description}</p>
+                  </div>
+                ))}
+                {!checklist.length ? (
+                  <div className="rounded-2xl border border-dashed border-border-soft px-4 py-3 text-center text-sm text-text-muted">
+                    Чек-лист пуст за выбранный период
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          </>
+        ) : null}
+      </div>
+    );
+  };
+
+
   const renderSectionTabs = React.useCallback(
     (className = '') => (
       <div
@@ -474,6 +971,9 @@ export const AdminPanelPage: React.FC = () => {
     }
     if (activeSection === 'finances') {
       return renderFinancesSection();
+    }
+    if (activeSection === 'analytics') {
+      return renderAnalyticsSection();
     }
     return null;
   };
