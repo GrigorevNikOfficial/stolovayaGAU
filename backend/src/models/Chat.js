@@ -11,6 +11,20 @@ const participantSchema = new Schema(
       enum: ['owner', 'admin', 'member'],
       default: 'member',
     },
+    status: {
+      type: String,
+      enum: ['active', 'pending'],
+      default: 'active',
+    },
+    invitedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    invitedAt: {
+      type: Date,
+      default: null,
+    },
     joinedAt: {
       type: Date,
       default: Date.now,

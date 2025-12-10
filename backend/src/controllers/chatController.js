@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { Chat } from '../models/Chat.js';
 import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
-import { attachUsersToChatRoom, detachUserFromChatRoom, emitChatMessage } from '../services/socketService.js';
+import { attachUsersToChatRoom, detachUserFromChatRoom, emitChatMessage, emitChatUpdated } from '../services/socketService.js';
 import { createUserNotification } from '../services/notificationService.js';
 import { DEFAULT_PROFILE_PICTURE_KEY, buildPublicUrl } from '../services/storageService.js';
 
@@ -41,13 +41,51 @@ const mapMessage = (message) => {
   };
 };
 
+const PARTICIPANT_STATUS = {
+  ACTIVE: 'active',
+  PENDING: 'pending',
+};
+
+const ensureStringId = (value) => {
+  if (!value) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value.toString === 'function') {
+    return value.toString();
+  }
+  return null;
+};
+
+const isActiveParticipant = (participant) =>
+  (participant?.status || PARTICIPANT_STATUS.ACTIVE) === PARTICIPANT_STATUS.ACTIVE;
+
+const getParticipantUserId = (participant) =>
+  ensureStringId(participant?.user?._id ?? participant?.user);
+
+const getParticipantForUser = (chat, userId) =>
+  (chat?.participants || []).find((participant) =>
+    getParticipantUserId(participant) === ensureStringId(userId)
+  );
+
+const listActiveParticipantIds = (chat) =>
+  (chat?.participants || [])
+    .filter(isActiveParticipant)
+    .map((participant) => getParticipantUserId(participant))
+    .filter(Boolean);
+
 const mapChat = (chat, currentUserId) => {
   const plain = typeof chat.toObject === 'function' ? chat.toObject() : chat;
   const isDirect = plain.type === 'direct';
   const participants = (plain.participants || []).map((participant) => ({
     _id: participant.user?._id || participant.user,
     role: participant.role,
+    status: participant.status || PARTICIPANT_STATUS.ACTIVE,
     joinedAt: participant.joinedAt,
+    invitedAt: participant.invitedAt,
+    invitedBy: mapUserLite(participant.invitedBy),
     user: mapUserLite(participant.user),
   }));
 
@@ -61,6 +99,10 @@ const mapChat = (chat, currentUserId) => {
       displayAvatar = other.user.avatar;
     }
   }
+
+  const membership = participants.find((participant) =>
+    participant._id?.toString?.() === currentUserId?.toString?.()
+  );
 
   return {
     _id: plain._id,
@@ -78,11 +120,18 @@ const mapChat = (chat, currentUserId) => {
     createdAt: plain.createdAt,
     updatedAt: plain.updatedAt,
     avatar: displayAvatar,
+    membershipStatus: membership?.status || PARTICIPANT_STATUS.ACTIVE,
+    membershipRole: membership?.role || 'member',
+    membershipSince: membership?.joinedAt || plain.createdAt,
+    membershipInvitedAt: membership?.invitedAt || null,
   };
 };
 
 const populateChatUsers = async (chat) =>
-  chat.populate({ path: 'participants.user', select: 'first_name last_name avatar role' });
+  chat.populate([
+    { path: 'participants.user', select: 'first_name last_name avatar role' },
+    { path: 'participants.invitedBy', select: 'first_name last_name avatar role' },
+  ]);
 
 const buildChatActionUrl = (chatId) => `/services/chat?chat=${chatId}`;
 
@@ -94,6 +143,89 @@ const formatUserDisplayName = (user) => {
   const last = user.last_name || user.lastName || '';
   const name = `${first} ${last}`.trim();
   return name || 'Коллега';
+};
+
+const broadcastChatSnapshots = async (chat, { skipPopulate } = {}) => {
+  if (!chat) {
+    return;
+  }
+
+  if (!skipPopulate) {
+    await populateChatUsers(chat);
+  }
+
+  const recipients = chat.participants || [];
+  recipients.forEach((participant) => {
+    const userId = ensureStringId(participant.user);
+    if (!userId) {
+      return;
+    }
+    const snapshot = mapChat(chat, userId);
+    emitChatUpdated(snapshot, userId);
+  });
+};
+
+const sendChatInviteNotification = async ({ chatDoc, inviteeId, inviter }) => {
+  if (!chatDoc || !inviteeId) {
+    return;
+  }
+
+  try {
+    const normalizedInviteeId = ensureStringId(inviteeId);
+    if (!normalizedInviteeId) {
+      console.warn('sendChatInviteNotification: invitee id is invalid', inviteeId);
+      return;
+    }
+
+    const chatId = chatDoc._id?.toString?.() ?? chatDoc._id;
+    const inviterName = formatUserDisplayName(inviter);
+    const chatTitle = chatDoc.type === 'direct'
+      ? `${inviterName} приглашает вас в личный чат`
+      : `${inviterName} приглашает в чат «${chatDoc.name || 'групповой чат'}»`;
+
+    await createUserNotification({
+      userId: normalizedInviteeId,
+      title: chatTitle,
+      body: 'Откройте чат, чтобы принять или отклонить приглашение.',
+      category: 'chat',
+      severity: 'info',
+      type: 'chat_invite',
+      icon: '💬',
+      actionLabel: 'Перейти',
+      actionUrl: buildChatActionUrl(chatId),
+      metadata: {
+        chatId,
+      },
+    });
+  } catch (error) {
+    console.error('sendChatInviteNotification error:', error);
+  }
+};
+
+const notifyInviterAboutDecision = async ({ chatDoc, inviterId, actor, action }) => {
+  if (!chatDoc || !inviterId || !actor) {
+    return;
+  }
+
+  const actionText = action === 'accepted' ? 'принял приглашение' : 'отклонил приглашение';
+
+  await createUserNotification({
+    userId: inviterId,
+    title: `${formatUserDisplayName(actor)} ${actionText}`,
+    body: chatDoc.name
+      ? `Чат «${chatDoc.name}» обновлён.`
+      : 'Статус личного чата обновлён.',
+    category: 'chat',
+    severity: action === 'accepted' ? 'success' : 'warning',
+    type: 'chat_invite_response',
+    icon: '💬',
+    actionLabel: 'Открыть чат',
+    actionUrl: buildChatActionUrl(chatDoc._id?.toString?.() ?? chatDoc._id),
+    metadata: {
+      chatId: chatDoc._id?.toString?.() ?? chatDoc._id,
+      decision: action,
+    },
+  });
 };
 
 const notifyChatParticipants = async (chatDoc, messageDoc) => {
@@ -108,6 +240,7 @@ const notifyChatParticipants = async (chatDoc, messageDoc) => {
 
   const chatId = chatDoc._id?.toString?.() ?? chatDoc.id;
   const recipients = (chatDoc.participants || [])
+    .filter((participant) => (participant?.status || PARTICIPANT_STATUS.ACTIVE) === PARTICIPANT_STATUS.ACTIVE)
     .map((participant) => {
       const raw = participant?.user;
       if (!raw) {
@@ -151,19 +284,31 @@ const notifyChatParticipants = async (chatDoc, messageDoc) => {
 };
 
 const assertParticipant = (chat, userId) => {
-  const isMember = chat.participants.some((participant) => participant.user.toString() === userId.toString());
-  if (!isMember) {
+  const participant = getParticipantForUser(chat, userId);
+  if (!participant) {
     const err = new Error('Доступ к чату запрещен');
     err.statusCode = 403;
     throw err;
   }
+  return participant;
+};
+
+const assertActiveParticipant = (chat, userId) => {
+  const participant = assertParticipant(chat, userId);
+  if (!isActiveParticipant(participant)) {
+    const err = new Error('Приглашение ещё не подтверждено');
+    err.statusCode = 403;
+    throw err;
+  }
+  return participant;
 };
 
 export const listChats = async (req, res) => {
   try {
     const chats = await Chat.find({ 'participants.user': req.user._id })
       .sort({ updatedAt: -1 })
-      .populate('participants.user', 'first_name last_name avatar role');
+      .populate('participants.user', 'first_name last_name avatar role')
+      .populate('participants.invitedBy', 'first_name last_name avatar role');
 
     res.json({ chats: chats.map((chat) => mapChat(chat, req.user._id)) });
   } catch (error) {
@@ -192,16 +337,31 @@ export const createDirectChat = async (req, res) => {
 
     const directKey = Chat.buildDirectKey(req.user._id, targetUserId);
 
-    let chat = await Chat.findOne({ directKey }).populate('participants.user', 'first_name last_name avatar role');
+    let chat = await Chat.findOne({ directKey })
+      .populate('participants.user', 'first_name last_name avatar role')
+      .populate('participants.invitedBy', 'first_name last_name avatar role');
     let isNewChat = false;
 
     if (!chat) {
+      const now = new Date();
       chat = await Chat.create({
         type: 'direct',
         createdBy: req.user._id,
         participants: [
-          { user: req.user._id, role: 'member' },
-          { user: targetUserId, role: 'member' },
+          {
+            user: req.user._id,
+            role: 'member',
+            status: PARTICIPANT_STATUS.ACTIVE,
+            joinedAt: now,
+          },
+          {
+            user: targetUserId,
+            role: 'member',
+            status: PARTICIPANT_STATUS.PENDING,
+            invitedBy: req.user._id,
+            invitedAt: now,
+            joinedAt: null,
+          },
         ],
         visibility: 'private',
         directKey,
@@ -209,13 +369,20 @@ export const createDirectChat = async (req, res) => {
 
       await populateChatUsers(chat);
       isNewChat = true;
+
+      await sendChatInviteNotification({
+        chatDoc: chat,
+        inviteeId: targetUserId,
+        inviter: req.user,
+      });
     }
 
     if (isNewChat) {
-      attachUsersToChatRoom(chat._id.toString(), [req.user._id.toString(), targetUserId.toString()]);
+      attachUsersToChatRoom(chat._id.toString(), [req.user._id.toString()]);
+      await broadcastChatSnapshots(chat, { skipPopulate: true });
     }
 
-    res.status(201).json({ chat: mapChat(chat, req.user._id) });
+    res.status(isNewChat ? 201 : 200).json({ chat: mapChat(chat, req.user._id) });
   } catch (error) {
     console.error('createDirectChat error:', error);
     res.status(500).json({ error: 'Не удалось создать чат' });
@@ -231,11 +398,19 @@ export const createGroupChat = async (req, res) => {
     }
 
     const uniqueIds = new Set([req.user._id.toString(), ...participantIds.map((id) => id.toString())]);
+    const now = new Date();
 
-    const participants = Array.from(uniqueIds).map((userId) => ({
-      user: ensureObjectId(userId),
-      role: userId === req.user._id.toString() ? 'owner' : 'member',
-    }));
+    const participants = Array.from(uniqueIds).map((userId) => {
+      const isOwner = userId === req.user._id.toString();
+      return {
+        user: ensureObjectId(userId),
+        role: isOwner ? 'owner' : 'member',
+        status: isOwner ? PARTICIPANT_STATUS.ACTIVE : PARTICIPANT_STATUS.PENDING,
+        invitedBy: isOwner ? null : req.user._id,
+        invitedAt: isOwner ? null : now,
+        joinedAt: isOwner ? now : null,
+      };
+    });
 
     const chat = await Chat.create({
       type: 'group',
@@ -253,8 +428,24 @@ export const createGroupChat = async (req, res) => {
 
     attachUsersToChatRoom(
       chat._id.toString(),
-      participants.map((participant) => participant.user.toString())
+      participants
+        .filter((participant) => participant.status === PARTICIPANT_STATUS.ACTIVE)
+        .map((participant) => getParticipantUserId(participant))
+        .filter(Boolean)
     );
+
+    const pendingInvitees = participants
+      .filter((participant) => participant.status === PARTICIPANT_STATUS.PENDING)
+      .map((participant) => getParticipantUserId(participant))
+      .filter(Boolean);
+
+    await Promise.allSettled(
+      pendingInvitees.map((inviteeId) =>
+        sendChatInviteNotification({ chatDoc: chat, inviteeId, inviter: req.user })
+      )
+    );
+
+    await broadcastChatSnapshots(chat, { skipPopulate: true });
 
     res.status(201).json({ chat: chatResponse });
   } catch (error) {
@@ -265,13 +456,15 @@ export const createGroupChat = async (req, res) => {
 
 export const getChatById = async (req, res) => {
   try {
-    const chat = await Chat.findById(req.params.chatId).populate('participants.user', 'first_name last_name avatar role');
+    const chat = await Chat.findById(req.params.chatId)
+      .populate('participants.user', 'first_name last_name avatar role')
+      .populate('participants.invitedBy', 'first_name last_name avatar role');
 
     if (!chat) {
       return res.status(404).json({ error: 'Чат не найден' });
     }
 
-    assertParticipant(chat, req.user._id);
+    assertActiveParticipant(chat, req.user._id);
 
     res.json({ chat: mapChat(chat, req.user._id) });
   } catch (error) {
@@ -292,7 +485,7 @@ export const getChatMessages = async (req, res) => {
       return res.status(404).json({ error: 'Чат не найден' });
     }
 
-    assertParticipant(chat, req.user._id);
+    assertActiveParticipant(chat, req.user._id);
 
     const filters = { chat: chatId };
 
@@ -334,7 +527,7 @@ export const sendMessage = async (req, res) => {
       return res.status(404).json({ error: 'Чат не найден' });
     }
 
-    assertParticipant(chat, req.user._id);
+    assertActiveParticipant(chat, req.user._id);
 
     const message = await Message.create({
       chat: chatId,
@@ -349,7 +542,7 @@ export const sendMessage = async (req, res) => {
     chat.lastMessagePreview = text || '[вложение]';
     await chat.save();
 
-    const participantIds = chat.participants.map((participant) => participant.user.toString());
+    const participantIds = listActiveParticipantIds(chat);
     emitChatMessage(chat._id.toString(), mapMessage(message), participantIds);
 
     await notifyChatParticipants(chat, message);
@@ -370,7 +563,7 @@ export const regenerateInviteCode = async (req, res) => {
       return res.status(404).json({ error: 'Чат не найден' });
     }
 
-    assertParticipant(chat, req.user._id);
+    assertActiveParticipant(chat, req.user._id);
 
     if (chat.type !== 'group') {
       return res.status(400).json({ error: 'Приглашение доступно только для групповых чатов' });
@@ -400,15 +593,40 @@ export const joinByInviteCode = async (req, res) => {
       return res.status(404).json({ error: 'Приглашение недействительно' });
     }
 
-    const alreadyMember = chat.participants.some((participant) => participant.user.toString() === req.user._id.toString());
+    let participant = getParticipantForUser(chat, req.user._id);
+    let statusChanged = false;
 
-    if (!alreadyMember) {
-      chat.participants.push({ user: req.user._id, role: 'member' });
+    if (!participant) {
+      chat.participants.push({
+        user: req.user._id,
+        role: 'member',
+        status: PARTICIPANT_STATUS.ACTIVE,
+        joinedAt: new Date(),
+      });
+      statusChanged = true;
+    } else if (!isActiveParticipant(participant)) {
+      participant.status = PARTICIPANT_STATUS.ACTIVE;
+      participant.joinedAt = new Date();
+      statusChanged = true;
+
+      const inviterId = ensureStringId(participant.invitedBy) || ensureStringId(chat.createdBy);
+      if (inviterId) {
+        await notifyInviterAboutDecision({
+          chatDoc: chat,
+          inviterId,
+          actor: req.user,
+          action: 'accepted',
+        });
+      }
+    }
+
+    if (statusChanged) {
       await chat.save();
       attachUsersToChatRoom(chat._id.toString(), [req.user._id.toString()]);
     }
 
     await populateChatUsers(chat);
+    await broadcastChatSnapshots(chat, { skipPopulate: true });
 
     res.json({ chat: mapChat(chat, req.user._id) });
   } catch (error) {
@@ -426,8 +644,12 @@ export const leaveChat = async (req, res) => {
       return res.status(404).json({ error: 'Чат не найден' });
     }
 
+    const participant = assertParticipant(chat, req.user._id);
+    const wasActive = isActiveParticipant(participant);
     const initialLength = chat.participants.length;
-    chat.participants = chat.participants.filter((participant) => participant.user.toString() !== req.user._id.toString());
+    chat.participants = chat.participants.filter(
+      (item) => getParticipantUserId(item) !== ensureStringId(req.user._id)
+    );
 
     if (chat.participants.length === initialLength) {
       return res.status(400).json({ error: 'Вы уже покинули чат' });
@@ -441,20 +663,130 @@ export const leaveChat = async (req, res) => {
 
     const hasOwner = chat.participants.some((participant) => participant.role === 'owner');
 
+    if (!hasOwner && chat.participants.length) {
+      chat.participants[0].role = 'owner';
+    }
+
+    await chat.save();
+
+    if (wasActive) {
+      detachUserFromChatRoom(chat._id.toString(), req.user._id.toString());
+    }
+
+    await populateChatUsers(chat);
+    await broadcastChatSnapshots(chat, { skipPopulate: true });
+
+    res.json({ message: 'Вы покинули чат' });
+  } catch (error) {
+    console.error('leaveChat error:', error);
+    res.status(500).json({ error: 'Не удалось покинуть чат' });
+  }
+};
+
+export const acceptChatInvite = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const chat = await Chat.findById(chatId)
+      .populate('participants.user', 'first_name last_name avatar role')
+      .populate('participants.invitedBy', 'first_name last_name avatar role');
+
+    if (!chat) {
+      return res.status(404).json({ error: 'Чат не найден' });
+    }
+
+    const participant = assertParticipant(chat, req.user._id);
+
+    if (isActiveParticipant(participant)) {
+      await populateChatUsers(chat);
+      return res.json({ chat: mapChat(chat, req.user._id) });
+    }
+
+    participant.status = PARTICIPANT_STATUS.ACTIVE;
+    participant.joinedAt = new Date();
+
+    await chat.save();
+    await populateChatUsers(chat);
+
+    attachUsersToChatRoom(chat._id.toString(), [req.user._id.toString()]);
+
+    const inviterId = ensureStringId(participant.invitedBy) || ensureStringId(chat.createdBy);
+    if (inviterId && inviterId !== req.user._id.toString()) {
+      await notifyInviterAboutDecision({
+        chatDoc: chat,
+        inviterId,
+        actor: req.user,
+        action: 'accepted',
+      });
+    }
+
+    await broadcastChatSnapshots(chat, { skipPopulate: true });
+
+    return res.json({ chat: mapChat(chat, req.user._id) });
+  } catch (error) {
+    console.error('acceptChatInvite error:', error);
+    const status = error.statusCode || 500;
+    res.status(status).json({ error: error.message || 'Не удалось подтвердить приглашение' });
+  }
+};
+
+export const declineChatInvite = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const chat = await Chat.findById(chatId)
+      .populate('participants.user', 'first_name last_name avatar role')
+      .populate('participants.invitedBy', 'first_name last_name avatar role');
+
+    if (!chat) {
+      return res.status(404).json({ error: 'Чат не найден' });
+    }
+
+    const participant = assertParticipant(chat, req.user._id);
+    const wasActive = isActiveParticipant(participant);
+
+    chat.participants = chat.participants.filter(
+      (item) => getParticipantUserId(item) !== ensureStringId(req.user._id)
+    );
+
+    if (!chat.participants.length) {
+      await Chat.deleteOne({ _id: chat._id });
+      await Message.deleteMany({ chat: chat._id });
+      if (wasActive) {
+        detachUserFromChatRoom(chat._id.toString(), req.user._id.toString());
+      }
+      return res.json({ removed: true, chatId });
+    }
+
+    const hasOwner = chat.participants.some((item) => item.role === 'owner');
     if (!hasOwner) {
       chat.participants[0].role = 'owner';
     }
 
     await chat.save();
 
-    await chat.save();
+    if (wasActive) {
+      detachUserFromChatRoom(chat._id.toString(), req.user._id.toString());
+    }
 
-    detachUserFromChatRoom(chat._id.toString(), req.user._id.toString());
+    if (!wasActive) {
+      const inviterId = ensureStringId(participant.invitedBy) || ensureStringId(chat.createdBy);
+      if (inviterId && inviterId !== req.user._id.toString()) {
+        await notifyInviterAboutDecision({
+          chatDoc: chat,
+          inviterId,
+          actor: req.user,
+          action: 'declined',
+        });
+      }
+    }
 
-    res.json({ message: 'Вы покинули чат' });
+    await populateChatUsers(chat);
+    await broadcastChatSnapshots(chat, { skipPopulate: true });
+
+    res.json({ removed: true, chatId });
   } catch (error) {
-    console.error('leaveChat error:', error);
-    res.status(500).json({ error: 'Не удалось покинуть чат' });
+    console.error('declineChatInvite error:', error);
+    const status = error.statusCode || 500;
+    res.status(status).json({ error: error.message || 'Не удалось отклонить приглашение' });
   }
 };
 
@@ -467,7 +799,9 @@ export const addParticipantsToChat = async (req, res) => {
       return res.status(400).json({ error: 'Укажите хотя бы одного участника' });
     }
 
-    const chat = await Chat.findById(chatId).populate('participants.user', 'first_name last_name avatar role');
+    const chat = await Chat.findById(chatId)
+      .populate('participants.user', 'first_name last_name avatar role')
+      .populate('participants.invitedBy', 'first_name last_name avatar role');
 
     if (!chat) {
       return res.status(404).json({ error: 'Чат не найден' });
@@ -491,7 +825,9 @@ export const addParticipantsToChat = async (req, res) => {
       return res.status(400).json({ error: 'Не удалось распознать участников' });
     }
 
-    const existingIds = new Set(chat.participants.map(participant => participant.user.toString()));
+    const existingIds = new Set(
+      chat.participants.map(participant => getParticipantUserId(participant)).filter(Boolean)
+    );
     const idsToAdd = normalizedIds.filter(id => !existingIds.has(id));
 
     if (!idsToAdd.length) {
@@ -505,15 +841,29 @@ export const addParticipantsToChat = async (req, res) => {
     }
 
     const addedIds = [];
+    const now = new Date();
     usersToAdd.forEach(user => {
-      chat.participants.push({ user: user._id, role: 'member' });
+      chat.participants.push({
+        user: user._id,
+        role: 'member',
+        status: PARTICIPANT_STATUS.PENDING,
+        invitedBy: req.user._id,
+        invitedAt: now,
+        joinedAt: null,
+      });
       addedIds.push(user._id.toString());
     });
 
     await chat.save();
     await populateChatUsers(chat);
 
-    attachUsersToChatRoom(chat._id.toString(), addedIds);
+    await Promise.allSettled(
+      addedIds.map((inviteeId) =>
+        sendChatInviteNotification({ chatDoc: chat, inviteeId, inviter: req.user })
+      )
+    );
+
+    await broadcastChatSnapshots(chat, { skipPopulate: true });
 
     res.json({ chat: mapChat(chat, req.user._id) });
   } catch (error) {

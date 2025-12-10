@@ -2,8 +2,10 @@ import express from 'express';
 import { authenticateToken } from '../controllers/auth.js';
 import {
     addParticipantsToChat,
+    acceptChatInvite,
     createDirectChat,
     createGroupChat,
+    declineChatInvite,
     getChatById,
     getChatMessages,
     joinByInviteCode,
@@ -23,6 +25,8 @@ router.post('/group', createGroupChat);
 router.post('/join', joinByInviteCode);
 router.post('/:chatId/invite', regenerateInviteCode);
 router.post('/:chatId/participants', addParticipantsToChat);
+router.post('/:chatId/invitations/accept', acceptChatInvite);
+router.post('/:chatId/invitations/decline', declineChatInvite);
 router.get('/:chatId', getChatById);
 router.get('/:chatId/messages', getChatMessages);
 router.post('/:chatId/messages', sendMessage);
