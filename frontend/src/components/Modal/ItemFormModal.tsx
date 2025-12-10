@@ -116,57 +116,57 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" />
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[3px] transition-opacity" />
 
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-[#111213] border border-[#2b2c2d] rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55)] max-w-2xl w-full max-h-[92vh] overflow-y-auto text-gray-100">
-          <div className="flex items-center justify-between p-6 border-b border-[#2f3031]">
+        <div className="relative bg-gradient-to-br from-white via-white to-emerald-50/70 border border-emerald-100/80 rounded-[32px] shadow-[0_35px_90px_rgba(16,185,129,0.2)] max-w-2xl w-full max-h-[92vh] overflow-y-auto text-text-primary">
+          <div className="flex items-center justify-between p-6 border-b border-emerald-100 bg-gradient-to-r from-white to-emerald-50/60">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-1">
+              <p className="text-xs uppercase tracking-[0.35em] text-emerald-500 mb-1">
                 {item ? 'Редактирование' : 'Новый товар'}
               </p>
-              <h2 className="text-2xl font-bold text-white">{item ? 'Редактировать товар' : 'Создать товар'}</h2>
+              <h2 className="text-2xl font-bold text-brand-indigo">{item ? 'Редактировать товар' : 'Создать товар'}</h2>
             </div>
             <button
               onClick={onClose}
               type="button"
-              className="w-10 h-10 rounded-2xl bg-[#1c1d1e] border border-[#343536] text-gray-400 hover:text-white hover:border-[#69e7b6] transition-all"
+              className="w-10 h-10 rounded-2xl border border-emerald-100 bg-white/80 text-emerald-700 hover:text-brand-indigo hover:border-brand-indigo/30 transition-all"
               aria-label="Закрыть"
             >
               ×
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
             <div>
-              <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">Изображение товара</label>
+              <label className="block text-xs uppercase tracking-[0.35em] text-text-secondary mb-2">Изображение товара</label>
               <div
-                className="relative w-full rounded-2xl border border-dashed border-[#3a3b3a] bg-[#1a1b1c] p-4 cursor-pointer group overflow-hidden"
+                className="relative w-full rounded-[28px] border border-dashed border-emerald-200 bg-white p-4 cursor-pointer group overflow-hidden shadow-sm"
                 onClick={handleImageAreaClick}
               >
                 <div className="relative w-full max-w-[160px] mx-auto">
-                  <div className="relative w-full pb-[90%] rounded-2xl overflow-hidden border border-[#3a3b3a]">
+                  <div className="relative w-full pb-[90%] rounded-2xl overflow-hidden border border-border-subtle bg-surface-base">
                     {imagePreview ? (
                       <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-500">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-text-secondary">
                         <ForkKnifeIcon className="w-10 h-10" />
-                        <p className="text-xs text-gray-400">Нажмите чтобы загрузить</p>
+                        <p className="text-xs text-text-muted">Нажмите чтобы загрузить</p>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs text-white">
+                    <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs text-emerald-700 font-semibold">
                       Изменить изображение
                     </div>
                   </div>
                 </div>
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                <p className="text-xs text-gray-500 mt-4 text-center">PNG, JPG, JPEG до 5MB</p>
+                <p className="text-xs text-text-muted mt-4 text-center">PNG, JPG, JPEG до 5MB</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Уникальный номер (uniq_nom) *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Уникальный номер (uniq_nom) *</label>
                 <Input
                   type="text"
                   value={formData.uniq_nom}
@@ -177,7 +177,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Название товара *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Название товара *</label>
                 <Input
                   type="text"
                   value={formData.name}
@@ -189,7 +189,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Цена *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Цена *</label>
                   <Input
                     type="number"
                     value={formData.price}
@@ -201,7 +201,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Категория *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Категория *</label>
                   <Select
                     options={categories}
                     value={formData.category_slug}
@@ -213,11 +213,11 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Описание *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Описание *</label>
                 <textarea
                   value={formData.description}
                   onChange={e => handleInputChange('description', e.target.value)}
-                  className="w-full px-4 py-3 border border-[#2f3031] rounded-xl bg-[#1b1c1d] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 border border-border-subtle rounded-2xl bg-white text-text-primary shadow-inner focus:outline-none focus:ring-2 focus:ring-brand-indigo/15 focus:border-brand-indigo transition-all duration-300"
                   rows={3}
                   placeholder="Описание товара..."
                   required
@@ -226,7 +226,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Калории</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Калории</label>
                   <Input
                     type="number"
                     value={formData.calories}
@@ -236,7 +236,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Время приготовления (мин)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Время приготовления (мин)</label>
                   <Input
                     type="number"
                     value={formData.preparation_time}
@@ -246,7 +246,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Количество приборов</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Количество приборов</label>
                   <Input
                     type="number"
                     value={formData.number_pribors}
@@ -258,19 +258,19 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Статус товара</label>
-                <div className="flex rounded-2xl border border-[#2f3031] bg-[#18191a] p-1 text-sm font-semibold">
+                <label className="block text-sm font-medium text-text-secondary mb-2">Статус товара</label>
+                <div className="flex rounded-2xl border border-border-subtle bg-white p-1 text-sm font-semibold shadow-sm">
                   <button
                     type="button"
                     onClick={() => handleInputChange('is_available', true)}
-                    className={`flex-1 py-2 rounded-xl transition-all ${formData.is_available ? 'bg-[#106157] text-white' : 'text-gray-400'}`}
+                    className={`flex-1 py-2 rounded-xl transition-all ${formData.is_available ? 'bg-emerald-50 text-emerald-900 shadow-[0_6px_20px_rgba(16,185,129,0.3)]' : 'text-text-secondary'}`}
                   >
                     Доступен
                   </button>
                   <button
                     type="button"
                     onClick={() => handleInputChange('is_available', false)}
-                    className={`flex-1 py-2 rounded-xl transition-all ${!formData.is_available ? 'bg-[#3a3b3a] text-white' : 'text-gray-400'}`}
+                    className={`flex-1 py-2 rounded-xl transition-all ${!formData.is_available ? 'bg-red-50 text-red-600 shadow-[0_6px_20px_rgba(248,113,113,0.25)]' : 'text-text-secondary'}`}
                   >
                     Недоступен
                   </button>
@@ -278,7 +278,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-[#2f3031]">
+            <div className="flex justify-end gap-3 pt-6 border-t border-emerald-100">
               <Button type="button" onClick={onClose} variant="outline" size="md">
                 Отмена
               </Button>

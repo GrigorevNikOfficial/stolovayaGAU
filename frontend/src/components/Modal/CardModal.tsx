@@ -44,21 +44,21 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, onOrderCr
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Затемнение фона с анимацией */}
       <div
-        className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-[2px] transition-opacity duration-300"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300"
         onClick={onClose}
       />
 
       {/* Модальное окно корзины с анимацией */}
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-[#1f2022] border-l border-[#2f3032] text-gray-100 shadow-2xl transform transition-transform duration-400 ease-out">
+      <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white/98 border-l border-border-subtle text-text-primary shadow-[0_40px_90px_rgba(15,23,42,0.18)] transform transition-transform duration-400 ease-out">
         <div className="flex flex-col h-full">
           {/* Заголовок */}
-          <div className="flex items-center justify-between p-6 border-b border-[#2f3032] bg-[#1c1d1f] gap-4">
+          <div className="flex items-center justify-between p-6 border-b border-border-subtle bg-gradient-to-r from-white to-emerald-50/60 gap-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-100">Корзина</h2>
+              <h2 className="text-xl font-bold text-brand-indigo">Корзина</h2>
               {currentUser && (
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-text-secondary mt-1">
                   Баланс:{' '}
-                  <span className="font-semibold text-[#69e7b6]">
+                  <span className="font-semibold text-emerald-600">
                     {formatBalance(currentUser.balance, { withDecimals: true })}
                   </span>
                 </p>
@@ -66,7 +66,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, onOrderCr
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-full border border-[#2f3032] bg-[#2d2d2c] hover:bg-[#343536] text-gray-300 hover:text-white flex items-center justify-center transition-all duration-300 hover:scale-105"
+              className="w-10 h-10 rounded-full border border-emerald-100 bg-white/80 hover:bg-white text-brand-indigo flex items-center justify-center transition-all duration-300 hover:scale-105"
             >
               <svg
                 className="w-4 h-4"
@@ -85,7 +85,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose, onOrderCr
           </div>
 
           {/* Контент корзины */}
-          <div className="flex-1 overflow-y-auto bg-[#161718]">
+          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-emerald-50/40">
             <CartBlock onOrderCreated={handleOrderCreated} />
           </div>
         </div>

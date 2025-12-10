@@ -28,7 +28,7 @@ const sortByCreatedAtAsc = (list: TopUpRequest[]) =>
   );
 
 const formatCurrency = (value: number) =>
-  `${value.toLocaleString('ru-RU', { minimumFractionDigits: 0 })} ₽`;
+  `${value.toLocaleString('ru-RU', { minimumFractionDigits: 0 })} баллов`;
 
 if (typeof window !== 'undefined') {
   onSocketEvent('topups:created', topUpRequestRealtimeCreated);

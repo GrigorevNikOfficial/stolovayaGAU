@@ -5,7 +5,7 @@ export interface Order {
   items_total?: number; // Сумма без сервисного сбора
   service_fee?: number; // Размер сервисного сбора
   service_fee_type?: 'percent' | 'fixed' | 'none'; // Тип сбора
-  service_fee_value?: number; // Значение настройки, % или ₽
+  service_fee_value?: number; // Значение настройки, % или баллы
   total_amount: number; // Итоговая сумма с учетом сбора
   ready_time?: string; // Время, к которому заказ должен быть готов
   status:

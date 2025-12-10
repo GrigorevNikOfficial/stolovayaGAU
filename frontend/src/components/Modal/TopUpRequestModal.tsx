@@ -19,7 +19,7 @@ const statusOrder: Record<string, number> = {
 };
 
 const formatCurrency = (value: number) =>
-  `${value.toLocaleString('ru-RU', { minimumFractionDigits: 0 })} ₽`;
+  `${value.toLocaleString('ru-RU', { minimumFractionDigits: 0 })} баллов`;
 
 interface TopUpRequestModalProps {
   isOpen: boolean;
@@ -98,8 +98,8 @@ export const TopUpRequestModal: React.FC<TopUpRequestModalProps> = ({
       <div className="relative w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-[32px] border border-border-soft bg-white text-text-primary shadow-[0_25px_80px_rgba(15,23,42,0.35)]">
         <div className="flex items-center justify-between border-b border-border-soft px-6 py-5">
           <div>
-            <p className="mb-1 text-xs uppercase tracking-[0.3em] text-text-muted">баланс</p>
-            <h2 className="text-2xl font-semibold text-brand-indigo">Пополнить баланс</h2>
+            <p className="mb-1 text-xs uppercase tracking-[0.3em] text-text-muted">баллы</p>
+            <h2 className="text-2xl font-semibold text-brand-indigo">Пополнить баллы</h2>
           </div>
           <button
             onClick={onClose}

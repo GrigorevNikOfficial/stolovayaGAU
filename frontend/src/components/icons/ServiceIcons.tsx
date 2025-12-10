@@ -73,6 +73,43 @@ export const ToolkitIcon: FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+export const TrophyIcon: FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={withDefaults(className)}
+    {...props}
+  >
+    <path d="M8 21h8" />
+    <path d="M12 17v4" />
+    <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+    <path d="M5 4H3a3 3 0 0 0 3 3" />
+    <path d="M19 4h2a3 3 0 0 1-3 3" />
+  </svg>
+);
+
+export const ChecklistIcon: FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={withDefaults(className)}
+    {...props}
+  >
+    <rect x={5} y={2} width={14} height={20} rx={2} />
+    <path d="m9 7 1.5 1.5L12.5 6" />
+    <path d="M9 13h6" />
+    <path d="m9 17 1.5 1.5L12.5 16" />
+  </svg>
+);
+
 export const CalendarIcon: FC<IconProps> = ({ className, ...props }) => (
   <svg
     viewBox="0 0 24 24"

@@ -74,7 +74,7 @@ function App() {
     }
 
     if (isProtected && !currentUser && !token) {
-      navigate('/');
+      navigate(currentPath === '/services/chat' ? '/login' : '/');
     }
   }, [currentPath, currentUser, navigate]);
 

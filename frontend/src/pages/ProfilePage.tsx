@@ -5,7 +5,6 @@ import { serviceRequestsApi } from '../api/service-requests';
 import { $currentUser, uploadAvatar, uploadAvatarFx, logout, updateProfile, updateProfileFx } from '../models/users';
 import { loadOrders } from '../models/orders';
 import Button from '../components/layout/Button/Button.tsx';
-import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import NotificationSettings from '../components/Profile/NotificationSettings.tsx';
@@ -429,8 +428,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
           </div>
         </div>
       </main>
-
-      <Footer />
       <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
 
       {mobileTabs.length > 0 && (

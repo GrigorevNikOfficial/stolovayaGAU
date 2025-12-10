@@ -10,7 +10,7 @@ import {
 } from '../../models/topups.ts';
 
 const formatCurrency = (value: number) =>
-  `${value.toLocaleString('ru-RU', { minimumFractionDigits: 0 })} ₽`;
+  `${value.toLocaleString('ru-RU', { minimumFractionDigits: 0 })} баллов`;
 
 type DecisionAction = 'approve' | 'reject';
 

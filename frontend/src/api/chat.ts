@@ -31,6 +31,10 @@ export const chatApi = {
     return httpClient.post<{ message: string }>(`/chats/${chatId}/leave`);
   },
 
+  async addParticipants(chatId: string, participantIds: string[]) {
+    return httpClient.post<{ chat: ChatSummary }>(`/chats/${chatId}/participants`, { participantIds });
+  },
+
   async getChatMessages(chatId: string, params?: { limit?: number; before?: string }) {
     return httpClient.get<PaginatedMessages>(`/chats/${chatId}/messages`, { params });
   },

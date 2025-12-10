@@ -1,12 +1,15 @@
-import type { FC } from 'react';
+import { useState, type FC } from 'react';
 import Button from '../components/layout/Button/Button.tsx';
+import Footer from '../components/layout/Footer/Footer.tsx';
 import {
   BellIcon,
   CalendarIcon,
   ChatBubblesIcon,
-  PieChartIcon,
+  ChecklistIcon,
   ForkKnifeIcon,
+  PieChartIcon,
   ToolkitIcon,
+  TrophyIcon,
 } from '../components/icons/ServiceIcons.tsx';
 import type { IconProps } from '../components/icons/ServiceIcons.tsx';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
@@ -91,8 +94,8 @@ const services: ServiceCardDescriptor[] = [
     title: 'Достижения',
     description: 'Собирайте бейджи активности за заявки, услуги и участие в сервисах.',
     status: 'testing',
-    Icon: BellIcon,
-    iconAccent: 'from-emerald-300 to-emerald-500',
+    Icon: TrophyIcon,
+    iconAccent: 'from-amber-300 to-amber-500',
     path: '/profile?tab=achievements',
   },
   {
@@ -100,7 +103,7 @@ const services: ServiceCardDescriptor[] = [
     title: 'Работа',
     description: 'Раздел подбора подработок и задач от университета, скоро включим доступ.',
     status: 'soon',
-    Icon: ToolkitIcon,
+    Icon: ChecklistIcon,
     iconAccent: 'from-slate-300 to-slate-500',
     path: '#',
   },
@@ -128,7 +131,7 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
     ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
     : '';
   const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
-
+  const [isServicePromptVisible, setIsServicePromptVisible] = useState(true);
   return (
     <div className="min-h-screen text-text-primary flex flex-col bg-surface-base">
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
@@ -211,24 +214,12 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
 
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
-          <section className="space-y-6">
-            <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <h2 className="mt-3 text-3xl font-semibold text-brand-indigo">Выберите сервис для продолжения</h2>
-                </div>
-                {currentUser && (
-                  <div className="rounded-2xl border border-border-subtle bg-surface-muted px-5 py-4 text-sm text-text-secondary">
-                    <p className="text-brand-indigo mb-1 font-semibold">
-                      {currentUser.first_name} {currentUser.last_name}
-                    </p>
-                    <p className="text-text-muted">Статус аккаунта синхронизирован</p>
-                  </div>
-                )}
-              </div>
+          <section className="space-y-5">
+            <div>
+              <h2 className="text-3xl font-semibold text-brand-indigo">Сервисы Studmi</h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+            <div id="services-grid" className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
               {services
                 .filter(service => !service.requiredRole || currentUser?.role === service.requiredRole)
                 .map(service => {
@@ -284,18 +275,36 @@ export const NavigationPage: FC<NavigationPageProps> = ({ currentUser, onNavigat
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border-subtle bg-white p-6 shadow-brand-card">
-            <p className="text-xs uppercase tracking-[0.4em] text-text-muted">дорожная карта</p>
-            <h3 className="mt-2 text-xl font-semibold text-brand-indigo">Дорожная карта релизов</h3>
-            <ul className="mt-4 space-y-3 text-sm text-text-secondary">
-              <li>• Q1 2025 — запуск уведомлений и мобильных пушей</li>
-              <li>• Q2 2025 — общий чат и поддержка</li>
-              <li>• Q3 2025 — маркетплейс услуг сотрудников</li>
-              <li>• Q4 2025 — афиша мероприятий</li>
-            </ul>
-          </section>
         </div>
       </main>
+
+      <Footer />
+
+      {isServicePromptVisible && (
+        <div className="fixed left-1/2 z-40 w-full max-w-xl -translate-x-1/2 px-4 sm:px-0 top-[6.5rem] sm:top-[7rem]">
+          <div className="mx-auto rounded-[24px] border border-emerald-200/80 bg-emerald-50/95 px-4 py-3 text-emerald-900 shadow-[0_25px_60px_rgba(16,185,129,0.25)]">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 text-center sm:text-left">
+                <h2 className="text-base font-semibold leading-snug sm:text-lg">Выберите сервис для продолжения</h2>
+                <p className="mt-1 text-xs text-emerald-800 sm:text-sm">
+                  Сервисы доступны в карточках ниже. Нажмите на нужный, чтобы перейти.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Скрыть подсказку"
+                onClick={() => setIsServicePromptVisible(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-600 transition hover:bg-emerald-100"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

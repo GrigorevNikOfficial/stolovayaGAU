@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { usersApi } from '../../api/users';
 import type { User } from '../../types/user';
 import { phoneToApiFormat } from '../../utils/phone';
+import { formatBalance } from '../../utils/formatBalance';
 import Button from '../layout/Button/Button';
 import Input from '../layout/Input/Input';
 import Select from '../layout/Select/Select';
@@ -228,7 +229,7 @@ export const EmployeeManagement: React.FC = () => {
                       {getRoleName(user.role)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">{user.balance}₽</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">{formatBalance(user.balance)} баллов</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => handleDelete(user._id)}

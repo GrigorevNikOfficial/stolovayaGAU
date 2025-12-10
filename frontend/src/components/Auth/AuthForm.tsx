@@ -51,7 +51,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
     if (!formData.phone.trim()) {
       errors.phone = 'Телефон обязателен';
     } else if (phoneDigits.length !== 11) {
-      errors.phone = 'Введите номер в формате +7 (999) 123 45-67';
+      errors.phone = 'Введите номер в формате +7 999 123-45-67';
     }
 
     if (!formData.password) {
@@ -82,7 +82,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
     const preparedPhone = phoneToApiFormat(formData.phone);
 
     if (!preparedPhone) {
-      setFormErrors(prev => ({ ...prev, phone: 'Введите номер в формате +7 (999) 123 45-67' }));
+      setFormErrors(prev => ({ ...prev, phone: 'Введите номер в формате +7 999 123-45-67' }));
       return;
     }
 
@@ -202,11 +202,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
           {isLogin ? 'Вход' : 'Регистрация'}
         </p>
         <h1 className="text-3xl font-bold text-text-primary">
-          {isLogin ? 'Рады видеть вас снова' : 'Добро пожаловать в столовую ГАУ'}
+          {isLogin ? 'Войдите в систему' : 'Добро пожаловать в столовую ГАУ'}
         </h1>
         <p className="text-text-secondary">
           {isLogin
-            ? 'Авторизуйтесь, чтобы управлять заказами и балансом.'
+            ? 'Введите телефон и пароль, чтобы продолжить.'
             : 'Зарегистрируйтесь и оформляйте заказы онлайн за пару кликов.'}
         </p>
       </div>
@@ -259,7 +259,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ variant = 'full' }) => {
           <div>
             <Input
               type="tel"
-              placeholder="Телефон (+7 (999) 123 45-67)"
+              placeholder="Телефон (+7 999 123-45-67)"
               value={formData.phone}
               onChange={value => setFormData({ ...formData, phone: value })}
               onFocus={() => {

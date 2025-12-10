@@ -8,7 +8,6 @@ import {
   type UpdateEventPayload,
 } from '../../api/events';
 import Button from '../../components/layout/Button/Button';
-import Footer from '../../components/layout/Footer/Footer';
 import Input from '../../components/layout/Input/Input';
 import Select from '../../components/layout/Select/Select';
 import NotificationBell from '../../components/Notifications/NotificationBell';
@@ -606,9 +605,6 @@ const EventsPage: React.FC = () => {
           </div>
         )}
       </main>
-
-      <Footer />
-
       {/* Modals */}
       <EventFormModal
         isOpen={showCreateModal}

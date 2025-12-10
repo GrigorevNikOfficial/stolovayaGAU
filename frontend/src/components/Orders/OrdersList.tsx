@@ -261,7 +261,7 @@ export const OrdersList: React.FC = () => {
           order.service_fee_type === 'percent'
             ? ` (${order.service_fee_value ?? 0}%)`
             : order.service_fee_type === 'fixed'
-              ? ` (${order.service_fee_value ?? order.service_fee} ₽)`
+              ? ` (${order.service_fee_value ?? order.service_fee} баллов)`
               : '';
 
         const cardBorderClass = isOrderOverdue
@@ -360,10 +360,10 @@ export const OrdersList: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <span className="font-semibold text-text-primary">
-                          {orderItem.quantity} × {orderItem.price} ₽
+                          {orderItem.quantity} × {orderItem.price} баллов
                         </span>
                         <p className="text-brand-indigo font-bold">
-                          {orderItem.quantity * orderItem.price} ₽
+                          {orderItem.quantity * orderItem.price} баллов
                         </p>
                       </div>
                     </li>
@@ -377,16 +377,16 @@ export const OrdersList: React.FC = () => {
                 <div className="space-y-1">
                   {typeof order.items_total === 'number' && (
                     <p className="text-sm text-text-secondary">
-                      Сумма товаров: {order.items_total} ₽
+                      Сумма товаров: {order.items_total} баллов
                     </p>
                   )}
                   {order.service_fee && order.service_fee > 0 && (
                     <p className="text-sm text-text-secondary">
-                      Сервисный сбор{serviceFeeLabel}: {order.service_fee} ₽
+                      Сервисный сбор{serviceFeeLabel}: {order.service_fee} баллов
                     </p>
                   )}
                   <p className="text-xl font-bold text-brand-indigo">
-                    Итого: {order.total_amount} ₽
+                    Итого: {order.total_amount} баллов
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 items-center">

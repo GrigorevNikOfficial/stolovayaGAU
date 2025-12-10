@@ -1,7 +1,6 @@
 ﻿import { useUnit } from 'effector-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../../components/layout/Button/Button.tsx';
-import Footer from '../../../components/layout/Footer/Footer.tsx';
 import Input from '../../../components/layout/Input/Input.tsx';
 import TopUpRequestModal from '../../../components/Modal/TopUpRequestModal.tsx';
 import {
@@ -9,6 +8,7 @@ import {
   $chats,
   $friends,
   $messagesByChat,
+  addParticipantsToChat,
   leaveChat,
   loadChats,
   loadFriends,
@@ -17,12 +17,14 @@ import {
   requestGroupChat,
   requestMessages,
   selectChat,
+  sendFriendRequest,
 } from '../../../models/chat';
+import { addParticipantsToChatFx, sendFriendRequestFx } from '../../../models/chat';
 import { $currentUser, logout } from '../../../models/users';
 import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
 import LogoSAU from '../../../images/logo.jpg';
 import { formatBalance } from '../../../utils/formatBalance';
-import type { ChatMessage, ChatSummary } from '../../../types/chat';
+import type { ChatMessage, ChatParticipant, ChatSummary, ParticipantRole } from '../../../types/chat';
 import type { Friendship } from '../../../types/friend';
 import type { UserPreview } from '../../../types/user';
 
@@ -114,6 +116,17 @@ type MessageCluster = {
   lastTimestamp: string;
 };
 
+const PARTICIPANT_ROLE_LABELS: Record<ParticipantRole, string> = {
+  owner: 'Создатель',
+  admin: 'Администратор',
+  member: 'Участник',
+};
+
+const SIDEBAR_TABS: Array<{ id: 'chats' | 'friends'; label: string }> = [
+  { id: 'chats', label: 'Чаты' },
+  { id: 'friends', label: 'Друзья' },
+];
+
 const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster }) => (
   <div className={`flex flex-col gap-1 ${cluster.isOwn ? 'items-end' : 'items-start'}`}>
     {!cluster.isOwn && (
@@ -125,7 +138,7 @@ const MessageClusterBlock: React.FC<{ cluster: MessageCluster }> = ({ cluster })
       {cluster.messages.map(message => (
         <div
           key={message._id}
-          className={`max-w-[80%] rounded-3xl px-4 py-2 text-sm leading-relaxed shadow-brand-card break-words ${
+          className={`max-w-[80%] rounded-[10px] px-4 py-2 text-sm leading-relaxed shadow-brand-card break-words ${
             cluster.isOwn
               ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 text-white'
               : 'bg-surface-base text-text-primary border border-border-soft'
@@ -145,22 +158,89 @@ const ChatPreviewButton: React.FC<{ chat: ChatSummary; active: boolean; onSelect
   <button
     type="button"
     onClick={onSelect}
-    className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
+    className={`w-full rounded-lg border px-2.5 py-2 text-left text-xs sm:text-sm transition-all ${
       active
-        ? 'border-brand-indigo/30 bg-white shadow-brand-card'
-        : 'border-border-subtle bg-transparent hover:border-brand-indigo/30'
+        ? 'border-brand-indigo/40 bg-white shadow-brand-card'
+        : 'border-border-subtle/80 bg-transparent hover:border-brand-indigo/30'
     }`}
   >
     <div className="flex items-center justify-between gap-2">
-      <p className="text-base font-semibold text-text-primary line-clamp-1">{chat.name}</p>
-      <span className="text-[11px] uppercase tracking-widest text-text-muted">
+      <p className="text-xs font-semibold text-text-primary line-clamp-1 sm:text-sm">{chat.name}</p>
+      <span className="text-[9px] uppercase tracking-[0.35em] text-text-muted sm:text-[10px]">
         {formatTime(chat.lastMessageAt)}
       </span>
     </div>
-    <p className="mt-1 text-sm text-text-secondary line-clamp-2">
+    <p className="mt-1 text-[11px] text-text-secondary line-clamp-2 sm:text-xs">
       {chat.lastMessagePreview || 'Будьте первым, кто напишет сообщение'}
     </p>
   </button>
+);
+
+const FriendListCard: React.FC<{ friendship: Friendship; onClick?: (userId: string) => void }> = ({ friendship, onClick }) => {
+  const user = friendship.user;
+  if (!user) {
+    return null;
+  }
+  const initials = `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.trim().toUpperCase() || 'U';
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick(user._id);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="flex w-full items-center gap-3 rounded-2xl border border-border-soft bg-white px-3 py-2 text-left transition-all duration-200 hover:border-brand-indigo/40 hover:shadow-brand-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
+    >
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-surface-muted text-sm font-semibold text-text-primary">
+        {user.avatar?.url ? (
+          <img src={user.avatar.url} alt="Аватар" className="h-full w-full rounded-2xl object-cover" />
+        ) : (
+          initials
+        )}
+      </div>
+      <div className="flex-1 text-left">
+        <p className="text-sm font-semibold text-text-primary">
+          {user.first_name} {user.last_name}
+        </p>
+        {friendship.status && (
+          <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">{friendship.status}</p>
+        )}
+      </div>
+    </button>
+  );
+};
+
+const SidebarTabs: React.FC<{ active: 'chats' | 'friends'; onChange: (tab: 'chats' | 'friends') => void }> = ({ active, onChange }) => (
+  <div className="flex w-full gap-2 overflow-x-auto px-0 py-1" role="tablist">
+    {SIDEBAR_TABS.map(tab => {
+      const isActive = active === tab.id;
+      return (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={isActive}
+          onClick={() => onChange(tab.id)}
+          className={`group relative flex flex-1 items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all duration-300 ${
+            isActive
+              ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
+              : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
+          } cursor-pointer hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
+        >
+          <span className="whitespace-nowrap">{tab.label}</span>
+          <span
+            className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
+              isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+            }`}
+          />
+        </button>
+      );
+    })}
+  </div>
 );
 
 export const ChatPage: React.FC = () => {
@@ -178,6 +258,8 @@ export const ChatPage: React.FC = () => {
     handleRequestGroupChat,
     handlePostMessage,
     handleLeaveChat,
+    handleAddParticipants,
+    handleSendFriendRequest,
     handleLogout,
   } = useUnit({
     chats: $chats,
@@ -193,13 +275,19 @@ export const ChatPage: React.FC = () => {
     handleRequestGroupChat: requestGroupChat,
     handlePostMessage: postMessage,
     handleLeaveChat: leaveChat,
+    handleAddParticipants: addParticipantsToChat,
+    handleSendFriendRequest: sendFriendRequest,
     handleLogout: logout,
   });
+
+  const isAddingParticipants = useUnit(addParticipantsToChatFx.pending);
+  const isFriendRequestPending = useUnit(sendFriendRequestFx.pending);
 
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const currentUserId = currentUser?._id ?? '';
   const [messageDraft, setMessageDraft] = useState('');
-  const [chatFilter, setChatFilter] = useState('');
+  const [sidebarTab, setSidebarTab] = useState<'chats' | 'friends'>('chats');
+  const [sidebarFilter, setSidebarFilter] = useState('');
   const [copyUserCodeSuccess, setCopyUserCodeSuccess] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [isCreateChatModalOpen, setIsCreateChatModalOpen] = useState(false);
@@ -211,6 +299,12 @@ export const ChatPage: React.FC = () => {
   const [codeParticipants, setCodeParticipants] = useState<string[]>([]);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [isMobileChatVisible, setIsMobileChatVisible] = useState(false);
+  const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
+  const [participantFilter, setParticipantFilter] = useState('');
+  const [selectedInvitees, setSelectedInvitees] = useState<Set<string>>(new Set());
+  const [inviteCopySuccess, setInviteCopySuccess] = useState(false);
+  const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
+  const [friendCodeInput, setFriendCodeInput] = useState('');
   const showMobileChatList = isMobileLayout && !isMobileChatVisible;
   const showChatPanel = !isMobileLayout || isMobileChatVisible;
 
@@ -248,6 +342,10 @@ export const ChatPage: React.FC = () => {
   }, [activeChatId, isMobileLayout]);
 
   useEffect(() => {
+    setSidebarFilter('');
+  }, [sidebarTab]);
+
+  useEffect(() => {
     handleLoadChats();
   }, [handleLoadChats]);
 
@@ -260,6 +358,11 @@ export const ChatPage: React.FC = () => {
       handleSelectChat(chats[0]._id);
     }
   }, [activeChatId, chats, handleSelectChat, isMobileLayout]);
+
+  useEffect(() => {
+    setSelectedInvitees(new Set());
+    setParticipantFilter('');
+  }, [activeChatId]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -278,9 +381,68 @@ export const ChatPage: React.FC = () => {
     }
   }, [activeChatId, handleRequestMessages]);
 
+  useEffect(() => {
+    if (!isParticipantsModalOpen) {
+      setParticipantFilter('');
+      setSelectedInvitees(new Set());
+      setInviteCopySuccess(false);
+    }
+  }, [isParticipantsModalOpen]);
+
+  useEffect(() => {
+    if (!isAddFriendModalOpen) {
+      setFriendCodeInput('');
+    }
+  }, [isAddFriendModalOpen]);
+
   const activeChat = chats.find(chat => chat._id === activeChatId) || null;
   const activeMessages = (activeChatId && messagesByChat[activeChatId]) || [];
+  const chatInviteCode = activeChat?.inviteCode || activeChat?._id || '';
   const friendList = friends ?? [];
+  const activeParticipantIds = useMemo(() => {
+    if (!activeChat?.participants) {
+      return new Set<string>();
+    }
+    return new Set(
+      activeChat.participants.map(participant => {
+        if (typeof participant.user === 'string') {
+          return participant.user;
+        }
+        return participant.user?._id ?? '';
+      }).filter(Boolean)
+    );
+  }, [activeChat]);
+  const availableFriends = useMemo(() => {
+    if (!friendList.length) {
+      return [] as Friendship[];
+    }
+    return friendList.filter(friend => friend.user && !activeParticipantIds.has(friend.user._id));
+  }, [friendList, activeParticipantIds]);
+  const filteredInviteOptions = useMemo(() => {
+    if (!participantFilter.trim()) {
+      return availableFriends;
+    }
+    const term = participantFilter.trim().toLowerCase();
+    return availableFriends.filter(friend => {
+      const first = friend.user?.first_name ?? '';
+      const last = friend.user?.last_name ?? '';
+      return `${first} ${last}`.toLowerCase().includes(term);
+    });
+  }, [availableFriends, participantFilter]);
+  const filteredFriends = useMemo(() => {
+    if (!friendList.length) {
+      return [] as Friendship[];
+    }
+    const term = sidebarFilter.trim().toLowerCase();
+    if (!term) {
+      return friendList;
+    }
+    return friendList.filter(friend => {
+      const first = friend.user?.first_name ?? '';
+      const last = friend.user?.last_name ?? '';
+      return `${first} ${last}`.toLowerCase().includes(term);
+    });
+  }, [friendList, sidebarFilter]);
   const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
 
   const messageGroups = useMemo(() => {
@@ -321,12 +483,12 @@ export const ChatPage: React.FC = () => {
   }, [messageGroups]);
 
   const filteredChats = useMemo(() => {
-    const term = chatFilter.trim().toLowerCase();
+    const term = sidebarFilter.trim().toLowerCase();
     if (!term) {
       return chats;
     }
     return chats.filter(chat => chat.name.toLowerCase().includes(term));
-  }, [chatFilter, chats]);
+  }, [sidebarFilter, chats]);
 
   const handleCopyUserCode = async () => {
     if (!currentUser?._id || typeof navigator === 'undefined' || !navigator.clipboard) {
@@ -376,6 +538,64 @@ export const ChatPage: React.FC = () => {
     setCodeParticipants(prev => prev.filter(item => item !== code));
   };
 
+  const handleToggleInvitee = (userId: string) => {
+    setSelectedInvitees(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  const handleAddSelectedInvitees = () => {
+    if (!activeChat) {
+      return;
+    }
+    const participantIds = Array.from(selectedInvitees);
+    if (!participantIds.length) {
+      return;
+    }
+    handleAddParticipants({ chatId: activeChat._id, participantIds });
+    setSelectedInvitees(new Set());
+  };
+
+  const handleOpenParticipantsModal = () => {
+    if (!activeChat) {
+      return;
+    }
+    setIsParticipantsModalOpen(true);
+  };
+
+  const handleCloseParticipantsModal = () => {
+    setIsParticipantsModalOpen(false);
+  };
+
+  const handleCopyInviteCode = async () => {
+    const inviteCodeValue = activeChat?.inviteCode || activeChat?._id;
+    if (!inviteCodeValue || typeof navigator === 'undefined' || !navigator.clipboard) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(inviteCodeValue);
+      setInviteCopySuccess(true);
+      window.setTimeout(() => setInviteCopySuccess(false), 2000);
+    } catch {
+      setInviteCopySuccess(false);
+    }
+  };
+
+  const handleSubmitFriendRequest = () => {
+    const code = friendCodeInput.trim();
+    if (!code) {
+      return;
+    }
+    handleSendFriendRequest(code);
+    setIsAddFriendModalOpen(false);
+  };
+
   const handleChatPreviewSelect = React.useCallback(
     (chatId: string) => {
       handleSelectChat(chatId);
@@ -384,6 +604,69 @@ export const ChatPage: React.FC = () => {
       }
     },
     [handleSelectChat, isMobileLayout]
+  );
+
+  const handleFriendClick = React.useCallback(
+    (userId: string) => {
+      if (!userId) {
+        return;
+      }
+
+      const participantMatches = (participant: ChatParticipant) => {
+        if (!participant) {
+          return false;
+        }
+        if (typeof participant.user === 'string') {
+          return participant.user === userId;
+        }
+        return participant.user?._id === userId;
+      };
+
+      const currentUserMatches = (participant: ChatParticipant) => {
+        if (!participant) {
+          return false;
+        }
+        if (typeof participant.user === 'string') {
+          return participant.user === currentUserId;
+        }
+        return participant.user?._id === currentUserId;
+      };
+
+      const existingDirectChat = chats.find(
+        chat =>
+          chat.type === 'direct' &&
+          Array.isArray(chat.participants) &&
+          chat.participants.some(participantMatches) &&
+          chat.participants.some(currentUserMatches)
+      );
+
+      if (existingDirectChat) {
+        handleChatPreviewSelect(existingDirectChat._id);
+        if (sidebarTab !== 'chats') {
+          setSidebarTab('chats');
+        }
+        if (isMobileLayout) {
+          setIsMobileChatVisible(true);
+        }
+        return;
+      }
+
+      handleRequestDirectChat(userId);
+      setSidebarTab('chats');
+      if (isMobileLayout) {
+        setIsMobileChatVisible(true);
+      }
+    },
+    [
+      chats,
+      currentUserId,
+      handleChatPreviewSelect,
+      handleRequestDirectChat,
+      isMobileLayout,
+      sidebarTab,
+      setIsMobileChatVisible,
+      setSidebarTab,
+    ]
   );
 
   const handleBackToChatList = React.useCallback(() => {
@@ -425,6 +708,7 @@ export const ChatPage: React.FC = () => {
     const confirmation = window.confirm('Вы уверены, что хотите покинуть чат?');
     if (confirmation) {
       handleLeaveChat(activeChat._id);
+      setIsParticipantsModalOpen(false);
       if (isMobileLayout) {
         setIsMobileChatVisible(false);
       }
@@ -530,43 +814,31 @@ export const ChatPage: React.FC = () => {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-text-muted">ваши беседы</p>
-                  <h2 className="text-2xl font-semibold text-text-primary">Чаты</h2>
-                </div>
-                <Button variant="primary" size="sm" onClick={() => setIsCreateChatModalOpen(true)}>
-                  Новый чат
-                </Button>
-              </div>
-              <div className="mt-4">
-                <Input placeholder="Поиск чата" value={chatFilter} onChange={setChatFilter} />
-              </div>
-              <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto pr-1 styled-scrollbar">
-                {filteredChats.length ? (
-                  filteredChats.map(chat => (
-                    <ChatPreviewButton
-                      key={chat._id}
-                      chat={chat}
-                      active={chat._id === activeChatId}
-                      onSelect={() => handleChatPreviewSelect(chat._id)}
-                    />
-                  ))
-                ) : (
-                  <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-1 min-h-0 flex-col gap-6 lg:h-[72vh] lg:flex-row lg:overflow-hidden">
-            <aside className="hidden w-[320px] min-h-[200px] flex-shrink-0 rounded-3xl border border-border-soft bg-white p-5 shadow-brand-card lg:flex lg:h-[72vh] lg:max-h-[72vh] lg:flex-col lg:items-center lg:overflow-hidden">
-              <div className="flex h-full w-full max-w-[300px] flex-1 flex-col items-center text-center min-h-0">
-                <div>
                   <h2 className="text-2xl font-semibold text-text-primary">Чат</h2>
                 </div>
-                <div className="mt-4 w-full max-w-[280px]">
-                  <Input placeholder="Поиск чата" value={chatFilter} onChange={setChatFilter} />
-                </div>
-                <div className="mt-4 flex-1 w-full max-w-[280px] space-y-2 overflow-y-auto pr-1 styled-scrollbar mx-auto">
-                  {filteredChats.length ? (
+                {sidebarTab === 'chats' ? (
+                  <Button variant="primary" size="sm" onClick={() => setIsCreateChatModalOpen(true)}>
+                    Создать чат
+                  </Button>
+                ) : (
+                  <Button variant="primary" size="sm" onClick={() => setIsAddFriendModalOpen(true)}>
+                    Добавить друга
+                  </Button>
+                )}
+              </div>
+              <div className="mt-4">
+                <SidebarTabs active={sidebarTab} onChange={setSidebarTab} />
+              </div>
+              <div className="mt-4">
+                <Input
+                  placeholder={sidebarTab === 'chats' ? 'Поиск чата' : 'Поиск друга'}
+                  value={sidebarFilter}
+                  onChange={setSidebarFilter}
+                />
+              </div>
+              <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto pr-1 styled-scrollbar">
+                {sidebarTab === 'chats' ? (
+                  filteredChats.length ? (
                     filteredChats.map(chat => (
                       <ChatPreviewButton
                         key={chat._id}
@@ -577,16 +849,84 @@ export const ChatPage: React.FC = () => {
                     ))
                   ) : (
                     <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
+                  )
+                ) : filteredFriends.length ? (
+                  filteredFriends.map(friendship =>
+                    friendship.user ? (
+                      <FriendListCard
+                        key={friendship._id}
+                        friendship={friendship}
+                        onClick={handleFriendClick}
+                      />
+                    ) : null
+                  )
+                ) : (
+                  <p className="text-sm text-text-secondary">Список друзей пуст.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-1 min-h-0 flex-col gap-6 lg:h-[72vh] lg:flex-row lg:overflow-hidden">
+            <aside className="hidden w-[260px] min-h-[200px] flex-shrink-0 rounded-3xl border border-border-soft bg-white p-4 shadow-brand-card lg:flex lg:h-[72vh] lg:max-h-[72vh] lg:flex-col lg:items-center lg:overflow-hidden">
+              <div className="flex h-full w-full max-w-[240px] flex-1 flex-col min-h-0">
+                <div className="text-center">
+                  <SidebarTabs active={sidebarTab} onChange={setSidebarTab} />
+                </div>
+                <div className="mt-4 w-full max-w-[220px] mx-auto">
+                  <Input
+                    placeholder={sidebarTab === 'chats' ? 'Поиск чата' : 'Поиск друга'}
+                    value={sidebarFilter}
+                    onChange={setSidebarFilter}
+                  />
+                </div>
+                <div className="mt-4 flex-1 w-full space-y-2 overflow-y-auto pr-1 styled-scrollbar">
+                  {sidebarTab === 'chats' ? (
+                    filteredChats.length ? (
+                      filteredChats.map(chat => (
+                        <ChatPreviewButton
+                          key={chat._id}
+                          chat={chat}
+                          active={chat._id === activeChatId}
+                          onSelect={() => handleChatPreviewSelect(chat._id)}
+                        />
+                      ))
+                    ) : (
+                      <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
+                    )
+                  ) : filteredFriends.length ? (
+                    filteredFriends.map(friendship =>
+                      friendship.user ? (
+                        <FriendListCard
+                          key={friendship._id}
+                          friendship={friendship}
+                          onClick={handleFriendClick}
+                        />
+                      ) : null
+                    )
+                  ) : (
+                    <p className="text-sm text-text-secondary">Список друзей пуст.</p>
                   )}
                 </div>
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="mt-4 w-full max-w-[280px]"
-                  onClick={() => setIsCreateChatModalOpen(true)}
-                >
-                  Создать новый чат
-                </Button>
+                {sidebarTab === 'chats' ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="mt-4 w-full"
+                    onClick={() => setIsCreateChatModalOpen(true)}
+                  >
+                    Создать чат
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="mt-4 w-full"
+                    onClick={() => setIsAddFriendModalOpen(true)}
+                  >
+                    Добавить друга
+                  </Button>
+                )}
               </div>
             </aside>
 
@@ -595,10 +935,19 @@ export const ChatPage: React.FC = () => {
               {activeChat ? (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle px-6 py-4 flex-none">
-                    <div>
-                      <h2 className="text-2xl font-semibold text-text-primary">{activeChat.name}</h2>
-                      <p className="text-sm text-text-secondary">{activeChat.participantCount} участников</p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenParticipantsModal}
+                      className="group text-left"
+                      aria-label="Открыть участников чата"
+                    >
+                      <h2 className="text-2xl font-semibold text-text-primary group-hover:text-brand-indigo transition-colors">
+                        {activeChat.name}
+                      </h2>
+                      <p className="text-sm text-text-secondary group-hover:text-brand-indigo/80">
+                        {activeChat.participantCount} участников
+                      </p>
+                    </button>
                     <div className="flex flex-wrap items-center gap-2">
                       {isMobileLayout && (
                         <Button
@@ -610,14 +959,6 @@ export const ChatPage: React.FC = () => {
                           Назад к чатам
                         </Button>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-border-soft text-text-primary"
-                        onClick={handleLeaveCurrentChat}
-                      >
-                        Покинуть чат
-                      </Button>
                     </div>
                   </div>
 
@@ -684,8 +1025,6 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
       <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
       {isCreateChatModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -693,7 +1032,6 @@ export const ChatPage: React.FC = () => {
           <div className="relative z-10 w-full max-w-lg rounded-3xl border border-border-soft bg-white p-6 shadow-brand-card">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-text-muted">создание</p>
                 <h3 className="text-2xl font-semibold text-text-primary">Новый чат</h3>
               </div>
               <button
@@ -732,40 +1070,6 @@ export const ChatPage: React.FC = () => {
             {chatCreationMode === 'group' ? (
               <div className="mt-5 space-y-4">
                 <Input value={newChatName} onChange={setNewChatName} placeholder="Название общего чата" />
-                <div className="rounded-2xl border border-border-soft bg-white/70 p-4 space-y-3">
-                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">добавить по коду</p>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input value={codeParticipantInput} onChange={setCodeParticipantInput} placeholder="Код участника" />
-                    <Button
-                      variant="outline"
-                      className="sm:min-w-[130px]"
-                      onClick={handleAddCodeParticipant}
-                      disabled={!codeParticipantInput.trim()}
-                    >
-                      Добавить
-                    </Button>
-                  </div>
-                  {codeParticipants.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {codeParticipants.map(code => (
-                        <span
-                          key={code}
-                          className="inline-flex items-center gap-2 rounded-full border border-border-soft bg-surface-muted px-3 py-1 text-xs font-mono"
-                        >
-                          {code}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCodeParticipant(code)}
-                            className="text-text-secondary hover:text-brand-indigo"
-                            aria-label="Удалить код участника"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
                 <div className="rounded-2xl border border-border-soft bg-white/70 p-4">
                   <p className="text-xs uppercase tracking-[0.35em] text-text-muted">выбрать из друзей</p>
                   <div className="mt-3 max-h-48 overflow-y-auto space-y-2 pr-1 styled-scrollbar">
@@ -810,6 +1114,55 @@ export const ChatPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+                <div className="rounded-2xl border border-border-soft bg-white/70 p-4 space-y-3">
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">добавить по коду</p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input value={codeParticipantInput} onChange={setCodeParticipantInput} placeholder="Код участника" />
+                    <Button
+                      variant="outline"
+                      className="sm:min-w-[130px]"
+                      onClick={handleAddCodeParticipant}
+                      disabled={!codeParticipantInput.trim()}
+                    >
+                      Добавить
+                    </Button>
+                  </div>
+                  {codeParticipants.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {codeParticipants.map(code => (
+                        <span
+                          key={code}
+                          className="inline-flex items-center gap-2 rounded-full border border-border-soft bg-surface-muted px-3 py-1 text-xs font-mono"
+                        >
+                          {code}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCodeParticipant(code)}
+                            className="text-text-secondary hover:text-brand-indigo"
+                            aria-label="Удалить код участника"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="rounded-2xl border border-dashed border-border-soft bg-surface-muted/60 p-3 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">ваш код</p>
+                      <p className="mt-1 break-all font-mono text-sm text-text-primary">{currentUser?._id || '—'}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 border-border-soft text-text-primary sm:mt-0"
+                      onClick={handleCopyUserCode}
+                      disabled={!currentUser?._id}
+                    >
+                      {copyUserCodeSuccess ? 'Скопировано' : 'Копировать'}
+                    </Button>
+                  </div>
+                </div>
                 <Button variant="primary" className="w-full" onClick={handleCreateGroupChat} disabled={!newChatName.trim()}>
                   Создать чат
                 </Button>
@@ -822,24 +1175,215 @@ export const ChatPage: React.FC = () => {
                 </Button>
               </div>
             )}
-            <div className="mt-6 rounded-2xl border border-dashed border-border-soft bg-surface-muted/60 p-4">
-              <p className="text-xs uppercase tracking-[0.35em] text-text-muted">ваш код</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="flex-1 break-all font-mono text-sm text-text-primary">{currentUser?._id || '—'}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-border-soft text-text-primary"
-                  onClick={handleCopyUserCode}
-                  disabled={!currentUser?._id}
-                >
-                  {copyUserCodeSuccess ? 'Скопировано' : 'Копировать'}
-                </Button>
-              </div>
-            </div>
             <Button variant="outline" className="mt-4 w-full border-border-soft text-text-primary" onClick={closeCreateChatModal}>
               Отменить
             </Button>
+          </div>
+        </div>
+      )}
+      {isAddFriendModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsAddFriendModalOpen(false)} />
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-border-soft bg-white p-6 shadow-brand-card">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-semibold text-text-primary">Добавить друга</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddFriendModalOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-brand-indigo"
+                aria-label="Закрыть"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-5 space-y-4">
+              <Input
+                value={friendCodeInput}
+                onChange={setFriendCodeInput}
+                placeholder="Код пользователя"
+              />
+              <div className="rounded-2xl border border-dashed border-border-soft bg-surface-muted/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-text-muted">ваш код</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="flex-1 break-all font-mono text-sm text-text-primary">{currentUser?._id || '—'}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-border-soft text-text-primary"
+                    onClick={handleCopyUserCode}
+                    disabled={!currentUser?._id}
+                  >
+                    {copyUserCodeSuccess ? 'Скопировано' : 'Копировать'}
+                  </Button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={handleSubmitFriendRequest}
+                  disabled={!friendCodeInput.trim() || isFriendRequestPending}
+                >
+                  {isFriendRequestPending ? 'Отправляем...' : 'Отправить запрос'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 border-border-soft text-text-primary"
+                  onClick={() => setIsAddFriendModalOpen(false)}
+                >
+                  Отмена
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isParticipantsModalOpen && activeChat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/35 backdrop-blur-sm" onClick={handleCloseParticipantsModal} />
+          <div className="relative z-10 w-full max-w-4xl rounded-3xl border border-border-soft bg-white p-6 shadow-brand-card">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-semibold text-text-primary">{activeChat.name}</h3>
+                <p className="text-sm text-text-secondary">{activeChat.participantCount} участников</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseParticipantsModal}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-brand-indigo"
+                aria-label="Закрыть"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-border-soft bg-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">участники</p>
+                  <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1 styled-scrollbar">
+                    {activeChat.participants?.length ? (
+                      activeChat.participants.map(participant => {
+                        const user = participant.user;
+                        const initials = `${user?.first_name?.[0] ?? ''}${user?.last_name?.[0] ?? ''}`.trim().toUpperCase() || 'U';
+                        return (
+                          <div
+                            key={participant._id}
+                            className="flex items-center gap-3 rounded-2xl border border-border-soft bg-white px-3 py-2"
+                          >
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-surface-muted text-sm font-semibold text-text-primary">
+                              {user?.avatar?.url ? (
+                                <img src={user.avatar.url} alt="Аватар участника" className="h-full w-full rounded-2xl object-cover" />
+                              ) : (
+                                initials || 'U'
+                              )}
+                            </div>
+                            <div className="flex-1 text-left">
+                              <p className="text-sm font-semibold text-text-primary">
+                                {user?.first_name} {user?.last_name}
+                              </p>
+                              <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">
+                                {PARTICIPANT_ROLE_LABELS[participant.role] || 'Участник'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-text-secondary">Список участников пока пуст.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-border-soft bg-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">добавить из друзей</p>
+                  <div className="mt-3">
+                    <Input value={participantFilter} onChange={setParticipantFilter} placeholder="Поиск по друзьям" />
+                  </div>
+                  <div className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1 styled-scrollbar">
+                    {filteredInviteOptions.length ? (
+                      filteredInviteOptions.map(friendship => {
+                        const user = friendship.user;
+                        if (!user) {
+                          return null;
+                        }
+                        const isSelected = selectedInvitees.has(user._id);
+                        return (
+                          <button
+                            key={friendship._id}
+                            type="button"
+                            onClick={() => handleToggleInvitee(user._id)}
+                            className={`w-full rounded-2xl border px-3 py-2 text-left text-sm transition-colors ${
+                              isSelected
+                                ? 'border-emerald-400 bg-emerald-50 text-text-primary shadow-brand-card'
+                                : 'border-border-subtle bg-white text-text-secondary hover:border-emerald-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="font-semibold text-text-primary">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <span className={`text-xs font-semibold ${isSelected ? 'text-emerald-600' : 'text-text-secondary'}`}>
+                                {isSelected ? 'Выбран' : 'Добавить'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-text-secondary">Подходящих друзей нет.</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="primary"
+                    className="mt-4 w-full"
+                    onClick={handleAddSelectedInvitees}
+                    disabled={!selectedInvitees.size || isAddingParticipants}
+                  >
+                    {isAddingParticipants
+                      ? 'Добавляем...'
+                      : selectedInvitees.size
+                        ? `Добавить (${selectedInvitees.size})`
+                        : 'Добавить участников'}
+                  </Button>
+                </div>
+                <div className="rounded-2xl border border-border-soft bg-white/70 p-4 space-y-3">
+                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">пригласить по коду</p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <span className="flex-1 break-all font-mono text-sm text-text-primary">
+                      {chatInviteCode || 'Код недоступен'}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-border-soft text-text-primary"
+                      onClick={handleCopyInviteCode}
+                      disabled={!chatInviteCode}
+                    >
+                      {inviteCopySuccess ? 'Скопировано' : 'Скопировать'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    Поделитесь кодом с теми, кто ещё не в друзьях.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={handleLeaveCurrentChat}
+                >
+                  Покинуть чат
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}

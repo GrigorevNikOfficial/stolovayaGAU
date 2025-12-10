@@ -363,7 +363,7 @@ export const ItemsList: React.FC = () => {
             <div className="flex flex-col lg:flex-row flex-wrap gap-4">
               <div className="flex-1 min-w-[200px]">
                 <label className="block text-sm font-medium text-text-muted mb-2">
-                  Ценовой диапазон (₽)
+                  Ценовой диапазон (баллы)
                 </label>
                 <div className="flex gap-2">
                   <Input
@@ -584,7 +584,7 @@ export const ItemsList: React.FC = () => {
                         </h3>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-bold text-brand-indigo">{item.price} ₽</span>
+                          <span className="text-base font-bold text-brand-indigo">{item.price}</span>
                           <span
                             className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${availabilityBadgeClasses}`}
                           >
@@ -726,26 +726,40 @@ const DeleteConfirmModal: React.FC<{
   onConfirm: () => void;
 }> = ({ itemName, onClose, onConfirm }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl my-8">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl text-red-600">⚠️</span>
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[3px] flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="relative bg-gradient-to-br from-white via-white to-red-50/70 border border-red-100 rounded-[32px] p-8 max-w-md w-full shadow-[0_35px_90px_rgba(248,113,113,0.25)] my-8">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-white border border-red-100 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+            <svg
+              className="w-8 h-8 text-red-500"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M10.29 3.86 1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0z" />
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Подтверждение удаления</h2>
-          <p className="text-gray-600 mb-6">
-            Вы уверены, что хотите удалить блюдо <strong>"{itemName}"</strong>? Это действие нельзя отменить.
-          </p>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-semibold text-text-primary">Подтверждение удаления</h2>
+            <p className="text-sm text-text-secondary">
+              Вы уверены, что хотите удалить блюдо <strong>"{itemName}"</strong>? Это действие нельзя отменить.
+            </p>
+          </div>
         </div>
-        <div className="flex justify-center gap-3">
-          <Button onClick={onClose} variant="outline" size="md">
+        <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+          <Button onClick={onClose} variant="outline" size="md" className="flex-1">
             Отмена
           </Button>
           <Button
             onClick={onConfirm}
-            variant="secondary"
+            variant="primary"
             size="md"
-            className="bg-red-500 hover:bg-red-600 border-red-500"
+            className="flex-1 bg-red-500 hover:bg-red-600 border-red-500"
           >
             Удалить
           </Button>

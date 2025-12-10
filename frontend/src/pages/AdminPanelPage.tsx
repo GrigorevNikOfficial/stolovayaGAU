@@ -2,7 +2,6 @@ import { useUnit } from 'effector-react';
 import React from 'react';
 import { settingsApi } from '../api/settings';
 import Button from '../components/layout/Button/Button';
-import Footer from '../components/layout/Footer/Footer';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import { Settings } from '../components/Settings/Settings';
 import { UserBalances } from '../components/Settings/UserBalances';
@@ -501,8 +500,6 @@ export const AdminPanelPage: React.FC = () => {
           {renderActiveSection()}
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

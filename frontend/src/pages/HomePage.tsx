@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CategoriesList } from '../components/Categories/CategoriesList.tsx';
 import { ItemsList } from '../components/Items/ItemsList.tsx';
 import Button from '../components/layout/Button/Button.tsx';
-import Footer from '../components/layout/Footer/Footer.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
 import CartModal from '../components/Modal/CardModal.tsx';
 import { OrdersList } from '../components/Orders/OrdersList.tsx';
@@ -138,7 +137,6 @@ export const HomePage: React.FC = () => {
       'created',
       'cooking',
       'waiting_delivery',
-      'in_transit',
       'ready_for_pickup',
     ]);
 
@@ -280,7 +278,7 @@ export const HomePage: React.FC = () => {
                     type="button"
                     onClick={() => setIsTopUpModalOpen(true)}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 text-emerald-700 font-semibold text-sm shadow-inner transition-colors hover:bg-emerald-100"
-                    aria-label="Пополнить баланс"
+                    aria-label="Пополнить баллы"
                   >
                     <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
                     <span className="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-500 text-white text-base leading-none shadow-sm">
@@ -451,7 +449,7 @@ export const HomePage: React.FC = () => {
                                   </p>
                                   <div className="flex items-center justify-between">
                                     <span className="text-lg font-bold text-brand-indigo">
-                                      {order.total_amount.toLocaleString('ru-RU')} ₽
+                                      {order.total_amount.toLocaleString('ru-RU')} баллов
                                     </span>
                                     <span className="text-xs text-text-muted">
                                       Tap, чтобы открыть
@@ -517,10 +515,6 @@ export const HomePage: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Футер */}
-      <Footer />
-
       {/* Кнопка открытия корзины (плавающая) - ТОЛЬКО ДЛЯ ДЕСКТОПА */}
       {showCart && cart.length > 0 && (
         <div className="hidden lg:block fixed bottom-6 right-6 z-30">

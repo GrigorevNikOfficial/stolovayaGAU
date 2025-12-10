@@ -101,7 +101,7 @@ export const OrderSettings: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
-                Значение {settings.serviceFeeType === 'percent' ? '(%)' : '(₽)'}
+                Значение {settings.serviceFeeType === 'percent' ? '(%)' : '(баллы)'}
               </label>
               <Input
                 type="number"
@@ -119,11 +119,11 @@ export const OrderSettings: React.FC = () => {
             {settings.serviceFeeValue > 0 && (
               <div className="bg-brand-indigo/5 border border-brand-indigo/20 rounded-2xl p-4">
                 <p className="text-sm text-brand-indigo">
-                  <strong>Пример:</strong> При заказе на 1000₽ итоговая сумма составит:{' '}
+                  <strong>Пример:</strong> При заказе на 1000 баллов итоговая сумма составит:{' '}
                   <strong>
                     {settings.serviceFeeType === 'percent'
-                      ? `${(1000 + (1000 * settings.serviceFeeValue) / 100).toFixed(2)}₽ (сбор ${settings.serviceFeeValue}%)`
-                      : `${(1000 + settings.serviceFeeValue).toFixed(2)}₽ (сбор ${settings.serviceFeeValue}₽)`}
+                      ? `${(1000 + (1000 * settings.serviceFeeValue) / 100).toFixed(2)} баллов (сбор ${settings.serviceFeeValue}%)`
+                      : `${(1000 + settings.serviceFeeValue).toFixed(2)} баллов (сбор ${settings.serviceFeeValue} баллов)`}
                   </strong>
                 </p>
               </div>

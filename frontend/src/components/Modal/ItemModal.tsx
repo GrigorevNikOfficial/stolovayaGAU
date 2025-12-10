@@ -198,7 +198,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
   const availabilityChipClasses = isAvailable
     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-    : 'bg-surface-muted text-text-muted border border-border-soft';
+    : 'bg-white/70 text-text-muted border border-border-soft';
 
   if (!isOpen || !item) {
     return null;
@@ -207,15 +207,15 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity"
         onClick={onClose}
       />
 
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl rounded-[32px] border border-border-soft bg-white text-text-primary shadow-[0_40px_90px_rgba(15,23,42,0.18)] overflow-hidden">
+        <div className="relative w-full max-w-4xl overflow-hidden rounded-[36px] border border-emerald-100/80 bg-gradient-to-br from-white via-white to-emerald-50/70 text-text-primary shadow-[0_35px_90px_rgba(16,185,129,0.2)]">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border-soft bg-white/90 text-text-secondary shadow-sm transition-all duration-200 hover:border-brand-indigo/40 hover:text-brand-indigo"
+            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-emerald-100/80 bg-white/80 text-emerald-700 shadow-sm transition-all duration-200 hover:border-brand-indigo/40 hover:text-brand-indigo"
             aria-label="Закрыть"
           >
             <svg
@@ -233,9 +233,9 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             </svg>
           </button>
 
-          <div className="flex flex-col gap-6 p-6 lg:flex-row lg:p-8">
+          <div className="flex flex-col gap-6 p-6 lg:flex-row lg:p-10">
             <div className="lg:w-1/2">
-              <div className="relative min-h-[280px] w-full overflow-hidden rounded-3xl border border-border-soft bg-surface-muted">
+              <div className="relative min-h-[280px] w-full overflow-hidden rounded-[28px] border border-emerald-100 bg-white/70">
                 {item.image_url || item.image?.url ? (
                   <img
                     src={item.image_url || item.image?.url}
@@ -243,7 +243,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-text-muted">
+                  <div className="absolute inset-0 flex items-center justify-center text-emerald-300">
                     <ForkKnifeIcon className="w-16 h-16" />
                   </div>
                 )}
@@ -268,7 +268,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-3xl font-bold text-brand-indigo">
-                    {item.price} ₽
+                    {item.price} баллов
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`px-3 py-1 text-[11px] font-semibold rounded-full ${availabilityChipClasses}`}>
@@ -284,20 +284,20 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-3 text-sm text-text-secondary">
                   {item.calories && (
-                    <div className="flex items-center gap-2 rounded-2xl border border-border-soft bg-surface-muted px-3 py-2">
-                      <FlameIcon className="w-4 h-4 text-text-muted" />
+                    <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2">
+                          <FlameIcon className="w-4 h-4 text-emerald-400" />
                       <span>{item.calories} ккал</span>
                     </div>
                   )}
                   {item.preparation_time && (
-                    <div className="flex items-center gap-2 rounded-2xl border border-border-soft bg-surface-muted px-3 py-2">
-                      <ClockIcon className="w-4 h-4 text-text-muted" />
+                        <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2">
+                          <ClockIcon className="w-4 h-4 text-emerald-400" />
                       <span>{item.preparation_time} мин</span>
                     </div>
                   )}
                   {item.number_pribors && (
-                    <div className="flex items-center gap-2 rounded-2xl border border-border-soft bg-surface-muted px-3 py-2">
-                      <ForkKnifeIcon className="w-4 h-4 text-text-muted" />
+                        <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2">
+                          <ForkKnifeIcon className="w-4 h-4 text-emerald-400" />
                       <span>{item.number_pribors} приборов</span>
                     </div>
                   )}

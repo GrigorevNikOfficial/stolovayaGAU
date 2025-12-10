@@ -265,13 +265,13 @@ export const ProfileContent: React.FC<ProfileContentProps> = ({
 
         <div className="bg-surface-muted rounded-xl p-4 sm:p-6 border border-border-soft">
           <label className="block text-sm sm:text-base font-medium text-text-muted mb-2 sm:mb-3">
-            Баланс
+            Баллы
           </label>
           <p className="text-2xl sm:text-3xl font-bold text-brand-indigo">
             {formattedBalance}
           </p>
           <p className="text-xs text-text-muted mt-1">
-            Пополнить баланс может администратор системы
+            Пополнить баллы может администратор системы
           </p>
         </div>
 

@@ -1,5 +1,5 @@
 const BALANCE_CAP = 10_000_000;
-const cappedLabel = '10+ млн ₽';
+const cappedLabel = '10+ млн';
 const DEFAULT_COMPACT_THRESHOLD = 100_000;
 
 const integerFormatter = new Intl.NumberFormat('ru-RU', {
@@ -28,14 +28,14 @@ export const formatBalance = (
 ): string => {
   const safeValue = Number(rawValue ?? 0);
   if (!Number.isFinite(safeValue)) {
-    return options?.withDecimals ? '0,00 ₽' : '0 ₽';
+    return options?.withDecimals ? '0,00' : '0';
   }
 
   const shouldUseCompact = Boolean(options?.compact) &&
     Math.abs(safeValue) >= (options?.compactThreshold ?? DEFAULT_COMPACT_THRESHOLD);
 
   if (shouldUseCompact) {
-    return `${compactFormatter.format(safeValue)} ₽`;
+    return compactFormatter.format(safeValue);
   }
 
   if (safeValue >= BALANCE_CAP) {
@@ -43,5 +43,5 @@ export const formatBalance = (
   }
 
   const formatter = options?.withDecimals ? decimalFormatter : integerFormatter;
-  return `${formatter.format(safeValue)} ₽`;
+  return formatter.format(safeValue);
 };

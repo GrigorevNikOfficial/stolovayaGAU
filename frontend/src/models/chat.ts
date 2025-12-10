@@ -71,6 +71,7 @@ export const sendFriendRequest = createEvent<string>();
 export const respondToRequest = createEvent<{ requestId: string; action: 'accept' | 'decline' }>();
 export const removeFriend = createEvent<string>();
 export const leaveChat = createEvent<string>();
+export const addParticipantsToChat = createEvent<{ chatId: string; participantIds: string[] }>();
 
 export const incomingSocketMessage = createEvent<ChatMessage>();
 
@@ -117,6 +118,11 @@ export const leaveChatFx = createEffect(async (chatId: string) => {
   return chatId;
 });
 
+export const addParticipantsToChatFx = createEffect(async ({ chatId, participantIds }: { chatId: string; participantIds: string[] }) => {
+  const response = await chatApi.addParticipants(chatId, participantIds);
+  return response.chat;
+});
+
 export const loadFriendsFx = createEffect(async () => {
   const response = await friendsApi.getFriends();
   return response.friends;
@@ -154,6 +160,7 @@ export const $chats = createStore<ChatSummary[]>([])
   .on(createDirectChatFx.doneData, (state, chat) => upsertChat(state, chat))
   .on(createGroupChatFx.doneData, (state, chat) => upsertChat(state, chat))
   .on(joinByCodeFx.doneData, (state, chat) => upsertChat(state, chat))
+  .on(addParticipantsToChatFx.doneData, (state, chat) => upsertChat(state, chat))
   .on(sendMessageFx.doneData, (state, message) => updateChatPreview(state, message))
   .on(incomingSocketMessage, (state, message) => updateChatPreview(state, message))
   .on(leaveChatFx.doneData, (state, chatId) => state.filter(chat => chat._id !== chatId));
@@ -269,6 +276,11 @@ sample({
 });
 
 sample({
+  clock: addParticipantsToChat,
+  target: addParticipantsToChatFx,
+});
+
+sample({
   clock: sendMessageFx.fail,
   fn: () => ({ message: 'Не удалось отправить сообщение', type: 'error' as const }),
   target: showToast,
@@ -295,6 +307,12 @@ sample({
 sample({
   clock: leaveChatFx.doneData,
   fn: () => ({ message: 'Вы покинули чат', type: 'success' as const }),
+  target: showToast,
+});
+
+sample({
+  clock: addParticipantsToChatFx.done,
+  fn: () => ({ message: 'Участники добавлены', type: 'success' as const }),
   target: showToast,
 });
 

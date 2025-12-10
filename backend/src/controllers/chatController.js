@@ -457,3 +457,67 @@ export const leaveChat = async (req, res) => {
     res.status(500).json({ error: 'Не удалось покинуть чат' });
   }
 };
+
+export const addParticipantsToChat = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { participantIds } = req.body || {};
+
+    if (!Array.isArray(participantIds) || participantIds.length === 0) {
+      return res.status(400).json({ error: 'Укажите хотя бы одного участника' });
+    }
+
+    const chat = await Chat.findById(chatId).populate('participants.user', 'first_name last_name avatar role');
+
+    if (!chat) {
+      return res.status(404).json({ error: 'Чат не найден' });
+    }
+
+    assertParticipant(chat, req.user._id);
+
+    if (chat.type !== 'group') {
+      return res.status(400).json({ error: 'Добавлять участников можно только в групповые чаты' });
+    }
+
+    const normalizedIds = Array.from(
+      new Set(
+        participantIds
+          .filter(id => typeof id === 'string' && id.trim())
+          .map(id => id.trim())
+      )
+    );
+
+    if (!normalizedIds.length) {
+      return res.status(400).json({ error: 'Не удалось распознать участников' });
+    }
+
+    const existingIds = new Set(chat.participants.map(participant => participant.user.toString()));
+    const idsToAdd = normalizedIds.filter(id => !existingIds.has(id));
+
+    if (!idsToAdd.length) {
+      return res.json({ chat: mapChat(chat, req.user._id) });
+    }
+
+    const usersToAdd = await User.find({ _id: { $in: idsToAdd } });
+
+    if (!usersToAdd.length) {
+      return res.status(404).json({ error: 'Указанные пользователи не найдены' });
+    }
+
+    const addedIds = [];
+    usersToAdd.forEach(user => {
+      chat.participants.push({ user: user._id, role: 'member' });
+      addedIds.push(user._id.toString());
+    });
+
+    await chat.save();
+    await populateChatUsers(chat);
+
+    attachUsersToChatRoom(chat._id.toString(), addedIds);
+
+    res.json({ chat: mapChat(chat, req.user._id) });
+  } catch (error) {
+    console.error('addParticipantsToChat error:', error);
+    res.status(500).json({ error: 'Не удалось добавить участников' });
+  }
+};

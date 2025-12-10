@@ -3,7 +3,6 @@ import React from 'react';
 import { marketplaceApi } from '../../api/services';
 import { serviceRequestsApi } from '../../api/service-requests';
 import Button from '../../components/layout/Button/Button';
-import Footer from '../../components/layout/Footer/Footer';
 import Input from '../../components/layout/Input/Input';
 import Select from '../../components/layout/Select/Select';
 import TopUpRequestModal from '../../components/Modal/TopUpRequestModal';
@@ -1346,7 +1345,7 @@ export const MarketplacePage: React.FC = () => {
     }
 
     if (Number.isNaN(price) || price <= 0) {
-      showToast({ message: 'Укажите стоимость больше 0 ₽', type: 'error' });
+      showToast({ message: 'Укажите стоимость больше 0 баллов', type: 'error' });
       return;
     }
 
@@ -1961,9 +1960,6 @@ export const MarketplacePage: React.FC = () => {
 
         </div>
       </main>
-
-      <Footer />
-
       {mobileHeaderTabs.length > 0 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 p-3 shadow-lg backdrop-blur z-40">
           <div className="flex justify-around items-center">

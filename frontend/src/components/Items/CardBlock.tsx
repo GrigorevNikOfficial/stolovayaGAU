@@ -115,7 +115,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const serviceFeeLabel =
     serviceFeeType === 'percent'
       ? `${serviceFeeValue}%`
-      : `${formatCurrency(serviceFeeValue)} ₽`;
+      : `${formatCurrency(serviceFeeValue)} баллов`;
 
   useEffect(() => {
     handleFetchSettings();
@@ -235,23 +235,23 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
   const deliveryTabLabel = settings.deliveryEnabled ? 'Доставка' : 'Доставка (в разработке)';
 
   return (
-    <div className="flex flex-col text-gray-100">
+    <div className="flex flex-col text-text-primary">
       {/* Выбор способа получения */}
       {cart.length > 0 && (
-        <div className="p-6 border-b border-[#2f3032] bg-[#161718]">
-          <label className="block text-sm font-medium text-gray-300 mb-3">
+        <div className="p-6 border-b border-border-subtle bg-white">
+          <label className="block text-sm font-medium text-text-secondary mb-3">
             Способ получения
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setDeliveryMethod('pickup')}
               disabled={!pickupAvailability.available}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl border-2 transition-all duration-300 ${
+              className={`flex-1 min-w-[160px] py-3 px-4 text-sm rounded-2xl border transition-all duration-300 ${
                 deliveryMethod === 'pickup'
-                  ? 'bg-[#106157] border-[#69e7b6] text-white shadow-lg shadow-[#106157]/40'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900 shadow-[0_15px_40px_rgba(16,185,129,0.25)]'
                   : pickupAvailability.available
-                    ? 'bg-[#1f2022] border-[#2f3032] text-gray-300 hover:border-[#106157] hover:text-white'
-                    : 'bg-[#1f2022] border-[#2f3032] text-gray-500 cursor-not-allowed opacity-60'
+                    ? 'border-border-subtle bg-white text-text-secondary hover:border-emerald-200 hover:text-emerald-600'
+                    : 'border-border-soft bg-surface-muted text-text-muted cursor-not-allowed opacity-70'
               }`}
             >
               {pickupAvailability.available ? 'Забрать с собой' : '✕'}
@@ -259,12 +259,12 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
             <button
               onClick={() => setDeliveryMethod('dine_in')}
               disabled={!dineInAvailability.available}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl border-2 transition-all duration-300 ${
+              className={`flex-1 min-w-[160px] py-3 px-4 text-sm rounded-2xl border transition-all duration-300 ${
                 deliveryMethod === 'dine_in'
-                  ? 'bg-[#106157] border-[#69e7b6] text-white shadow-lg shadow-[#106157]/40'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900 shadow-[0_15px_40px_rgba(16,185,129,0.25)]'
                   : dineInAvailability.available
-                    ? 'bg-[#1f2022] border-[#2f3032] text-gray-300 hover:border-[#106157] hover:text-white'
-                    : 'bg-[#1f2022] border-[#2f3032] text-gray-500 cursor-not-allowed opacity-60'
+                    ? 'border-border-subtle bg-white text-text-secondary hover:border-emerald-200 hover:text-emerald-600'
+                    : 'border-border-soft bg-surface-muted text-text-muted cursor-not-allowed opacity-70'
               }`}
             >
               {dineInAvailability.available ? 'В столовой' : '✕'}
@@ -272,12 +272,12 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
             <button
               onClick={() => setDeliveryMethod('delivery')}
               disabled={!deliveryAvailability.available}
-              className={`flex-1 py-3 px-4 text-sm rounded-xl border-2 transition-all duration-300 ${
+              className={`flex-1 min-w-[160px] py-3 px-4 text-sm rounded-2xl border transition-all duration-300 ${
                 deliveryMethod === 'delivery'
-                  ? 'bg-[#106157] border-[#69e7b6] text-white shadow-lg shadow-[#106157]/40'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900 shadow-[0_15px_40px_rgba(16,185,129,0.25)]'
                   : deliveryAvailability.available
-                    ? 'bg-[#1f2022] border-[#2f3032] text-gray-300 hover:border-[#106157] hover:text-white'
-                    : 'bg-[#1f2022] border-[#2f3032] text-gray-500 cursor-not-allowed opacity-60'
+                    ? 'border-border-subtle bg-white text-text-secondary hover:border-emerald-200 hover:text-emerald-600'
+                    : 'border-border-soft bg-surface-muted text-text-muted cursor-not-allowed opacity-70'
               }`}
             >
               {deliveryTabLabel}
@@ -286,40 +286,34 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
           {/* Сообщения о времени работы */}
           {!pickupAvailability.available && deliveryMethod === 'pickup' && (
-            <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-xs text-yellow-200 flex items-center gap-2">
-                <ClockIcon className="w-3.5 h-3.5" />
-                {pickupAvailability.message}
-              </p>
+            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+              <ClockIcon className="w-4 h-4 text-amber-500" />
+              <p className="text-xs font-medium">{pickupAvailability.message}</p>
             </div>
           )}
           {!dineInAvailability.available && deliveryMethod === 'dine_in' && (
-            <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-xs text-yellow-200 flex items-center gap-2">
-                <ClockIcon className="w-3.5 h-3.5" />
-                {dineInAvailability.message}
-              </p>
+            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+              <ClockIcon className="w-4 h-4 text-amber-500" />
+              <p className="text-xs font-medium">{dineInAvailability.message}</p>
             </div>
           )}
           {!deliveryAvailability.available && settings.deliveryEnabled && (
-            <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-xs text-yellow-200 flex items-center gap-2">
-                <ClockIcon className="w-3.5 h-3.5" />
-                {deliveryAvailability.message}
-              </p>
+            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+              <ClockIcon className="w-4 h-4 text-amber-500" />
+              <p className="text-xs font-medium">{deliveryAvailability.message}</p>
             </div>
           )}
           {deliveryMethod === 'delivery' && settings.deliveryEnabled && deliveryAvailability.available && (
-            <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg text-xs text-emerald-200">
-              <span className="inline-flex items-center gap-2">
-                <ClockIcon className="w-3.5 h-3.5" />
+            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
+              <ClockIcon className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs font-medium">
                 Доставка активна с {settings.deliveryTimeStart || '00:00'} до {settings.deliveryTimeEnd || '23:59'}
               </span>
             </div>
           )}
           {settings.deliveryEnabled && deliveryMethod === 'delivery' && (
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Выберите адрес доставки
               </label>
               <Select
@@ -335,7 +329,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
           {/* Время готовности для самовывоза/в зале */}
           {(deliveryMethod === 'pickup' || deliveryMethod === 'dine_in') && (
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Время готовности
               </label>
               {readyTimeOptions.length > 0 ? (
@@ -346,9 +340,9 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                   placeholder="Выберите время"
                 />
               ) : (
-                <p className="text-sm text-gray-500">Загрузка вариантов времени...</p>
+                <p className="text-sm text-text-muted">Загрузка вариантов времени...</p>
               )}
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-text-muted mt-2">
                 Минимальное время: {readyTimeOptions[0]?.label ?? '-'}
               </p>
             </div>
@@ -357,49 +351,49 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
       )}
 
       {/* Список товаров */}
-      <div className="p-6 bg-[#1c1d1f]">
+      <div className="p-6 bg-gradient-to-b from-white to-emerald-50/30">
         {/* Баланс перенесен в заголовок модального окна */}
 
         {cart.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <div className="text-gray-500 mb-4 flex items-center justify-center">
+          <div className="text-center py-12 text-text-muted">
+            <div className="text-text-secondary mb-4 flex items-center justify-center">
               <CartIcon className="w-14 h-14" />
             </div>
-            <p className="text-gray-300 text-lg font-medium mb-2">
+            <p className="text-text-primary text-lg font-medium mb-2">
               Корзина пуста
             </p>
-            <p className="text-gray-500 text-sm">Добавьте товары из меню</p>
+            <p className="text-text-secondary text-sm">Добавьте товары из меню</p>
           </div>
         ) : (
           <div className="space-y-4">
             {cart.map(({ item, quantity }) => (
               <div
                 key={item._id}
-                className="bg-[#1f2022] rounded-2xl p-5 border border-[#2f3032] shadow-sm hover:shadow-lg hover:shadow-[#106157]/20 transition-all duration-400 ease-out hover:-translate-y-1"
+                className="bg-white rounded-2xl p-5 border border-border-subtle shadow-sm hover:shadow-[0_25px_60px_rgba(16,185,129,0.12)] transition-all duration-300 ease-out hover:-translate-y-0.5"
               >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1 pr-4">
-                    <h3 className="text-base font-semibold text-gray-100 mb-1">
+                <div className="flex justify-between items-start mb-3 gap-3">
+                  <div className="flex-1 pr-2">
+                    <h3 className="text-base font-semibold text-text-primary mb-1">
                       {item.name}
                     </h3>
                     {item.description && (
-                      <p className="text-sm text-gray-400 line-clamp-2">
+                      <p className="text-sm text-text-secondary line-clamp-2">
                         {item.description}
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => handleRemoveFromCart(item._id)}
-                    className="w-8 h-8 rounded-full border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-300 hover:text-red-200 transition-all duration-300 hover:scale-105 text-lg font-bold"
+                    className="w-8 h-8 rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition-all duration-200"
                   >
                     ×
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-lg font-bold text-[#69e7b6]">
-                    {item.price * quantity} ₽
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <p className="text-lg font-bold text-brand-indigo">
+                    {item.price * quantity} баллов
                   </p>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() =>
                         quantity <= 1
@@ -409,7 +403,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                               quantity: quantity - 1,
                             })
                       }
-                      className="w-8 h-8 rounded-full border border-[#3a3b3d] bg-[#161718] hover:bg-[#106157]/10 flex items-center justify-center text-gray-200 hover:text-white transition-all duration-300 text-sm font-bold"
+                      className="w-9 h-9 rounded-full border border-border-subtle bg-white text-brand-indigo hover:border-brand-indigo/40 transition-all duration-200"
                     >
                       -
                     </button>
@@ -424,7 +418,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                           quantity
                         )
                       }
-                      className="w-16 text-center border border-[#3a3b3d] bg-[#161718] text-gray-100 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-[#106157] focus:border-[#106157]"
+                      className="w-16 text-center border border-border-subtle bg-white text-text-primary rounded-xl py-1.5 px-2 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-indigo/20"
                     />
                     <button
                       onClick={() =>
@@ -433,7 +427,7 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
                           quantity: quantity + 1,
                         })
                       }
-                      className="w-8 h-8 rounded-full border border-[#3a3b3d] bg-[#161718] hover:bg-[#106157]/10 flex items-center justify-center text-gray-200 hover:text-white transition-all duration-300 text-sm font-bold"
+                      className="w-9 h-9 rounded-full border border-border-subtle bg-white text-brand-indigo hover:border-brand-indigo/40 transition-all duration-200"
                     >
                       +
                     </button>
@@ -447,32 +441,31 @@ export const CartBlock: React.FC<CartBlockProps> = ({ onOrderCreated }) => {
 
       {/* Футер корзины */}
       {cart.length > 0 && (
-        <div className="border-t border-[#2f3032] p-6 bg-[#1c1d1f]">
+        <div className="border-t border-border-subtle p-6 bg-white">
           <div className="space-y-2 mb-4">
-            <div className="flex justify-between text-sm text-gray-400">
+            <div className="flex justify-between text-sm text-text-secondary">
               <span>Сумма товаров</span>
-              <span>{formatCurrency(cartTotal)} ₽</span>
+              <span>{formatCurrency(cartTotal)} баллов</span>
             </div>
             {serviceFeeAmount > 0 && (
-              <div className="flex justify-between text-sm text-gray-400">
+              <div className="flex justify-between text-sm text-text-secondary">
                 <span>Сервисный сбор ({serviceFeeLabel})</span>
-                <span>{formatCurrency(serviceFeeAmount)} ₽</span>
+                <span>{formatCurrency(serviceFeeAmount)} баллов</span>
               </div>
             )}
             <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold text-gray-100">
+              <span className="text-lg font-semibold text-text-primary">
                 Итого:
               </span>
-              <span className="text-2xl font-bold text-[#69e7b6]">
-                {formatCurrency(cartTotalWithServiceFee)} ₽
+              <span className="text-2xl font-bold text-brand-indigo">
+                {formatCurrency(cartTotalWithServiceFee)} баллов
               </span>
             </div>
           </div>
 
           {!hasEnoughBalance && currentUser && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/40 rounded-xl text-sm text-red-300">
-              Недостаточно средств на балансе. Попросите администратора
-              пополнить баланс.
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              Недостаточно средств на балансе. Попросите администратора пополнить баллы.
             </div>
           )}
 
