@@ -81,4 +81,5 @@ jobs:
             cd "$DEPLOY_PATH"
             STACK_VERSION=$STACK_VERSION docker compose -f docker-compose.server.yml pull
             STACK_VERSION=$STACK_VERSION docker compose -f docker-compose.server.yml up -d --remove-orphans
+            STACK_VERSION=$STACK_VERSION docker compose -f docker-compose.server.yml ps
             docker image prune -f
