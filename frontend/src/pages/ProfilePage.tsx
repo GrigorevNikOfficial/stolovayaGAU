@@ -5,13 +5,13 @@ import { serviceRequestsApi } from '../api/service-requests';
 import { $currentUser, uploadAvatar, uploadAvatarFx, logout, updateProfile, updateProfileFx } from '../models/users';
 import { loadOrders } from '../models/orders';
 import Button from '../components/layout/Button/Button.tsx';
+import ServiceHeader from '../components/layout/ServiceHeader/ServiceHeader.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import NotificationSettings from '../components/Profile/NotificationSettings.tsx';
 import ProfileContent from '../components/Profile/ProfileContent.tsx';
 import Achievements from '../components/Profile/Achievements';
 import TopUpRequestModal from '../components/Modal/TopUpRequestModal';
-import LogoSAU from '../images/logo.jpg';
 import { formatBalance } from '../utils/formatBalance';
 import type { ProfileStats } from '../components/Profile/profileStats';
 import { defaultProfileStats } from '../components/Profile/profileStats';
@@ -306,90 +306,77 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)]">
-      <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
-        <div className="px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center gap-2 py-3 sm:py-4 lg:gap-4 lg:justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                type="button"
-                onClick={() => handleNavigation('/')}
-                className="group flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-brand-indigo/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
-                aria-label="Перейти на главную"
-              >
-                <img
-                  src={LogoSAU}
-                  alt="Логотип сервиса"
-                  className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
-                />
-                <div className="leading-tight">
-                  <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
-                    <span className="tracking-[-0.04em]">STUD</span>
-                    <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
-                      MI
-                    </span>
-                  </h1>
-                  <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">профиль</p>
-                </div>
-              </button>
-            </div>
-
-            <div className="hidden flex-1 justify-center lg:flex">
-              <Tabs
-                tabs={headerTabs}
-                activeTab={activeTabIndex}
-                onTabChange={handleHeaderTabChange}
-                className="max-w-2xl w-full"
-                wrap={false}
-                variant="marketplace"
-              />
-            </div>
-
-            <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => setIsTopUpModalOpen(true)}
-                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
-              >
-                <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
-                  {balanceLabel}
-                </span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
-              </button>
-              <NotificationBell />
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    userInitials
-                  )}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleLogoutClick}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-brand-indigo/40 hover:text-brand-indigo"
-                aria-label="Выйти"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-              </button>
-            </div>
+      <ServiceHeader
+        subtitle="профиль"
+        onLogoClick={() => handleNavigation('/')}
+        centerSlot={(
+          <div className="w-full max-w-3xl">
+            <Tabs
+              tabs={headerTabs}
+              activeTab={activeTabIndex}
+              onTabChange={handleHeaderTabChange}
+              className="max-w-2xl w-full"
+              wrap={false}
+              variant="marketplace"
+            />
           </div>
-
-        </div>
-      </header>
+        )}
+        mobileDockSlot={(
+          <Tabs
+            tabs={headerTabs}
+            activeTab={activeTabIndex}
+            onTabChange={handleHeaderTabChange}
+            orientation="horizontal"
+            className="w-full"
+            variant="marketplace"
+            wrap
+          />
+        )}
+        rightSlot={(
+          <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3">
+            <button
+              type="button"
+              onClick={() => setIsTopUpModalOpen(true)}
+              className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+            >
+              <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
+                {balanceLabel}
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
+            </button>
+            <NotificationBell />
+            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  userInitials
+                )}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogoutClick}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-brand-indigo/40 hover:text-brand-indigo"
+              aria-label="Выйти"
+            >
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+            </button>
+          </div>
+        )}
+      />
 
       <main className="flex-1 pb-28 pt-6 px-3 sm:px-6 sm:pb-32 lg:pb-10">
         <div className="max-w-5xl mx-auto">

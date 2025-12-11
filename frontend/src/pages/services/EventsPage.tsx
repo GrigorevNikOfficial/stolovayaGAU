@@ -10,11 +10,11 @@ import {
 import Button from '../../components/layout/Button/Button';
 import Input from '../../components/layout/Input/Input';
 import Select from '../../components/layout/Select/Select';
+import ServiceHeader from '../../components/layout/ServiceHeader/ServiceHeader.tsx';
 import NotificationBell from '../../components/Notifications/NotificationBell';
 import EventFormModal from '../../components/Events/EventFormModal';
 import EventDetailsModal from '../../components/Events/EventDetailsModal';
 import { showToast } from '../../components/layout/Toast/stores/toastStore';
-import LogoSAU from '../../images/logo.jpg';
 import { $currentUser, logout } from '../../models/users';
 import { formatBalance } from '../../utils/formatBalance';
 
@@ -362,79 +362,54 @@ const EventsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.08),_transparent_55%)] text-text-primary">
-      <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
-        <div className={PAGE_CONTAINER}>
-          <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
+      <ServiceHeader
+        subtitle="афиша"
+        onLogoClick={() => handleNavigate('/')}
+        centerSlot={(
+          <div className="w-full max-w-4xl">{renderHeaderTabs()}</div>
+        )}
+        mobileDockSlot={renderHeaderTabs('justify-center')}
+        rightSlot={
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={() => handleNavigate('/')}
-              className="group flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-emerald-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-              aria-label="Перейти на главную"
+              onClick={() => handleNavigate('/profile')}
+              className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
-              <img
-                src={LogoSAU}
-                alt="Логотип сервиса"
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105"
-              />
-              <div className="leading-tight">
-                <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
-                  <span className="tracking-[-0.04em]">STUD</span>
-                  <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
-                    MI
-                  </span>
-                </h1>
-                <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">
-                  афиша
-                </p>
-              </div>
+              <span
+                className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
+                title={formatBalance(currentUser?.balance || 0)}
+              >
+                {formatBalance(currentUser?.balance || 0)}
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">
+                +
+              </span>
             </button>
-            <div className="hidden lg:flex flex-1 justify-center">
-              <div className="w-full max-w-4xl">{renderHeaderTabs()}</div>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => handleNavigate('/profile')}
-                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+              aria-label="Выйти"
+            >
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <span
-                  className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
-                  title={formatBalance(currentUser?.balance || 0)}
-                >
-                  {formatBalance(currentUser?.balance || 0)}
-                </span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">
-                  +
-                </span>
-              </button>
-              <NotificationBell />
-              <button
-                type="button"
-                onClick={() => logout()}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-                aria-label="Выйти"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-              </button>
-            </div>
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+            </button>
           </div>
-          <div className="lg:hidden pb-2">
-            {renderHeaderTabs('justify-center')}
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className={`${PAGE_CONTAINER} flex-1 py-10 pb-28 lg:pb-10`}>
         {/* Filters */}
@@ -606,7 +581,7 @@ const EventsPage: React.FC = () => {
         )}
       </main>
       {viewTabs.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 p-3 shadow-lg backdrop-blur z-40">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur z-40">
           <div className="flex items-center justify-around">
             {viewTabs.map(tab => {
               const isActive = viewMode === tab.id;
@@ -697,3 +672,4 @@ const EventsPage: React.FC = () => {
 };
 
 export default EventsPage;
+

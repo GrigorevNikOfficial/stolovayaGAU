@@ -123,9 +123,9 @@ export const Input: React.FC<InputProps> = ({
     [handleChange, value]
   );
 
-  const baseInputClasses = `
-          w-full px-5 py-3.5 rounded-2xl border border-border-soft bg-white/95
-          text-text-primary placeholder:text-text-muted shadow-[0_18px_50px_rgba(15,23,42,0.07)]
+    const baseInputClasses = `
+      w-full px-5 py-3.5 rounded-2xl border border-border-soft bg-white/95
+      text-base text-text-primary placeholder:text-text-muted shadow-[0_18px_50px_rgba(15,23,42,0.07)]
           focus:outline-none focus:ring-2 focus:ring-brand-almond focus:border-brand-almond
           transition-colors duration-200 hover:border-brand-almond/60 hover:bg-white
           disabled:opacity-50 disabled:cursor-not-allowed

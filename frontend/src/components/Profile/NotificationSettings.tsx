@@ -328,13 +328,14 @@ const NotificationSettings: React.FC = () => {
         </section>
       )}
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           type="button"
           variant="primary"
           size="lg"
           disabled={!isDirty || isPending}
           onClick={handleSave}
+          className="flex-1 min-w-[140px] sm:flex-none sm:min-w-[180px]"
         >
           {isPending ? 'Сохраняем...' : 'Сохранить изменения'}
         </Button>
@@ -344,6 +345,7 @@ const NotificationSettings: React.FC = () => {
           size="lg"
           disabled={isPending || !isDirty}
           onClick={handleReset}
+          className="flex-1 min-w-[140px] sm:flex-none sm:min-w-[180px]"
         >
           Сбросить изменения
         </Button>

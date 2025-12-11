@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../../components/layout/Button/Button.tsx';
 import Input from '../../../components/layout/Input/Input.tsx';
+import ServiceHeader from '../../../components/layout/ServiceHeader/ServiceHeader.tsx';
 import TopUpRequestModal from '../../../components/Modal/TopUpRequestModal.tsx';
 import {
   $activeChatId,
@@ -33,7 +34,6 @@ import {
 } from '../../../models/chat';
 import { $currentUser, logout } from '../../../models/users';
 import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
-import LogoSAU from '../../../images/logo.jpg';
 import { formatBalance } from '../../../utils/formatBalance';
 import { isAuthPath, markAuthRedirect } from '../../../utils/authRedirect';
 import type { ChatMessage, ChatParticipant, ChatSummary, ParticipantRole } from '../../../types/chat';
@@ -401,15 +401,12 @@ export const ChatPage: React.FC = () => {
   const [codeParticipantInput, setCodeParticipantInput] = useState('');
   const [codeParticipants, setCodeParticipants] = useState<string[]>([]);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const [isMobileChatVisible, setIsMobileChatVisible] = useState(false);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [participantFilter, setParticipantFilter] = useState('');
   const [selectedInvitees, setSelectedInvitees] = useState<Set<string>>(new Set());
   const [inviteCopySuccess, setInviteCopySuccess] = useState(false);
   const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
   const [friendCodeInput, setFriendCodeInput] = useState('');
-  const showMobileChatList = isMobileLayout && !isMobileChatVisible;
-  const showChatPanel = !isMobileLayout || isMobileChatVisible;
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -432,17 +429,6 @@ export const ChatPage: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isMobileLayout) {
-      setIsMobileChatVisible(false);
-    }
-  }, [isMobileLayout]);
-
-  useEffect(() => {
-    if (!activeChatId && isMobileLayout) {
-      setIsMobileChatVisible(false);
-    }
-  }, [activeChatId, isMobileLayout]);
 
   useEffect(() => {
     setSidebarFilter('');
@@ -480,11 +466,8 @@ export const ChatPage: React.FC = () => {
     const targetChatId = params.get('chatId');
     if (targetChatId && chats.some(chat => chat._id === targetChatId)) {
       handleSelectChat(targetChatId);
-      if (isMobileLayout) {
-        setIsMobileChatVisible(true);
-      }
     }
-  }, [chats, handleSelectChat, isMobileLayout]);
+  }, [chats, handleSelectChat]);
 
   const activeChat = chats.find(chat => chat._id === activeChatId) || null;
   const activeMessages = (activeChatId && messagesByChat[activeChatId]) || [];
@@ -738,11 +721,8 @@ export const ChatPage: React.FC = () => {
   const handleChatPreviewSelect = React.useCallback(
     (chatId: string) => {
       handleSelectChat(chatId);
-      if (isMobileLayout) {
-        setIsMobileChatVisible(true);
-      }
     },
-    [handleSelectChat, isMobileLayout]
+    [handleSelectChat]
   );
 
   const handleFriendClick = React.useCallback(
@@ -784,28 +764,13 @@ export const ChatPage: React.FC = () => {
         if (sidebarTab !== 'chats') {
           setSidebarTab('chats');
         }
-        if (isMobileLayout) {
-          setIsMobileChatVisible(true);
-        }
         return;
       }
 
       handleRequestDirectChat(userId);
       setSidebarTab('chats');
-      if (isMobileLayout) {
-        setIsMobileChatVisible(true);
-      }
     },
-    [
-      chats,
-      currentUserId,
-      handleChatPreviewSelect,
-      handleRequestDirectChat,
-      isMobileLayout,
-      sidebarTab,
-      setIsMobileChatVisible,
-      setSidebarTab,
-    ]
+    [chats, currentUserId, handleChatPreviewSelect, handleRequestDirectChat, sidebarTab, setSidebarTab]
   );
 
   const handleAcceptFriendRequest = React.useCallback(
@@ -839,12 +804,6 @@ export const ChatPage: React.FC = () => {
     },
     [handleDeclineChatInvite]
   );
-
-  const handleBackToChatList = React.useCallback(() => {
-    if (isMobileLayout) {
-      setIsMobileChatVisible(false);
-    }
-  }, [isMobileLayout]);
 
   const handleCreateGroupChat = () => {
     if (!newChatName.trim()) {
@@ -880,9 +839,6 @@ export const ChatPage: React.FC = () => {
     if (confirmation) {
       handleLeaveChat(activeChat._id);
       setIsParticipantsModalOpen(false);
-      if (isMobileLayout) {
-        setIsMobileChatVisible(false);
-      }
     }
   };
 
@@ -899,87 +855,64 @@ export const ChatPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
-      <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
-        <div className="px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
-            <button
-              type="button"
-              onClick={() => handleNavigation('/')}
-              className="group flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-brand-indigo/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
-              aria-label="Перейти на главную"
-            >
-              <img
-                src={LogoSAU}
-                alt="Логотип сервиса"
-                className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
-              />
-              <div className="leading-tight">
-                <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
-                  <span className="tracking-[-0.04em]">STUD</span>
-                  <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
-                    MI
-                  </span>
-                </h1>
-                <p className="text-xs uppercase tracking-[0.35em] text-text-muted">чат</p>
-              </div>
-            </button>
-            <div className="flex items-center gap-2 sm:gap-3">
-              {currentUser ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
-                  >
-                    <span
-                      className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
-                      title={balanceLabel}
-                    >
-                      {balanceLabel}
-                    </span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
-                  </button>
-                  <NotificationBell />
-                  <button
-                    type="button"
-                    onClick={() => handleNavigation('/profile')}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
-                    aria-label="Профиль"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
-                      {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleLogout()}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-                    aria-label="Выйти"
-                  >
-                    <svg
-                      className="h-5 w-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </header>
+      <ServiceHeader
+        subtitle="чат"
+        onLogoClick={() => handleNavigation('/')}
+        rightSlot={
+          currentUser ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsTopUpModalOpen(true)}
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              >
+                <span
+                  className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
+                  title={balanceLabel}
+                >
+                  {balanceLabel}
+                </span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
+              </button>
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={() => handleNavigation('/profile')}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
+                aria-label="Профиль"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
+                  {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLogout()}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+                aria-label="Выйти"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+              </button>
+            </>
+          ) : null
+        }
+      />
 
       <main className="flex-1 w-full overflow-hidden min-h-0 pb-28 lg:pb-0">
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:py-8 lg:px-8 min-h-0">
-          {showMobileChatList && (
+          {isMobileLayout && (
             <div className="lg:hidden rounded-3xl border border-border-soft bg-white p-5 shadow-brand-card">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -1120,11 +1053,10 @@ export const ChatPage: React.FC = () => {
               </div>
             </aside>
 
-            {showChatPanel && (
-              <section className="flex h-full min-h-[60vh] flex-1 flex-col rounded-3xl border border-border-soft bg-white shadow-brand-card overflow-hidden max-h-[85vh] md:max-h-[78vh] lg:h-[72vh] lg:max-h-[72vh] lg:min-h-0">
+            <section className="flex h-full min-h-[60vh] flex-1 flex-col rounded-3xl border border-border-soft bg-white shadow-brand-card overflow-hidden max-h-[85vh] md:max-h-[78vh] lg:h-[72vh] lg:max-h-[72vh] lg:min-h-0">
               {activeChat ? (
                 <>
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle px-6 py-4 flex-none">
+                  <div className="flex flex-wrap items-center gap-4 border-b border-border-subtle px-6 py-4 flex-none">
                     {canManageParticipants ? (
                       <button
                         type="button"
@@ -1145,18 +1077,6 @@ export const ChatPage: React.FC = () => {
                         <p className="text-sm text-text-secondary">{activeChat.participantCount} участников</p>
                       </div>
                     )}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {isMobileLayout && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-border-soft text-text-primary"
-                          onClick={handleBackToChatList}
-                        >
-                          Назад к чатам
-                        </Button>
-                      )}
-                    </div>
                   </div>
 
                   {isMembershipPending && activeChat && (
@@ -1284,13 +1204,12 @@ export const ChatPage: React.FC = () => {
                           )}
                         </div>
                       )}
-              </section>
-            )}
+            </section>
           </div>
         </div>
       </main>
       {SIDEBAR_TABS.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 p-3 shadow-lg backdrop-blur z-40">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur z-40">
           <div className="flex items-center justify-around">
             {SIDEBAR_TABS.map(tab => {
               const isActive = sidebarTab === tab.id;

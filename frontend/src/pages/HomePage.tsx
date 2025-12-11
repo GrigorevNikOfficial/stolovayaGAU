@@ -4,9 +4,10 @@ import { CategoriesList } from '../components/Categories/CategoriesList.tsx';
 import { ItemsList } from '../components/Items/ItemsList.tsx';
 import Button from '../components/layout/Button/Button.tsx';
 import { Tabs } from '../components/layout/Tabs/Tabs.tsx';
+import ServiceHeader from '../components/layout/ServiceHeader/ServiceHeader.tsx';
 import CartModal from '../components/Modal/CardModal.tsx';
+import { CartBlock } from '../components/Items/CardBlock.tsx';
 import { OrdersList } from '../components/Orders/OrdersList.tsx';
-import LogoSAU from '../images/logo.jpg';
 import { $cart } from '../models/cart';
 import {
   $currentUser,
@@ -74,7 +75,6 @@ export const HomePage: React.FC = () => {
     orders: $orders,
   });
   const [activeTab, setActiveTab] = useState(0);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [isGuestPromptVisible, setIsGuestPromptVisible] = useState(!currentUser);
@@ -98,19 +98,16 @@ export const HomePage: React.FC = () => {
       {
         id: 'menu',
         label: 'Меню',
-        icon: '🍽️',
         roles: ['admin', 'canteenManager', 'cateenManager', 'user', 'guest'],
       },
       {
         id: 'categories',
         label: 'Категории',
-        icon: '📂',
         roles: ['admin', 'canteenManager', 'cateenManager'],
       },
       {
         id: 'orders',
         label: 'Заказы',
-        icon: '🧾',
         roles: [
           'admin',
           'canteenManager',
@@ -121,11 +118,18 @@ export const HomePage: React.FC = () => {
       },
     ];
 
+    if (user && (user.role === 'admin' || user.role === 'user')) {
+      allTabs.push({
+        id: 'cart',
+        label: 'Корзина',
+        roles: ['admin', 'user'],
+      });
+    }
+
     if (user) {
       allTabs.push({
         id: 'profile',
         label: 'Профиль',
-        icon: '👤',
         roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
       });
     }
@@ -153,21 +157,26 @@ export const HomePage: React.FC = () => {
 
   const activeOrdersCount = activeOrders.length;
   const ordersBadge = activeOrdersCount > 0 ? String(Math.min(activeOrdersCount, 99)) : undefined;
+  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const cartBadge = cartItemCount > 0 ? String(Math.min(cartItemCount, 99)) : undefined;
 
   const visibleTabs = useMemo(() => {
     const tabs = getVisibleTabs(currentUser);
     return tabs.map(tab => ({
       ...tab,
-      badge: tab.id === 'orders' && ordersBadge ? ordersBadge : undefined,
+      badge:
+        tab.id === 'orders' && ordersBadge
+          ? ordersBadge
+          : tab.id === 'cart' && cartBadge
+          ? cartBadge
+          : undefined,
     }));
-  }, [currentUser, ordersBadge]);
+  }, [currentUser, ordersBadge, cartBadge]);
 
   const profileTabIndex = visibleTabs.findIndex(tab => tab.id === 'profile');
   const profileTabActive = profileTabIndex !== -1 && activeTab === profileTabIndex;
-  const mainTabs = profileTabIndex === -1 ? visibleTabs : visibleTabs.filter(tab => tab.id !== 'profile');
-  const activeMainTabIndex = mainTabs.findIndex(
-    tab => tab.id === visibleTabs[activeTab]?.id
-  );
+  const mainTabs = visibleTabs.filter(tab => tab.id !== 'profile');
+  const activeMainTabIndex = mainTabs.findIndex(tab => tab.id === visibleTabs[activeTab]?.id);
 
   const selectTabById = (tabId: string) => {
     const nextIndex = visibleTabs.findIndex(tab => tab.id === tabId);
@@ -204,18 +213,12 @@ export const HomePage: React.FC = () => {
     currentUser &&
     (currentUser.role === 'admin' || currentUser.role === 'user');
 
-  // Закрываем мобильное меню при смене таба
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [activeTab]);
-
   useEffect(() => {
     if (currentUser) {
       setIsGuestPromptVisible(false);
     }
   }, [currentUser]);
 
-  const mobileTabs = mainTabs;
   const handleCartOrderCreated = () => {
     selectTabById('orders');
     setIsCartModalOpen(false);
@@ -242,138 +245,107 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col overflow-x-hidden">
-        {/* Шапка */}
-        <header className="fixed top-0 left-0 right-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
-        <div className="px-3 sm:px-4 lg:px-6">
-          {/* Вся навигация в одной строке */}
-          <div className="flex items-center justify-between py-3 sm:py-4 gap-4 min-h-[72px]">
-            {/* Левая часть: логотип и название */}
-            <button
-              type="button"
-              onClick={() => handleNavigation('/')}
-              className="group flex items-center gap-3 shrink-0 mr-6 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-brand-indigo/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
-              aria-label="Перейти в навигацию сервисов"
-            >
-              <img
-                src={LogoSAU}
-                alt="Логотип столовой ГАУ"
-                className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
-              />
-              <div className="leading-tight">
-                <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
-                  <span className="tracking-[-0.04em]">STUD</span>
-                  <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
-                    MI
+      <ServiceHeader
+        subtitle="еда"
+        onLogoClick={() => handleNavigation('/')}
+        centerSlot={(
+          <div className="w-full max-w-3xl">
+            <Tabs
+              tabs={mainTabs}
+              activeTab={activeMainTabIndex >= 0 ? activeMainTabIndex : -1}
+              onTabChange={handleMainTabChange}
+              orientation="horizontal"
+              justify="center"
+              className="w-full"
+              variant="marketplace"
+            />
+          </div>
+        )}
+        mobileDockSlot={
+          <Tabs
+            tabs={mainTabs}
+            activeTab={activeMainTabIndex >= 0 ? activeMainTabIndex : -1}
+            onTabChange={handleMainTabChange}
+            orientation="horizontal"
+            className="w-full"
+            variant="marketplace"
+          />
+        }
+          rightSlot={
+            currentUser ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsTopUpModalOpen(true)}
+                  className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 px-2 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:px-3 sm:py-1.5 sm:text-sm"
+                  aria-label="Пополнить баллы"
+                >
+                  <span className="max-w-[72px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[120px] sm:text-base">
+                    {formatBalance(currentUser.balance)}
                   </span>
-                </h1>
-                <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">еда</p>
-              </div>
-            </button>
-
-            {/* Центральная часть: табы */}
-            <div className="hidden lg:flex flex-1 justify-center">
-              <Tabs
-                tabs={mainTabs}
-                activeTab={activeMainTabIndex >= 0 ? activeMainTabIndex : -1}
-                onTabChange={handleMainTabChange}
-                orientation="horizontal"
-                justify="center"
-                className="max-w-3xl w-full"
-                variant="marketplace"
-              />
-            </div>
-
-            {/* Правая часть: кнопки пользователя */}
-            <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 shrink-0">
-              {currentUser ? (
-                <>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">
+                    +
+                  </span>
+                </button>
+                <NotificationBell />
+                {profileTabIndex !== -1 && (
                   <button
                     type="button"
-                    onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 text-emerald-700 font-semibold text-sm shadow-inner transition-colors hover:bg-emerald-100"
-                    aria-label="Пополнить баллы"
+                    onClick={() => handleNavigation('/profile')}
+                    aria-pressed={profileTabActive}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200 sm:h-11 sm:w-11 ${
+                      profileTabActive
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-brand-card'
+                        : 'border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 bg-white'
+                    }`}
                   >
-                    <span className="text-base sm:text-lg">{formatBalance(currentUser.balance)}</span>
-                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-500 text-white text-base leading-none shadow-sm">
-                      +
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-sm font-semibold text-emerald-700 shadow-sm sm:h-10 sm:w-10">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" />
+                      ) : (
+                        userInitials
+                      )}
                     </span>
                   </button>
-                  <NotificationBell />
-                  {profileTabIndex !== -1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleNavigation('/profile')}
-                      aria-pressed={profileTabActive}
-                      className={`w-11 h-11 rounded-full border transition-all duration-200 flex items-center justify-center ${profileTabActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-brand-card' : 'border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 bg-white'}`}
-                    >
-                      <span className="w-10 h-10 rounded-full bg-white border border-emerald-200 shadow-sm flex items-center justify-center text-base font-semibold text-emerald-700 overflow-hidden">
-                        {avatarUrl ? (
-                          <img
-                            src={avatarUrl}
-                            alt="Аватар"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          userInitials
-                        )}
-                      </span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleLogoutClick}
-                    aria-label="Выйти из аккаунта"
-                    className="w-11 h-11 flex items-center justify-center rounded-full border border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 transition-colors bg-surface-base"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
-                  </button>
-                </>
-              ) : (
-                <Button
-                  onClick={() => handleNavigation('/login')}
-                  variant="primary"
-                  size="md"
-                  className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
+                )}
+                <button
+                  type="button"
+                  onClick={handleLogoutClick}
+                  aria-label="Выйти из аккаунта"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
                 >
-                  Войти
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-        </header>
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                    <polyline points="10 17 15 12 10 7" />
+                    <line x1="15" y1="12" x2="3" y2="12" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <Button
+                onClick={() => handleNavigation('/login')}
+                variant="primary"
+                size="md"
+                className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
+              >
+                Войти
+              </Button>
+            )
+          }
+          isFixed
+        />
 
         {/* Основной контент */}
-        <div className="flex-1 px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 mt-[88px] sm:mt-[96px] lg:mt-[104px]">
+        <div className="flex-1 px-2 sm:px-4 lg:px-6 pt-4 pb-28 sm:pt-6 sm:pb-32 lg:pt-8 lg:pb-12 mt-[88px] sm:mt-[96px] lg:mt-[104px]">
         <div className="h-full">
-          {/* Мобильное меню */}
-          <div
-            className={`lg:hidden mb-6 transition-all duration-300 ${isMobileMenuOpen ? 'block' : 'hidden'}`}
-          >
-            <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-4">
-              <Tabs
-                tabs={mainTabs}
-                activeTab={activeMainTabIndex >= 0 ? activeMainTabIndex : 0}
-                onTabChange={handleMainTabChange}
-                orientation="vertical"
-                className="w-full"
-                variant="marketplace"
-              />
-            </div>
-          </div>
-
           {/* Контент активного таба */}
           {activeTab < visibleTabs.length && (
             <>
@@ -484,13 +456,10 @@ export const HomePage: React.FC = () => {
 
               {visibleTabs[activeTab].id === 'categories' && (
                 <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between ">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
-                      <span>{visibleTabs[activeTab].icon}</span>
-                      <span>{visibleTabs[activeTab].label}</span>
-                    </div>
+                  <div className="lg:hidden text-xs font-semibold uppercase tracking-[0.35em] text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
+                    {visibleTabs[activeTab].label}
                   </div>
-                  <div className="flex-1 overflow-y-auto">
+                  <div className="flex-1 overflow-y-auto mt-3 lg:mt-0">
                     <CategoriesList />
                   </div>
                 </div>
@@ -498,18 +467,21 @@ export const HomePage: React.FC = () => {
 
               {visibleTabs[activeTab].id === 'orders' && (
                 <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-4 sm:p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <div className="lg:hidden flex items-center gap-2 text-sm text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
-                      <span>{visibleTabs[activeTab].icon}</span>
-                      <span>{visibleTabs[activeTab].label}</span>
-                    </div>
+                  <div className="lg:hidden text-xs font-semibold uppercase tracking-[0.35em] text-text-secondary bg-white px-3 py-1 rounded-full shadow-sm">
+                    {visibleTabs[activeTab].label}
                   </div>
-                  <div className="flex-1 overflow-y-auto">
+                  <div className="flex-1 overflow-y-auto mt-3 lg:mt-0">
                     <OrdersList />
                   </div>
                 </div>
               )}
 
+
+              {visibleTabs[activeTab].id === 'cart' && showCart && (
+                <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-0 h-full overflow-hidden">
+                  <CartBlock onOrderCreated={handleCartOrderCreated} />
+                </div>
+              )}
 
               {visibleTabs[activeTab].id === 'profile' && currentUser && (
                 <div className="h-full">
@@ -550,7 +522,7 @@ export const HomePage: React.FC = () => {
 
       {/* Модальное окно корзины */}
       <CartModal
-        isOpen={isCartModalOpen}
+        isOpen={isCartModalOpen && visibleTabs[activeTab]?.id !== 'cart'}
         onClose={() => setIsCartModalOpen(false)}
         onOrderCreated={handleCartOrderCreated}
       />
@@ -559,58 +531,6 @@ export const HomePage: React.FC = () => {
         isOpen={isTopUpModalOpen}
         onClose={() => setIsTopUpModalOpen(false)}
       />
-
-      {/* Мобильная навигация */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 border-t border-border-subtle p-3 z-30 shadow-lg backdrop-blur">
-        <div className="flex justify-around items-center">
-          {mobileTabs.map(tab => {
-            const isActive = visibleTabs[activeTab]?.id === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => selectTabById(tab.id)}
-                className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] border ${
-                  isActive
-                    ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
-                    : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
-                }`}
-              >
-                {tab.id === 'orders' && ordersBadge && (
-                  <span className="absolute -top-1 -right-1 bg-brand-almond text-brand-indigo text-xs font-semibold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1">
-                    {ordersBadge}
-                  </span>
-                )}
-                <span className="text-lg mb-1">{tab.icon}</span>
-                <span className="text-xs font-medium truncate max-w-[60px]">
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-
-          {/* Кнопка корзины для мобильных */}
-          {showCart && (
-            <button
-              onClick={() => setIsCartModalOpen(true)}
-              className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 min-w-[70px] border ${
-                isCartModalOpen
-                  ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
-                  : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
-              }`}
-            >
-              {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-brand-almond text-brand-indigo text-xs font-semibold w-5 h-5 rounded-full flex items-center justify-center">
-                  {cart.reduce((total, item) => total + item.quantity, 0)}
-                </span>
-              )}
-              <span className="mb-1">
-                <CartIcon className="w-5 h-5" />
-              </span>
-              <span className="text-xs font-medium">Корзина</span>
-            </button>
-          )}
-        </div>
-      </div>
       {shouldShowGuestPrompt && (
         <div className="fixed left-1/2 z-40 w-full max-w-xl -translate-x-1/2 px-4 sm:px-0 top-[6.5rem] sm:top-[7rem]">
           <div className="mx-auto rounded-[24px] border border-emerald-200/80 bg-emerald-50/95 px-4 py-3 text-emerald-900 shadow-[0_25px_60px_rgba(16,185,129,0.25)]">

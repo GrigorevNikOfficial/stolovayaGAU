@@ -3,6 +3,7 @@ import React from 'react';
 import { analyticsApi } from '../api/analytics';
 import { settingsApi } from '../api/settings';
 import Button from '../components/layout/Button/Button';
+import ServiceHeader from '../components/layout/ServiceHeader/ServiceHeader.tsx';
 import Input from '../components/layout/Input/Input';
 import NotificationBell from '../components/Notifications/NotificationBell.tsx';
 import { Settings } from '../components/Settings/Settings';
@@ -10,7 +11,6 @@ import { UserBalances } from '../components/Settings/UserBalances';
 import { TopUpRequestsAdmin } from '../components/TopUpRequests/TopUpRequestsAdmin';
 import { showToast } from '../components/layout/Toast/stores/toastStore';
 import { onSocketEvent } from '../lib/socket';
-import LogoSAU from '../images/logo.jpg';
 import { $currentUser, logout } from '../models/users';
 import type { MarketplaceSettings } from '../types/settings';
 import { formatBalance } from '../utils/formatBalance';
@@ -718,8 +718,7 @@ export const AdminPanelPage: React.FC = () => {
         <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-brand-card">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-text-muted">сводка</p>
-              <h3 className="mt-2 text-3xl font-semibold text-brand-indigo">Пульс сервисов</h3>
+              <h3 className=" text-3xl font-semibold text-brand-indigo">Пульс сервисов</h3>
               <p className="mt-1 text-sm text-text-secondary">
                 {periodCaption} · {rangeLabel}
               </p>
@@ -800,8 +799,8 @@ export const AdminPanelPage: React.FC = () => {
               <div className="space-y-5 rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted">модули</p>
-                    <h4 className="mt-2 text-2xl font-semibold text-brand-indigo">{selectedModuleMeta.label}</h4>
+                    
+                    <h4 className=" text-2xl font-semibold text-brand-indigo">{selectedModuleMeta.label}</h4>
                     <p className="text-sm text-text-secondary">{selectedModuleMeta.description}</p>
                   </div>
                   <span className="rounded-full border border-brand-indigo/20 px-3 py-1 text-xs font-semibold text-brand-indigo">
@@ -868,7 +867,7 @@ export const AdminPanelPage: React.FC = () => {
             <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">динамика за период</p>
+                  
                   <h4 className="mt-2 text-xl font-semibold text-brand-indigo">Последние дни</h4>
                 </div>
               </div>
@@ -895,7 +894,7 @@ export const AdminPanelPage: React.FC = () => {
             <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">оперативный чек-лист</p>
+                  
                   <h4 className="mt-2 text-2xl font-semibold text-brand-indigo">Что проверить сегодня</h4>
                 </div>
                 <span className="rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">{rangeLabel}</span>
@@ -980,100 +979,73 @@ export const AdminPanelPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.08),_transparent_55%)] text-text-primary">
-      <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
-        <div className="px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleNavigate('/')}
-                className="group flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-brand-indigo/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
-                aria-label="Перейти на страницу навигации"
+      <ServiceHeader
+        subtitle="админ"
+        onLogoClick={() => handleNavigate('/')}
+        centerSlot={(
+          <div className="w-full max-w-4xl">{renderSectionTabs()}</div>
+        )}
+        mobileDockSlot={renderSectionTabs()}
+        rightSlot={(
+          <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3">
+            <button
+              type="button"
+              onClick={handleProfileNavigate}
+              className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+            >
+              <span
+                className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
+                title={balanceLabel}
               >
-                <img
-                  src={LogoSAU}
-                  alt="Логотип сервиса"
-                  className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
-                />
-                <div className="leading-tight">
-                  <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
-                    <span className="tracking-[-0.04em]">STUD</span>
-                    <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
-                      MI
-                    </span>
-                  </h1>
-                  <p className="mt-1 text-xs uppercase tracking-[0.4em] text-text-muted">панель администратора</p>
-                </div>
-              </button>
-            </div>
-            <div className="hidden flex-1 justify-center px-3 lg:flex">
-              <div className="w-full max-w-3xl">{renderSectionTabs()}</div>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={handleProfileNavigate}
-                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+                {balanceLabel}
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
+            </button>
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={handleProfileNavigate}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
+              aria-label="Профиль"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
+                {currentUser.avatar?.url ? (
+                  <img src={currentUser.avatar.url} alt="Аватар" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+                )}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleLogoutClick}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
+              aria-label="Выйти"
+            >
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <span
-                  className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
-                  title={balanceLabel}
-                >
-                  {balanceLabel}
-                </span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
-              </button>
-              <NotificationBell />
-              <button
-                type="button"
-                onClick={handleProfileNavigate}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
-                aria-label="Профиль"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
-                  {currentUser.avatar?.url ? (
-                    <img src={currentUser.avatar.url} alt="Аватар" className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
-                  )}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={handleLogoutClick}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-                aria-label="Выйти"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-              </button>
-            </div>
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+            </button>
           </div>
-        </div>
-      </header>
+        )}
+      />
 
-      <main className="flex-1 pb-28 sm:pb-32 lg:pb-0">
+      <main className="flex-1 pb-40 sm:pb-44 lg:pb-0">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-          <section className="rounded-[36px] border border-border-soft bg-white p-6 shadow-brand-card lg:hidden">
-            <div className="flex justify-center">
-              <div className="w-full max-w-xl">{renderSectionTabs()}</div>
-            </div>
-          </section>
-
           {renderActiveSection()}
         </div>
       </main>
+
     </div>
   );
 };

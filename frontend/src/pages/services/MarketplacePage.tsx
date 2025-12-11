@@ -6,11 +6,11 @@ import { uploadsApi, type MarketplaceUploadResponse } from '../../api/uploads';
 import Button from '../../components/layout/Button/Button';
 import Input from '../../components/layout/Input/Input';
 import Select from '../../components/layout/Select/Select';
+import ServiceHeader from '../../components/layout/ServiceHeader/ServiceHeader.tsx';
 import TopUpRequestModal from '../../components/Modal/TopUpRequestModal';
 import { CheckIcon, EyeIcon, LeafIcon } from '../../components/icons/ServiceIcons.tsx';
 import NotificationBell from '../../components/Notifications/NotificationBell.tsx';
 import { showToast } from '../../components/layout/Toast/stores/toastStore';
-import LogoSAU from '../../images/logo.jpg';
 import { $currentUser, getMeFx, logout } from '../../models/users';
 import { onSocketEvent } from '../../lib/socket';
 import { formatBalance } from '../../utils/formatBalance';
@@ -1646,43 +1646,53 @@ export const MarketplacePage: React.FC = () => {
   const mobileHeaderTabs = React.useMemo(() => availableTabs.filter(tab => !tab.disabled), [availableTabs]);
 
   const renderHeaderTabs = React.useCallback(
-    (className = '') => (
-      <div className={`flex w-full justify-center gap-2 overflow-x-auto px-1 py-1.5 sm:py-2 ${className}`} role="tablist">
-        {headerTabs.map((tab, index) => {
-          const isActive = safeActiveTabIndex === index;
-          const isDisabled = Boolean(tab.disabled);
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              aria-disabled={isDisabled}
-              disabled={isDisabled}
-              onClick={() => {
-                if (!isDisabled) {
-                  handleHeaderTabChange(index);
-                }
-              }}
-              className={`group relative flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all duration-300 ${
-                isActive
-                  ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
-                  : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
-              } ${
-                isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-0.5'
-              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
-            >
-              <span className="flex items-center gap-2 whitespace-nowrap">{tab.label}</span>
-              <span
-                className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
-                  isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
-                }`}
-              />
-            </button>
-          );
-        })}
-      </div>
-    ),
+    (options?: { className?: string; dense?: boolean }) => {
+      const { className = '', dense = false } = options ?? {};
+      const paddingClasses = dense ? 'py-1 text-xs' : 'py-1.5 sm:py-2';
+
+      return (
+        <div
+          className={`flex w-full justify-center gap-2 overflow-x-auto px-1 ${paddingClasses} ${className}`}
+          role="tablist"
+        >
+          {headerTabs.map((tab, index) => {
+            const isActive = safeActiveTabIndex === index;
+            const isDisabled = Boolean(tab.disabled);
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-disabled={isDisabled}
+                disabled={isDisabled}
+                onClick={() => {
+                  if (!isDisabled) {
+                    handleHeaderTabChange(index);
+                  }
+                }}
+                className={`group relative flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all duration-300 ${
+                  isActive
+                    ? 'border-emerald-400/70 bg-emerald-50 text-emerald-800 shadow-[0_18px_45px_rgba(16,185,129,0.25)]'
+                    : 'border-transparent bg-transparent text-text-secondary hover:text-emerald-600'
+                } ${
+                  isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-0.5'
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30`}
+              >
+                <span className="flex items-center gap-2 whitespace-nowrap">{tab.label}</span>
+                <span
+                  className={`pointer-events-none absolute inset-x-6 -bottom-1 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 transition-all duration-300 ${
+                    isActive
+                      ? 'scale-x-100 opacity-100'
+                      : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                  }`}
+                />
+              </button>
+            );
+          })}
+        </div>
+      );
+    },
     [headerTabs, handleHeaderTabChange, safeActiveTabIndex]
   );
 
@@ -1879,99 +1889,77 @@ export const MarketplacePage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(76,99,255,0.08),_transparent_55%)] text-text-primary">
-      <header className="sticky top-0 z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur">
-        <div className="px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-4 py-3 sm:py-4 min-h-[72px]">
-            <div className="flex items-center gap-3">
+      <ServiceHeader
+        subtitle="услуги"
+        onLogoClick={() => handleNavigate('/')}
+        centerSlot={(
+          <div className="w-full max-w-3xl">{renderHeaderTabs()}</div>
+        )}
+        mobileDockSlot={(
+          <nav aria-label="Разделы маркетплейса">
+            {renderHeaderTabs({ className: 'justify-between px-0', dense: true })}
+          </nav>
+        )}
+        rightSlot={
+          currentUser ? (
+            <>
               <button
                 type="button"
-                onClick={() => handleNavigate('/')}
-                className="group flex items-center gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition-all duration-200 hover:border-brand-indigo/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30"
-                aria-label="Перейти на страницу навигации"
+                onClick={() => setIsTopUpModalOpen(true)}
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:px-3 sm:py-1.5 sm:text-sm"
               >
-                <img
-                  src={LogoSAU}
-                  alt="Логотип сервиса"
-                  className="hidden h-12 w-12 rounded-3xl border border-transparent transition-transform duration-200 group-hover:scale-105 sm:block sm:h-14 sm:w-14"
-                />
-                <div className="leading-tight">
-                  <h1 className="flex items-center text-2xl font-black uppercase tracking-tight text-text-primary sm:text-[1.85rem] lg:text-[2.1rem]">
-                    <span className="tracking-[-0.04em]">STUD</span>
-                    <span className="ml-1 bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm tracking-[-0.04em]">
-                      MI
-                    </span>
-                  </h1>
-                  <p className="mt-1 text-xs uppercase tracking-[0.35em] text-text-muted">услуги</p>
-                </div>
-              </button>
-            </div>
-            <div className="hidden lg:flex flex-1 justify-center">
-              <div className="max-w-3xl">
-                {renderHeaderTabs()}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              {currentUser ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsTopUpModalOpen(true)}
-                    className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
-                  >
-                    <span className="max-w-[90px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base" title={balanceLabel}>
-                      {balanceLabel}
-                    </span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
-                  </button>
-                  <NotificationBell />
-                  <button
-                    type="button"
-                    onClick={handleProfileNavigate}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600"
-                    aria-label="Профиль"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
-                      {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLogoutClick}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-                    aria-label="Выйти"
-                  >
-                    <svg
-                      className="h-5 w-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
-                  </button>
-                </>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
-                  onClick={() => handleNavigate('/login')}
+                <span
+                  className="max-w-[72px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[140px] sm:text-base"
+                  title={balanceLabel}
                 >
-                  Войти
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className="pb-2 lg:hidden">
-            {renderHeaderTabs()}
-          </div>
-        </div>
-      </header>
+                  {balanceLabel}
+                </span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">+</span>
+              </button>
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={handleProfileNavigate}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
+                aria-label="Профиль"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-sm font-semibold text-white sm:h-10 sm:w-10">
+                  {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLogoutClick}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
+                aria-label="Выйти"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <Button
+              variant="primary"
+              size="md"
+              className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
+              onClick={() => handleNavigate('/login')}
+            >
+              Войти
+            </Button>
+          )
+        }
+      />
 
       {shouldShowGuestAlert && (
         <div className="fixed left-1/2 top-[6.25rem] z-30 w-full max-w-2xl -translate-x-1/2 px-4 sm:top-[6.75rem] sm:px-0">
@@ -1994,7 +1982,7 @@ export const MarketplacePage: React.FC = () => {
         </div>
       )}
 
-      <main className="w-full flex-1 pb-28 sm:pb-32 lg:pb-0">
+      <main className="w-full flex-1 pb-40 sm:pb-44 lg:pb-12">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           {isCatalogTab && (
             <div className="space-y-10">
@@ -2205,15 +2193,15 @@ export const MarketplacePage: React.FC = () => {
             <div className="space-y-8">
               <section className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
                 <div className="flex h-full flex-col rounded-[32px] border border-border-soft bg-white p-6 shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="text-2xl font-semibold text-brand-indigo">Управляйте своими услугами</h3>
                     </div>
-                    <div className="flex flex-nowrap gap-2 overflow-x-auto">
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:justify-end">
                       <Button
                         variant="primary"
                         size="md"
-                        className="min-w-[180px] flex-shrink-0"
+                        className="w-full sm:w-auto sm:min-w-[160px]"
                         onClick={openCreateOfferListingModal}
                       >
                         Предложить услуги
@@ -2221,7 +2209,7 @@ export const MarketplacePage: React.FC = () => {
                       <Button
                         variant="primary"
                         size="md"
-                        className="min-w-[180px] flex-shrink-0"
+                        className="w-full sm:w-auto sm:min-w-[160px]"
                         onClick={openCreateRequestListingModal}
                       >
                         Создать заказ
