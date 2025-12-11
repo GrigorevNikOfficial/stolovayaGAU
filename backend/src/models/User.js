@@ -39,6 +39,8 @@ const userSchema = new mongoose.Schema(
         "canteenManager",
         "cateenManager",
         "storeManager",
+        "workAdmin",
+        "internshipAdmin",
       ],
       default: "user",
     },

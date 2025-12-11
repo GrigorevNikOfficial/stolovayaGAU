@@ -26,6 +26,8 @@ import { router as paymentRoutes } from './src/routes/payments.js';
 import { router as notificationRoutes } from './src/routes/notifications.js';
 import { router as uploadRoutes } from './src/routes/uploads.js';
 import { router as analyticsRoutes } from './src/routes/analytics.js';
+import { router as workRoutes } from './src/routes/work.js';
+import { router as internshipRoutes } from './src/routes/internships.js';
 
 const app = express();
 
@@ -52,6 +54,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/work', workRoutes);
+app.use('/api/internships', internshipRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
