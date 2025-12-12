@@ -1,27 +1,27 @@
-import { S3_FOLDERS } from '../config/storage.js';
-import { uploadImage } from '../services/storageService.js';
+import { S3_FOLDERS } from "../config/storage.js";
+import { uploadImage } from "../services/storageService.js";
 
-const sanitizeOriginalName = name => {
+const sanitizeOriginalName = (name) => {
   if (!name) {
-    return 'attachment';
+    return "attachment";
   }
-  return name.replace(/[^\w.\-]+/gi, '-');
+  return name.replace(/[^\w.\-]+/gi, "-");
 };
 
 export const uploadMarketplaceAttachment = async (req, res) => {
   try {
     if (!req.file || !req.file.buffer) {
-      return res.status(400).json({ error: 'Файл не найден' });
+      return res.status(400).json({ error: "Файл не найден" });
     }
 
     const originalName = sanitizeOriginalName(req.file.originalname);
-    const uniqueName = `${Date.now()}-${originalName || 'attachment'}`;
+    const uniqueName = `${Date.now()}-${originalName || "attachment"}`;
 
     const uploadResult = await uploadImage({
       buffer: req.file.buffer,
       folder: S3_FOLDERS.MARKETPLACE_ATTACHMENTS,
       filename: uniqueName,
-      contentType: req.file.mimetype || 'application/octet-stream',
+      contentType: req.file.mimetype || "application/octet-stream",
       makePublic: true,
     });
 
@@ -33,7 +33,31 @@ export const uploadMarketplaceAttachment = async (req, res) => {
       contentType: req.file.mimetype,
     });
   } catch (error) {
-    console.error('Upload marketplace attachment error:', error);
-    res.status(500).json({ error: 'Не удалось загрузить файл' });
+    console.error("Upload marketplace attachment error:", error);
+    res.status(500).json({ error: "Не удалось загрузить файл" });
+  }
+};
+
+export const uploadEventImage = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ error: "Файл не найден" });
+    }
+
+    const originalName = sanitizeOriginalName(req.file.originalname);
+    const uniqueName = `${Date.now()}-${originalName || "event"}`;
+
+    const uploadResult = await uploadImage({
+      buffer: req.file.buffer,
+      folder: S3_FOLDERS.EVENT_PICTURES,
+      filename: uniqueName,
+      contentType: req.file.mimetype || "image/webp",
+      makePublic: true,
+    });
+
+    res.json({ key: uploadResult.key, url: uploadResult.url });
+  } catch (error) {
+    console.error("Upload event image error:", error);
+    res.status(500).json({ error: "Не удалось загрузить изображение" });
   }
 };

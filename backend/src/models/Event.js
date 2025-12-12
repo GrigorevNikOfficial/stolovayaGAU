@@ -96,8 +96,15 @@ const eventSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["draft", "published", "ongoing", "completed", "cancelled"],
-      default: "draft",
+      enum: [
+        "draft",
+        "registration_open",
+        "registration_closed",
+        "ongoing",
+        "completed",
+        "cancelled",
+      ],
+      default: "registration_open",
       index: true,
     },
     qrCode: {

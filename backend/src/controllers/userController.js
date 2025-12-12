@@ -204,6 +204,36 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+export const searchUsers = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || typeof query !== "string" || !query.trim()) {
+      return res.json({ users: [] });
+    }
+
+    const cleaned = query.trim();
+    const phoneDigits = cleaned.replace(/\D/g, "");
+
+    const criteria = [
+      { first_name: { $regex: cleaned, $options: "i" } },
+      { last_name: { $regex: cleaned, $options: "i" } },
+    ];
+
+    if (phoneDigits.length >= 3) {
+      criteria.push({ phone: { $regex: phoneDigits, $options: "i" } });
+    }
+
+    const users = await User.find({ $or: criteria })
+      .select("-password")
+      .limit(10);
+
+    res.json({ users: users.map(mapUserToResponse) });
+  } catch (error) {
+    console.error("Search users error:", error);
+    res.status(500).json({ error: "Ошибка при поиске пользователей" });
+  }
+};
+
 export const topUpUserBalance = async (req, res) => {
   try {
     const { id } = req.params;

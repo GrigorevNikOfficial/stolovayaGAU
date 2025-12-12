@@ -23,7 +23,9 @@ export const ServiceHeader: React.FC<ServiceHeaderProps> = ({
 
   return (
     <>
-      <header className={`${positionClass} z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur`}>
+      <header
+        className={`${positionClass} z-40 border-b border-border-subtle bg-white/95 shadow-sm backdrop-blur`}
+      >
         <div className="px-3 sm:px-4 lg:px-6">
           <div className="flex w-full items-center gap-2 sm:gap-3 lg:gap-4 py-2.5 sm:py-4 min-h-[60px] sm:min-h-[72px]">
             <button

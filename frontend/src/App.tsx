@@ -7,10 +7,15 @@ import { HomePage } from './pages/HomePage';
 import { NavigationPage } from './pages/NavigationPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ChatPage } from './pages/services/chat/ChatPage.tsx';
-import { EventsServicePage } from './pages/services/ServicePlaceholderPages.tsx';
+import EventsPage from './pages/services/EventsPage.tsx';
+import EventDetailsPage from './pages/services/EventDetailsPage.tsx';
 import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
 import { AdminPanelPage } from './pages/AdminPanelPage';
-import { consumeAuthRedirect, isAuthPath, markAuthRedirect } from './utils/authRedirect';
+import {
+  consumeAuthRedirect,
+  isAuthPath,
+  markAuthRedirect,
+} from './utils/authRedirect';
 
 const PROTECTED_PATHS = new Set(['/profile', '/services/chat', '/admin']);
 
@@ -18,7 +23,9 @@ const AuthPendingScreen = () => (
   <div className="flex min-h-screen items-center justify-center text-text-primary">
     <div className="text-center space-y-4">
       <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-brand-indigo/20 border-t-brand-indigo" />
-      <p className="text-sm tracking-[0.35em] uppercase text-text-muted">Проверяем авторизацию</p>
+      <p className="text-sm tracking-[0.35em] uppercase text-text-muted">
+        Проверяем авторизацию
+      </p>
     </div>
   </div>
 );
@@ -34,7 +41,8 @@ function App() {
     window.location.pathname
   );
 
-  const hasToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('authToken'));
+  const hasToken =
+    typeof window !== 'undefined' && Boolean(localStorage.getItem('authToken'));
 
   // Проверяем авторизацию при загрузке приложения
   React.useEffect(() => {
@@ -71,7 +79,9 @@ function App() {
   React.useEffect(() => {
     const isAuthPage = currentPath === '/login' || currentPath === '/register';
     const token = Boolean(localStorage.getItem('authToken'));
-    const isProtected = PROTECTED_PATHS.has(currentPath);
+    const isProtected =
+      PROTECTED_PATHS.has(currentPath) ||
+      currentPath.startsWith('/services/events');
 
     if (isAuthPage && currentUser) {
       const target = consumeAuthRedirect();
@@ -87,7 +97,11 @@ function App() {
   }, [currentPath, currentUser, navigate]);
 
   React.useEffect(() => {
-    if (currentPath === '/admin' && currentUser && currentUser.role !== 'admin') {
+    if (
+      currentPath === '/admin' &&
+      currentUser &&
+      currentUser.role !== 'admin'
+    ) {
       navigate('/');
     }
   }, [currentPath, currentUser, navigate]);
@@ -158,7 +172,11 @@ function App() {
     }
 
     if (currentPath === '/services/events') {
-      return <EventsServicePage />;
+      return renderProtectedPage(<EventsPage />);
+    }
+
+    if (currentPath.startsWith('/services/events/')) {
+      return renderProtectedPage(<EventDetailsPage />);
     }
 
     if (currentPath === '/admin') {

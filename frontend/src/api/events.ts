@@ -60,11 +60,18 @@ export interface Event {
   reviews: EventReview[];
   averageRating: number;
   reviewCount: number;
-  status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
+  status:
+    | 'draft'
+    | 'registration_open'
+    | 'registration_closed'
+    | 'ongoing'
+    | 'completed'
+    | 'cancelled';
   userApprovalStatus?: 'pending' | 'approved' | 'rejected' | null;
   chatId: string | null;
   image?: {
     key: string;
+    url?: string;
   };
   tags: string[];
   requiresApproval: boolean;
@@ -93,7 +100,7 @@ export interface CreateEventPayload {
   capacity: number;
   requiresApproval?: boolean;
   tags?: string[];
-  status?: 'draft' | 'published';
+  status?: 'draft' | 'registration_open' | 'registration_closed';
 }
 
 export interface UpdateEventPayload {
@@ -110,9 +117,16 @@ export interface UpdateEventPayload {
   endDate?: string;
   location?: string;
   capacity?: number;
-  status?: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
+  status?:
+    | 'draft'
+    | 'registration_open'
+    | 'registration_closed'
+    | 'ongoing'
+    | 'completed'
+    | 'cancelled';
   tags?: string[];
   requiresApproval?: boolean;
+  imageKey?: string | null;
 }
 
 export interface EventFilters {
@@ -203,5 +217,34 @@ export const eventsApi = {
 
   async getOrganizedEvents() {
     return httpClient.get<{ events: Event[] }>('/events/organized');
+  },
+
+  async addParticipantManually(
+    eventId: string,
+    payload: {
+      userId: string;
+      approvalStatus?: 'pending' | 'approved' | 'rejected';
+    }
+  ) {
+    return httpClient.post<{ message: string; event: Event }>(
+      `/events/${eventId}/participants`,
+      payload
+    );
+  },
+
+  async removeParticipant(eventId: string, participantId: string) {
+    return httpClient.delete<{ message: string; event: Event }>(
+      `/events/${eventId}/participants/${participantId}`
+    );
+  },
+
+  async uploadEventImage(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return httpClient.request<{ key: string; url: string }>('/uploads/events', {
+      method: 'POST',
+      body: formData,
+    });
   },
 };

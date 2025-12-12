@@ -46,7 +46,8 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
         calories: item.calories?.toString() || '',
         number_pribors: item.number_pribors?.toString() || '',
         preparation_time: item.preparation_time?.toString() || '',
-        is_available: item.is_available !== undefined ? item.is_available : true,
+        is_available:
+          item.is_available !== undefined ? item.is_available : true,
       });
       setSelectedImage(null);
       setImagePreview(item.image_url || item.image?.url || '');
@@ -90,8 +91,15 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.uniq_nom || !formData.name || !formData.price || !formData.category_slug) {
-      alert('Заполните обязательные поля: уникальный номер, название, цена, категория');
+    if (
+      !formData.uniq_nom ||
+      !formData.name ||
+      !formData.price ||
+      !formData.category_slug
+    ) {
+      alert(
+        'Заполните обязательные поля: уникальный номер, название, цена, категория'
+      );
       return;
     }
 
@@ -102,8 +110,12 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
       category_slug: formData.category_slug,
       description: formData.description,
       calories: formData.calories ? Number(formData.calories) : undefined,
-      number_pribors: formData.number_pribors ? Number(formData.number_pribors) : undefined,
-      preparation_time: formData.preparation_time ? Number(formData.preparation_time) : undefined,
+      number_pribors: formData.number_pribors
+        ? Number(formData.number_pribors)
+        : undefined,
+      preparation_time: formData.preparation_time
+        ? Number(formData.preparation_time)
+        : undefined,
       is_available: formData.is_available,
     };
 
@@ -125,7 +137,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               <p className="text-xs uppercase tracking-[0.35em] text-emerald-500 mb-1">
                 {item ? 'Редактирование' : 'Новый товар'}
               </p>
-              <h2 className="text-2xl font-bold text-brand-indigo">{item ? 'Редактировать товар' : 'Создать товар'}</h2>
+              <h2 className="text-2xl font-bold text-brand-indigo">
+                {item ? 'Редактировать товар' : 'Создать товар'}
+              </h2>
             </div>
             <button
               onClick={onClose}
@@ -139,7 +153,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             <div>
-              <label className="block text-xs uppercase tracking-[0.35em] text-text-secondary mb-2">Изображение товара</label>
+              <label className="block text-xs uppercase tracking-[0.35em] text-text-secondary mb-2">
+                Изображение товара
+              </label>
               <div
                 className="relative w-full rounded-[28px] border border-dashed border-emerald-200 bg-white p-4 cursor-pointer group overflow-hidden shadow-sm"
                 onClick={handleImageAreaClick}
@@ -147,11 +163,17 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                 <div className="relative w-full max-w-[160px] mx-auto">
                   <div className="relative w-full pb-[90%] rounded-2xl overflow-hidden border border-border-subtle bg-surface-base">
                     {imagePreview ? (
-                      <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-text-secondary">
                         <ForkKnifeIcon className="w-10 h-10" />
-                        <p className="text-xs text-text-muted">Нажмите чтобы загрузить</p>
+                        <p className="text-xs text-text-muted">
+                          Нажмите чтобы загрузить
+                        </p>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs text-emerald-700 font-semibold">
@@ -159,14 +181,24 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                     </div>
                   </div>
                 </div>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                <p className="text-xs text-text-muted mt-4 text-center">PNG, JPG, JPEG до 5MB</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <p className="text-xs text-text-muted mt-4 text-center">
+                  PNG, JPG, JPEG до 5MB
+                </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Уникальный номер (uniq_nom) *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Уникальный номер (uniq_nom) *
+                </label>
                 <Input
                   type="text"
                   value={formData.uniq_nom}
@@ -177,7 +209,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Название товара *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Название товара *
+                </label>
                 <Input
                   type="text"
                   value={formData.name}
@@ -189,7 +223,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Цена *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Цена *
+                  </label>
                   <Input
                     type="number"
                     value={formData.price}
@@ -201,11 +237,15 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Категория *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Категория *
+                  </label>
                   <Select
                     options={categories}
                     value={formData.category_slug}
-                    onChange={value => handleInputChange('category_slug', value)}
+                    onChange={value =>
+                      handleInputChange('category_slug', value)
+                    }
                     placeholder="Выберите категорию"
                     required
                   />
@@ -213,10 +253,14 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Описание *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Описание *
+                </label>
                 <textarea
                   value={formData.description}
-                  onChange={e => handleInputChange('description', e.target.value)}
+                  onChange={e =>
+                    handleInputChange('description', e.target.value)
+                  }
                   className="w-full px-4 py-3 border border-border-subtle rounded-2xl bg-white text-text-primary shadow-inner focus:outline-none focus:ring-2 focus:ring-brand-indigo/15 focus:border-brand-indigo transition-all duration-300"
                   rows={3}
                   placeholder="Описание товара..."
@@ -226,7 +270,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Калории</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Калории
+                  </label>
                   <Input
                     type="number"
                     value={formData.calories}
@@ -236,21 +282,29 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Время приготовления (мин)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Время приготовления (мин)
+                  </label>
                   <Input
                     type="number"
                     value={formData.preparation_time}
-                    onChange={value => handleInputChange('preparation_time', value)}
+                    onChange={value =>
+                      handleInputChange('preparation_time', value)
+                    }
                     placeholder="0"
                     min="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Количество приборов</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Количество приборов
+                  </label>
                   <Input
                     type="number"
                     value={formData.number_pribors}
-                    onChange={value => handleInputChange('number_pribors', value)}
+                    onChange={value =>
+                      handleInputChange('number_pribors', value)
+                    }
                     placeholder="0"
                     min="0"
                   />
@@ -258,7 +312,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Статус товара</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Статус товара
+                </label>
                 <div className="flex rounded-2xl border border-border-subtle bg-white p-1 text-sm font-semibold shadow-sm">
                   <button
                     type="button"
@@ -279,7 +335,12 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
             </div>
 
             <div className="flex justify-end gap-3 pt-6 border-t border-emerald-100">
-              <Button type="button" onClick={onClose} variant="outline" size="md">
+              <Button
+                type="button"
+                onClick={onClose}
+                variant="outline"
+                size="md"
+              >
                 Отмена
               </Button>
               <Button type="submit" variant="primary" size="md">

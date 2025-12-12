@@ -1,8 +1,8 @@
 import type {
-    LoginRequest,
-    RegisterRequest,
-    UpdateProfileRequest,
-    User,
+  LoginRequest,
+  RegisterRequest,
+  UpdateProfileRequest,
+  User,
 } from '../types/user';
 import { httpClient } from './http-client';
 
@@ -61,6 +61,14 @@ export const usersApi = {
   // Получить всех пользователей (админ)
   getUsers: async (): Promise<{ users: User[] }> => {
     const response = await httpClient.get<{ users: User[] }>('/users');
+    return response;
+  },
+
+  // Поиск пользователей по имени/телефону (auth)
+  searchUsers: async (query: string): Promise<{ users: User[] }> => {
+    const response = await httpClient.get<{ users: User[] }>('/users/search', {
+      params: { query },
+    });
     return response;
   },
 

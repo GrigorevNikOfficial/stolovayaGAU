@@ -14,6 +14,8 @@ import {
   getOrganizedEvents,
   approveParticipant,
   rejectParticipant,
+  removeParticipant,
+  addParticipantManually,
 } from "../controllers/eventController.js";
 
 const router = express.Router();
@@ -36,6 +38,8 @@ router.post(
   approveParticipant
 );
 router.post("/:eventId/participants/:participantId/reject", rejectParticipant);
+router.delete("/:eventId/participants/:participantId", removeParticipant);
+router.post("/:eventId/participants", addParticipantManually);
 
 // Registration
 router.post("/:eventId/register", registerForEvent);

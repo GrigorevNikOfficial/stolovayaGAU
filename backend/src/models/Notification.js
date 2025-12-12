@@ -1,13 +1,21 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const CATEGORY_VALUES = ['orders', 'marketplace', 'system', 'chat', 'balance', 'topups'];
-const SEVERITY_VALUES = ['info', 'success', 'warning', 'danger'];
+const CATEGORY_VALUES = [
+  "orders",
+  "marketplace",
+  "system",
+  "chat",
+  "balance",
+  "topups",
+  "events",
+];
+const SEVERITY_VALUES = ["info", "success", "warning", "danger"];
 
 const notificationSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
@@ -24,17 +32,17 @@ const notificationSchema = new mongoose.Schema(
     category: {
       type: String,
       enum: CATEGORY_VALUES,
-      default: 'system',
+      default: "system",
       index: true,
     },
     severity: {
       type: String,
       enum: SEVERITY_VALUES,
-      default: 'info',
+      default: "info",
     },
     type: {
       type: String,
-      default: 'generic',
+      default: "generic",
     },
     topic: {
       type: String,
@@ -96,4 +104,4 @@ notificationSchema.methods.markAsRead = function () {
   return this;
 };
 
-export const Notification = mongoose.model('Notification', notificationSchema);
+export const Notification = mongoose.model("Notification", notificationSchema);

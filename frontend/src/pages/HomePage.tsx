@@ -77,11 +77,13 @@ export const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
-  const [isGuestPromptVisible, setIsGuestPromptVisible] = useState(!currentUser);
+  const [isGuestPromptVisible, setIsGuestPromptVisible] =
+    useState(!currentUser);
 
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
-    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+    ? `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() ||
+      'U'
     : 'U';
 
   const handleNavigation = (path: string) => {
@@ -130,7 +132,13 @@ export const HomePage: React.FC = () => {
       allTabs.push({
         id: 'profile',
         label: 'Профиль',
-        roles: ['admin', 'canteenManager', 'cateenManager', 'storeManager', 'user'],
+        roles: [
+          'admin',
+          'canteenManager',
+          'cateenManager',
+          'storeManager',
+          'user',
+        ],
       });
     }
 
@@ -156,9 +164,11 @@ export const HomePage: React.FC = () => {
   }, [orders, currentUser]);
 
   const activeOrdersCount = activeOrders.length;
-  const ordersBadge = activeOrdersCount > 0 ? String(Math.min(activeOrdersCount, 99)) : undefined;
+  const ordersBadge =
+    activeOrdersCount > 0 ? String(Math.min(activeOrdersCount, 99)) : undefined;
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
-  const cartBadge = cartItemCount > 0 ? String(Math.min(cartItemCount, 99)) : undefined;
+  const cartBadge =
+    cartItemCount > 0 ? String(Math.min(cartItemCount, 99)) : undefined;
 
   const visibleTabs = useMemo(() => {
     const tabs = getVisibleTabs(currentUser);
@@ -168,15 +178,18 @@ export const HomePage: React.FC = () => {
         tab.id === 'orders' && ordersBadge
           ? ordersBadge
           : tab.id === 'cart' && cartBadge
-          ? cartBadge
-          : undefined,
+            ? cartBadge
+            : undefined,
     }));
   }, [currentUser, ordersBadge, cartBadge]);
 
   const profileTabIndex = visibleTabs.findIndex(tab => tab.id === 'profile');
-  const profileTabActive = profileTabIndex !== -1 && activeTab === profileTabIndex;
+  const profileTabActive =
+    profileTabIndex !== -1 && activeTab === profileTabIndex;
   const mainTabs = visibleTabs.filter(tab => tab.id !== 'profile');
-  const activeMainTabIndex = mainTabs.findIndex(tab => tab.id === visibleTabs[activeTab]?.id);
+  const activeMainTabIndex = mainTabs.findIndex(
+    tab => tab.id === visibleTabs[activeTab]?.id
+  );
 
   const selectTabById = (tabId: string) => {
     const nextIndex = visibleTabs.findIndex(tab => tab.id === tabId);
@@ -248,7 +261,7 @@ export const HomePage: React.FC = () => {
       <ServiceHeader
         subtitle="еда"
         onLogoClick={() => handleNavigation('/')}
-        centerSlot={(
+        centerSlot={
           <div className="w-full max-w-3xl">
             <Tabs
               tabs={mainTabs}
@@ -260,7 +273,7 @@ export const HomePage: React.FC = () => {
               variant="marketplace"
             />
           </div>
-        )}
+        }
         mobileDockSlot={
           <Tabs
             tabs={mainTabs}
@@ -271,80 +284,84 @@ export const HomePage: React.FC = () => {
             variant="marketplace"
           />
         }
-          rightSlot={
-            currentUser ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsTopUpModalOpen(true)}
-                  className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 px-2 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:px-3 sm:py-1.5 sm:text-sm"
-                  aria-label="Пополнить баллы"
-                >
-                  <span className="max-w-[72px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[120px] sm:text-base">
-                    {formatBalance(currentUser.balance)}
-                  </span>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">
-                    +
-                  </span>
-                </button>
-                <NotificationBell />
-                {profileTabIndex !== -1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleNavigation('/profile')}
-                    aria-pressed={profileTabActive}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200 sm:h-11 sm:w-11 ${
-                      profileTabActive
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-brand-card'
-                        : 'border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 bg-white'
-                    }`}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-sm font-semibold text-emerald-700 shadow-sm sm:h-10 sm:w-10">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" />
-                      ) : (
-                        userInitials
-                      )}
-                    </span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleLogoutClick}
-                  aria-label="Выйти из аккаунта"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                    <polyline points="10 17 15 12 10 7" />
-                    <line x1="15" y1="12" x2="3" y2="12" />
-                  </svg>
-                </button>
-              </>
-            ) : (
-              <Button
-                onClick={() => handleNavigation('/login')}
-                variant="primary"
-                size="md"
-                className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
+        rightSlot={
+          currentUser ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsTopUpModalOpen(true)}
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 px-2 py-1 text-xs font-semibold text-emerald-700 shadow-inner transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:px-3 sm:py-1.5 sm:text-sm"
+                aria-label="Пополнить баллы"
               >
-                Войти
-              </Button>
-            )
-          }
-          isFixed
-        />
+                <span className="max-w-[72px] truncate text-sm font-semibold text-emerald-800 sm:max-w-[120px] sm:text-base">
+                  {formatBalance(currentUser.balance)}
+                </span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-6 sm:w-6">
+                  +
+                </span>
+              </button>
+              <NotificationBell />
+              {profileTabIndex !== -1 && (
+                <button
+                  type="button"
+                  onClick={() => handleNavigation('/profile')}
+                  aria-pressed={profileTabActive}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200 sm:h-11 sm:w-11 ${
+                    profileTabActive
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-brand-card'
+                      : 'border-border-subtle text-text-secondary hover:text-emerald-600 hover:border-emerald-300 bg-white'
+                  }`}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-sm font-semibold text-emerald-700 shadow-sm sm:h-10 sm:w-10">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Аватар"
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      userInitials
+                    )}
+                  </span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLogoutClick}
+                aria-label="Выйти из аккаунта"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <Button
+              onClick={() => handleNavigation('/login')}
+              variant="primary"
+              size="md"
+              className="px-7 text-base shadow-brand-card hover:-translate-y-0.5"
+            >
+              Войти
+            </Button>
+          )
+        }
+        isFixed
+      />
 
-        {/* Основной контент */}
-        <div className="flex-1 px-2 sm:px-4 lg:px-6 pt-4 pb-28 sm:pt-6 sm:pb-32 lg:pt-8 lg:pb-12 mt-[88px] sm:mt-[96px] lg:mt-[104px]">
+      {/* Основной контент */}
+      <div className="flex-1 px-2 sm:px-4 lg:px-6 pt-4 pb-28 sm:pt-6 sm:pb-32 lg:pt-8 lg:pb-12 mt-[88px] sm:mt-[96px] lg:mt-[104px]">
         <div className="h-full">
           {/* Контент активного таба */}
           {activeTab < visibleTabs.length && (
@@ -364,7 +381,8 @@ export const HomePage: React.FC = () => {
                             режим гостя
                           </p>
                           <p className="text-base text-text-secondary">
-                            Вы можете изучить меню, но оформление заказа доступно только после входа.
+                            Вы можете изучить меню, но оформление заказа
+                            доступно только после входа.
                           </p>
                         </div>
                         <Button
@@ -382,7 +400,9 @@ export const HomePage: React.FC = () => {
                       <div className="mb-5">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.35em] text-text-muted">активные заказы</p>
+                            <p className="text-xs uppercase tracking-[0.35em] text-text-muted">
+                              активные заказы
+                            </p>
                             <p className="text-sm text-text-secondary">
                               {activeOrdersCount === 1
                                 ? 'Есть заказ в работе'
@@ -400,13 +420,17 @@ export const HomePage: React.FC = () => {
                         <div className="-mx-1 px-1 overflow-x-auto pb-2">
                           <div className="flex gap-3 min-w-full">
                             {activeOrders.map(order => {
-                              const statusMeta = orderStatusMeta[order.status] ?? {
+                              const statusMeta = orderStatusMeta[
+                                order.status
+                              ] ?? {
                                 label: order.status,
                                 color: 'text-text-secondary',
                               };
                               const readyTime = formatTime(order.ready_time);
                               const createdTime = formatTime(order.created_at);
-                              const methodLabel = deliveryMethodLabels[order.delivery_method] ?? 'Заказ';
+                              const methodLabel =
+                                deliveryMethodLabels[order.delivery_method] ??
+                                'Заказ';
                               return (
                                 <button
                                   key={order._id}
@@ -418,7 +442,9 @@ export const HomePage: React.FC = () => {
                                     <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
                                       #{order.order_number}
                                     </span>
-                                    <span className={`text-xs font-semibold ${statusMeta.color}`}>
+                                    <span
+                                      className={`text-xs font-semibold ${statusMeta.color}`}
+                                    >
                                       {statusMeta.label}
                                     </span>
                                   </div>
@@ -429,12 +455,15 @@ export const HomePage: React.FC = () => {
                                     {readyTime
                                       ? `Готово к ${readyTime}`
                                       : createdTime
-                                      ? `Создан в ${createdTime}`
-                                      : 'Обрабатываем заказ'}
+                                        ? `Создан в ${createdTime}`
+                                        : 'Обрабатываем заказ'}
                                   </p>
                                   <div className="flex items-center justify-between">
                                     <span className="text-lg font-bold text-brand-indigo">
-                                      {order.total_amount.toLocaleString('ru-RU')} баллов
+                                      {order.total_amount.toLocaleString(
+                                        'ru-RU'
+                                      )}{' '}
+                                      баллов
                                     </span>
                                     <span className="text-xs text-text-muted">
                                       Tap, чтобы открыть
@@ -475,7 +504,6 @@ export const HomePage: React.FC = () => {
                   </div>
                 </div>
               )}
-
 
               {visibleTabs[activeTab].id === 'cart' && showCart && (
                 <div className="bg-surface-base border border-border-subtle rounded-2xl shadow-lg p-0 h-full overflow-hidden">
@@ -536,8 +564,13 @@ export const HomePage: React.FC = () => {
           <div className="mx-auto rounded-[24px] border border-emerald-200/80 bg-emerald-50/95 px-4 py-3 text-emerald-900 shadow-[0_25px_60px_rgba(16,185,129,0.25)]">
             <div className="flex items-start gap-3">
               <div className="flex-1 text-center sm:text-left">
-                <h2 className="text-base font-semibold leading-snug sm:text-lg">Войдите для оформления заказа.</h2>
-                <p className="mt-1 text-xs text-emerald-800 sm:text-sm">Авторизуйтесь, чтобы добавлять блюда в корзину и завершать покупки.</p>
+                <h2 className="text-base font-semibold leading-snug sm:text-lg">
+                  Войдите для оформления заказа.
+                </h2>
+                <p className="mt-1 text-xs text-emerald-800 sm:text-sm">
+                  Авторизуйтесь, чтобы добавлять блюда в корзину и завершать
+                  покупки.
+                </p>
               </div>
               <button
                 type="button"
@@ -545,7 +578,16 @@ export const HomePage: React.FC = () => {
                 onClick={() => setIsGuestPromptVisible(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-600 transition hover:bg-emerald-100"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>

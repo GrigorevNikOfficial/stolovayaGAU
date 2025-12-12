@@ -13,7 +13,6 @@ import Select from '../../components/layout/Select/Select';
 import ServiceHeader from '../../components/layout/ServiceHeader/ServiceHeader.tsx';
 import NotificationBell from '../../components/Notifications/NotificationBell';
 import EventFormModal from '../../components/Events/EventFormModal';
-import EventDetailsModal from '../../components/Events/EventDetailsModal';
 import { showToast } from '../../components/layout/Toast/stores/toastStore';
 import { $currentUser, logout } from '../../models/users';
 import { formatBalance } from '../../utils/formatBalance';
@@ -34,13 +33,13 @@ const EventsPage: React.FC = () => {
     page: 1,
     limit: 20,
   });
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const isAdmin = currentUser?.role === 'admin';
+
   const sortEventsByPhase = (list: Event[]) => {
     const now = new Date().getTime();
     const phase = (event: Event) => {
@@ -65,6 +64,25 @@ const EventsPage: React.FC = () => {
       return bStart - aStart; // past: recent first
     });
   };
+
+  const applyFilters = (list: Event[]) => {
+    return list.filter(event => {
+      if (filters.search) {
+        const query = filters.search.toLowerCase();
+        const titleMatch = event.title.toLowerCase().includes(query);
+        const descriptionMatch = event.description
+          .toLowerCase()
+          .includes(query);
+        if (!titleMatch && !descriptionMatch) return false;
+      }
+
+      if (filters.type && event.type !== filters.type) return false;
+      if (filters.status && event.status !== filters.status) return false;
+
+      return true;
+    });
+  };
+
   const viewTabs = useMemo(() => {
     const tabs: { id: ViewMode; label: string }[] = [
       { id: 'all', label: 'Все события' },
@@ -76,18 +94,47 @@ const EventsPage: React.FC = () => {
     return tabs;
   }, [isAdmin]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const incomingView = params.get('view');
+    if (
+      incomingView === 'my' ||
+      incomingView === 'organized' ||
+      incomingView === 'all'
+    ) {
+      if (incomingView !== 'organized' || isAdmin) {
+        setViewMode(incomingView as ViewMode);
+      }
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const syncFiltersState = () => setFiltersOpen(mq.matches);
+    syncFiltersState();
+    mq.addEventListener('change', syncFiltersState);
+    return () => mq.removeEventListener('change', syncFiltersState);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('view', viewMode);
+    const next = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', next);
+  }, [viewMode]);
+
   const loadEvents = async () => {
     setLoading(true);
     try {
       if (viewMode === 'my') {
         const response = await eventsApi.getMyEvents();
-        setEvents(sortEventsByPhase(response.events));
+        setEvents(sortEventsByPhase(applyFilters(response.events)));
       } else if (viewMode === 'organized') {
         const response = await eventsApi.getOrganizedEvents();
-        setEvents(sortEventsByPhase(response.events));
+        setEvents(sortEventsByPhase(applyFilters(response.events)));
       } else {
         const response = await eventsApi.getEvents(filters);
-        setEvents(sortEventsByPhase(response.events));
+        setEvents(sortEventsByPhase(applyFilters(response.events)));
       }
     } catch (error) {
       showToast({ message: 'Ошибка при загрузке событий', type: 'error' });
@@ -110,8 +157,10 @@ const EventsPage: React.FC = () => {
       });
       loadEvents();
     } catch (error: any) {
+      const apiMessage =
+        error?.response?.data?.error || error?.response?.data?.message;
       showToast({
-        message: error?.response?.data?.error || 'Ошибка при регистрации',
+        message: apiMessage || 'Ошибка при регистрации',
         type: 'error',
       });
     }
@@ -123,9 +172,10 @@ const EventsPage: React.FC = () => {
       showToast({ message: 'Регистрация отменена', type: 'success' });
       loadEvents();
     } catch (error: any) {
+      const apiMessage =
+        error?.response?.data?.error || error?.response?.data?.message;
       showToast({
-        message:
-          error?.response?.data?.error || 'Ошибка при отмене регистрации',
+        message: apiMessage || 'Ошибка при отмене регистрации',
         type: 'error',
       });
     }
@@ -159,9 +209,13 @@ const EventsPage: React.FC = () => {
         text: 'Черновик',
         color: 'border border-slate-200 bg-slate-50 text-slate-600',
       },
-      published: {
-        text: 'Опубликовано',
+      registration_open: {
+        text: 'Регистрация открыта',
         color: 'border border-emerald-200 bg-emerald-50 text-emerald-700',
+      },
+      registration_closed: {
+        text: 'Регистрация закрыта',
+        color: 'border border-amber-200 bg-amber-50 text-amber-700',
       },
       ongoing: {
         text: 'Идет',
@@ -198,9 +252,9 @@ const EventsPage: React.FC = () => {
 
   const canRegister = (event: Event) => {
     return (
-      (event.status === 'published' || event.status === 'ongoing') &&
+      event.status === 'registration_open' &&
       !isUserRegistered(event) &&
-      event.participantCount < event.capacity
+      (event.requiresApproval || event.participantCount < event.capacity)
     );
   };
 
@@ -224,9 +278,6 @@ const EventsPage: React.FC = () => {
   };
 
   const handleOpenEdit = (event: Event) => {
-    // Close details modal if it is open to avoid stacked overlays
-    setShowDetailsModal(false);
-    setSelectedEvent(event);
     setEditingEvent(event);
     setShowEditModal(true);
   };
@@ -248,80 +299,24 @@ const EventsPage: React.FC = () => {
     }
   };
 
-  const handleAddReview = async (rating: number, comment: string) => {
-    if (!selectedEvent) return;
-    try {
-      await eventsApi.addEventReview(selectedEvent._id, rating, comment);
-      showToast({ message: 'Отзыв добавлен успешно', type: 'success' });
-      // Reload event details
-      const response = await eventsApi.getEventById(selectedEvent._id);
-      setSelectedEvent(response.event);
-    } catch (error: any) {
-      showToast({
-        message: error?.response?.data?.error || 'Ошибка при добавлении отзыва',
-        type: 'error',
-      });
-    }
-  };
-
-  const handleApproveParticipant = async (participantId: string) => {
-    if (!selectedEvent) return;
-    try {
-      await eventsApi.approveParticipant(selectedEvent._id, participantId);
-      showToast({ message: 'Участник подтвержден', type: 'success' });
-      const response = await eventsApi.getEventById(selectedEvent._id);
-      setSelectedEvent(response.event);
-      loadEvents();
-    } catch (error: any) {
-      showToast({
-        message:
-          error?.response?.data?.error || 'Ошибка при подтверждении участника',
-        type: 'error',
-      });
-    }
-  };
-
-  const handleRejectParticipant = async (participantId: string) => {
-    if (!selectedEvent) return;
-    try {
-      await eventsApi.rejectParticipant(selectedEvent._id, participantId);
-      showToast({ message: 'Участник отклонен', type: 'success' });
-      const response = await eventsApi.getEventById(selectedEvent._id);
-      setSelectedEvent(response.event);
-      loadEvents();
-    } catch (error: any) {
-      showToast({
-        message:
-          error?.response?.data?.error || 'Ошибка при отклонении участника',
-        type: 'error',
-      });
-    }
-  };
-
   const handleNavigate = (path: string) => {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    const confirmed = window.confirm(
-      'Удалить событие? Это действие нельзя отменить.'
+  const renderCreateCard = () => {
+    if (!isAdmin) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => setShowCreateModal(true)}
+        className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border-subtle bg-white p-6 text-text-secondary shadow-brand-card transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400 hover:text-emerald-700 hover:shadow-[0_30px_70px_rgba(16,185,129,0.2)]"
+      >
+        <span className="text-4xl leading-none">+</span>
+        <span className="text-sm font-semibold">Создать событие</span>
+        <span className="text-xs text-text-muted">Добавьте новую афишу</span>
+      </button>
     );
-    if (!confirmed) return;
-    try {
-      await eventsApi.deleteEvent(eventId);
-      showToast({ message: 'Событие удалено', type: 'success' });
-      setShowDetailsModal(false);
-      setSelectedEvent(null);
-      setShowEditModal(false);
-      setEditingEvent(null);
-      loadEvents();
-    } catch (error: any) {
-      showToast({
-        message: error?.response?.data?.error || 'Ошибка при удалении события',
-        type: 'error',
-      });
-    }
   };
 
   const renderHeaderTabs = (className = '') => (
@@ -365,9 +360,9 @@ const EventsPage: React.FC = () => {
       <ServiceHeader
         subtitle="афиша"
         onLogoClick={() => handleNavigate('/')}
-        centerSlot={(
+        centerSlot={
           <div className="w-full max-w-4xl">{renderHeaderTabs()}</div>
-        )}
+        }
         mobileDockSlot={renderHeaderTabs('justify-center')}
         rightSlot={
           <div className="flex items-center gap-2 sm:gap-3">
@@ -413,67 +408,87 @@ const EventsPage: React.FC = () => {
 
       <main className={`${PAGE_CONTAINER} flex-1 py-10 pb-28 lg:pb-10`}>
         {/* Filters */}
-        {viewMode === 'all' && (
-          <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-6 sm:p-8 shadow-brand-card mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Поиск
-                </label>
-                <Input
-                  value={filters.search || ''}
-                  onChange={value => setFilters({ ...filters, search: value })}
-                  placeholder="Название события..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Тип
-                </label>
-                <Select
-                  value={filters.type || ''}
-                  onChange={value => setFilters({ ...filters, type: value })}
-                  options={[
-                    { value: '', label: 'Все типы' },
-                    { value: 'seminar', label: 'Семинар' },
-                    { value: 'hackathon', label: 'Хакатон' },
-                    { value: 'party', label: 'Вечеринка' },
-                    { value: 'workshop', label: 'Мастер-класс' },
-                    { value: 'conference', label: 'Конференция' },
-                    { value: 'other', label: 'Другое' },
-                  ]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Статус
-                </label>
-                <Select
-                  value={filters.status || ''}
-                  onChange={value => setFilters({ ...filters, status: value })}
-                  options={[
-                    { value: '', label: 'Все статусы' },
-                    { value: 'published', label: 'Опубликовано' },
-                    { value: 'ongoing', label: 'Идет' },
-                    { value: 'completed', label: 'Завершено' },
-                  ]}
-                />
-              </div>
+        <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-5 sm:p-8 shadow-brand-card mb-6">
+          <div className="flex items-start justify-between gap-3 sm:items-center">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-text-muted">
+                фильтры
+              </p>
+              <p className="text-sm text-text-secondary">
+                Подберите события по типу, статусу или названию
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl border border-border-subtle px-3 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-emerald-300 hover:text-emerald-700 md:hidden"
+              onClick={() => setFiltersOpen(prev => !prev)}
+              aria-expanded={filtersOpen}
+            >
+              <span>{filtersOpen ? 'Скрыть' : 'Показать'}</span>
+              <span
+                className={`transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
+              >
+                ▼
+              </span>
+            </button>
+          </div>
+
+          <div
+            className={`${filtersOpen ? 'grid' : 'hidden md:grid'} grid-cols-1 gap-4 pt-4 md:grid-cols-3`}
+          >
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Поиск
+              </label>
+              <Input
+                value={filters.search || ''}
+                onChange={value => setFilters({ ...filters, search: value })}
+                placeholder="Название события..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Тип
+              </label>
+              <Select
+                value={filters.type || ''}
+                onChange={value => setFilters({ ...filters, type: value })}
+                options={[
+                  { value: '', label: 'Все типы' },
+                  { value: 'seminar', label: 'Семинар' },
+                  { value: 'hackathon', label: 'Хакатон' },
+                  { value: 'party', label: 'Вечеринка' },
+                  { value: 'workshop', label: 'Мастер-класс' },
+                  { value: 'conference', label: 'Конференция' },
+                  { value: 'other', label: 'Другое' },
+                ]}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Статус
+              </label>
+              <Select
+                value={filters.status || ''}
+                onChange={value => setFilters({ ...filters, status: value })}
+                options={[
+                  { value: '', label: 'Все статусы' },
+                  {
+                    value: 'registration_open',
+                    label: 'Регистрация открыта',
+                  },
+                  {
+                    value: 'registration_closed',
+                    label: 'Регистрация закрыта',
+                  },
+                  { value: 'ongoing', label: 'Идет' },
+                  { value: 'completed', label: 'Завершено' },
+                  { value: 'cancelled', label: 'Отменено' },
+                ]}
+              />
             </div>
           </div>
-        )}
-
-        {/* Create Button */}
-        {isAdmin && (
-          <div className="mb-6">
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-brand-card hover:-translate-y-0.5 transition-all duration-200"
-            >
-              Создать событие
-            </Button>
-          </div>
-        )}
+        </div>
 
         {/* Events List */}
         {loading ? (
@@ -484,16 +499,32 @@ const EventsPage: React.FC = () => {
             </p>
           </div>
         ) : events.length === 0 ? (
-          <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-12 text-center shadow-brand-card">
-            <p className="text-text-secondary">Нет доступных событий</p>
-          </div>
+          isAdmin ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {renderCreateCard()}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-3xl border border-border-subtle bg-white p-12 text-center shadow-brand-card">
+              <p className="text-text-secondary">Нет доступных событий</p>
+            </div>
+          )
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6">
+            {renderCreateCard()}
             {events.map(event => (
               <div
                 key={event._id}
-                className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-border-subtle bg-white p-6 shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(16,185,129,0.22)]"
+                className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-border-subtle bg-white p-5 sm:p-6 shadow-[0_35px_80px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_rgba(16,185,129,0.22)]"
               >
+                {event.image?.url && (
+                  <div className="-mx-5 -mt-5 mb-4 aspect-[4/3] overflow-hidden rounded-[20px] bg-gradient-to-br from-emerald-50 to-white sm:-mx-6 sm:-mt-6">
+                    <img
+                      src={event.image.url}
+                      alt={event.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                )}
                 <div className="flex justify-between items-start mb-4 gap-3">
                   <div>
                     <h3 className="text-xl font-semibold text-text-primary mb-2 break-words">
@@ -545,10 +576,11 @@ const EventsPage: React.FC = () => {
 
                 <div className="mt-auto flex flex-col space-y-2">
                   <Button
-                    onClick={() => {
-                      setSelectedEvent(event);
-                      setShowDetailsModal(true);
-                    }}
+                    onClick={() =>
+                      handleNavigate(
+                        `/services/events/${event._id}${window.location.search}`
+                      )
+                    }
                     className="w-full justify-center shadow-brand-card hover:-translate-y-0.5"
                     size="md"
                   >
@@ -597,7 +629,9 @@ const EventsPage: React.FC = () => {
                       : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
                   }`}
                 >
-                  <span className="whitespace-normal leading-tight">{tab.label}</span>
+                  <span className="whitespace-normal leading-tight">
+                    {tab.label}
+                  </span>
                 </button>
               );
             })}
@@ -620,56 +654,8 @@ const EventsPage: React.FC = () => {
         }}
         onSave={data => handleUpdateEvent(data as UpdateEventPayload)}
       />
-
-      <EventDetailsModal
-        event={selectedEvent}
-        isOpen={showDetailsModal}
-        onClose={() => {
-          setShowDetailsModal(false);
-          setSelectedEvent(null);
-        }}
-        onRegister={
-          selectedEvent && canRegister(selectedEvent)
-            ? () => handleRegister(selectedEvent._id)
-            : undefined
-        }
-        onUnregister={
-          selectedEvent && isUserRegistered(selectedEvent)
-            ? () => handleUnregister(selectedEvent._id)
-            : undefined
-        }
-        onAddReview={
-          selectedEvent && isUserRegistered(selectedEvent)
-            ? handleAddReview
-            : undefined
-        }
-        isRegistered={selectedEvent ? isUserRegistered(selectedEvent) : false}
-        canRegister={selectedEvent ? canRegister(selectedEvent) : false}
-        canEdit={selectedEvent ? canEditEvent(selectedEvent) : false}
-        onEdit={
-          selectedEvent && canEditEvent(selectedEvent)
-            ? () => handleOpenEdit(selectedEvent)
-            : undefined
-        }
-        onDelete={
-          selectedEvent && canEditEvent(selectedEvent)
-            ? () => handleDeleteEvent(selectedEvent._id)
-            : undefined
-        }
-        onApproveParticipant={
-          selectedEvent && canEditEvent(selectedEvent)
-            ? participantId => handleApproveParticipant(participantId)
-            : undefined
-        }
-        onRejectParticipant={
-          selectedEvent && canEditEvent(selectedEvent)
-            ? participantId => handleRejectParticipant(participantId)
-            : undefined
-        }
-      />
     </div>
   );
 };
 
 export default EventsPage;
-

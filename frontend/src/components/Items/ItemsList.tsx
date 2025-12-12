@@ -51,12 +51,12 @@ export const ItemsList: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'unavailable'>(
-    'all'
-  );
-  const [sortOption, setSortOption] = useState<'default' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'>(
-    'default'
-  );
+  const [availabilityFilter, setAvailabilityFilter] = useState<
+    'all' | 'available' | 'unavailable'
+  >('all');
+  const [sortOption, setSortOption] = useState<
+    'default' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'
+  >('default');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -105,7 +105,10 @@ export const ItemsList: React.FC = () => {
     ? items.filter(item => {
         const matchesSearch =
           item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (item.description && item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+          (item.description &&
+            item.description
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()));
         const matchesPrice =
           (minPriceValue === null || item.price >= minPriceValue) &&
           (maxPriceValue === null || item.price <= maxPriceValue);
@@ -150,7 +153,9 @@ export const ItemsList: React.FC = () => {
 
   const categoryLabelMap = useMemo(() => {
     const map = new Map<string, string>();
-    categoriesForSelect.forEach(category => map.set(category.value, category.label));
+    categoriesForSelect.forEach(category =>
+      map.set(category.value, category.label)
+    );
     return map;
   }, [categoriesForSelect]);
 
@@ -173,7 +178,8 @@ export const ItemsList: React.FC = () => {
 
     const orderedSlugs = categoriesForSelect.map(category => category.value);
 
-    const orderedGroups: Array<{ key: string; label: string; items: any[] }> = [];
+    const orderedGroups: Array<{ key: string; label: string; items: any[] }> =
+      [];
 
     orderedSlugs.forEach(slug => {
       const group = groups.get(slug);
@@ -197,7 +203,10 @@ export const ItemsList: React.FC = () => {
   const handleCategoryTabClick = (slug: string) => {
     setSelectedCategory(slug);
     if (!slug) {
-      groupedContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      groupedContainerRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
       return;
     }
 
@@ -212,12 +221,19 @@ export const ItemsList: React.FC = () => {
     return cartItem ? cartItem.quantity : 0;
   };
 
-  const onCreateItem = (itemData: CreateItemRequest, imageFile?: File | null) => {
+  const onCreateItem = (
+    itemData: CreateItemRequest,
+    imageFile?: File | null
+  ) => {
     handleCreateItem({ data: itemData, imageFile: imageFile ?? undefined });
     setShowCreateModal(false);
   };
 
-  const onUpdateItem = (id: string, itemData: UpdateItemRequest, imageFile?: File | null) => {
+  const onUpdateItem = (
+    id: string,
+    itemData: UpdateItemRequest,
+    imageFile?: File | null
+  ) => {
     handleUpdateItem({ id, data: itemData, imageFile: imageFile ?? undefined });
     setShowEditModal(false);
     setSelectedItem(null);
@@ -394,7 +410,9 @@ export const ItemsList: React.FC = () => {
                 <Select
                   value={availabilityFilter}
                   onChange={value =>
-                    setAvailabilityFilter(value as 'all' | 'available' | 'unavailable')
+                    setAvailabilityFilter(
+                      value as 'all' | 'available' | 'unavailable'
+                    )
                   }
                   options={[
                     { value: 'all', label: 'Все товары' },
@@ -412,7 +430,12 @@ export const ItemsList: React.FC = () => {
                   value={sortOption}
                   onChange={value =>
                     setSortOption(
-                      value as 'default' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc'
+                      value as
+                        | 'default'
+                        | 'price_asc'
+                        | 'price_desc'
+                        | 'name_asc'
+                        | 'name_desc'
                     )
                   }
                   options={[
@@ -471,7 +494,6 @@ export const ItemsList: React.FC = () => {
             ))}
           </div>
         </div>
-
       </div>
 
       {isLoading ? (
@@ -513,8 +535,12 @@ export const ItemsList: React.FC = () => {
               className="space-y-4"
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-text-primary">{group.label}</h3>
-                <span className="text-sm text-text-muted">{group.items.length} шт.</span>
+                <h3 className="text-lg font-semibold text-text-primary">
+                  {group.label}
+                </h3>
+                <span className="text-sm text-text-muted">
+                  {group.items.length} шт.
+                </span>
               </div>
 
               <div className="grid grid-cols-2 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 gap-3">
@@ -539,7 +565,11 @@ export const ItemsList: React.FC = () => {
                             onClick={e => handleMenuClick(e, item._id)}
                             className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-border-soft shadow-sm flex items-center justify-center text-text-secondary hover:text-brand-indigo backdrop-blur-sm transition-all duration-300 text-sm"
                           >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
                               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                             </svg>
                           </button>
@@ -565,14 +595,14 @@ export const ItemsList: React.FC = () => {
                       <div className="relative mb-2.5 w-full overflow-hidden rounded-xl">
                         <div className="relative w-full pb-[100%]">
                           {item.image_url || item.image?.url ? (
-                              <img
+                            <img
                               src={item.image_url || item.image?.url}
                               alt={item.name}
                               className="absolute inset-0 w-full h-full object-cover shadow-sm group-hover:shadow-md transition-shadow duration-300"
                             />
                           ) : (
-                              <div className="absolute inset-0 bg-gradient-to-br from-surface-muted to-white flex items-center justify-center border border-border-soft text-text-muted">
-                                <ForkKnifeIcon className="w-8 h-8" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-surface-muted to-white flex items-center justify-center border border-border-soft text-text-muted">
+                              <ForkKnifeIcon className="w-8 h-8" />
                             </div>
                           )}
                         </div>
@@ -584,7 +614,9 @@ export const ItemsList: React.FC = () => {
                         </h3>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-bold text-brand-indigo">{item.price}</span>
+                          <span className="text-base font-bold text-brand-indigo">
+                            {item.price}
+                          </span>
                           <span
                             className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${availabilityBadgeClasses}`}
                           >
@@ -592,52 +624,61 @@ export const ItemsList: React.FC = () => {
                           </span>
                         </div>
 
-                        {currentUser && (currentUser.role === 'admin' || currentUser.role === 'user') && (
-                          <div className="mt-2">
-                            {!isInCart ? (
-                              <Button
-                                onClick={isAvailable ? e => handleAddToCartClick(e, item) : undefined}
-                                disabled={!isAvailable}
-                                variant="outline"
-                                size="md"
-                                className="w-full text-sm py-2 px-3 truncate"
-                              >
-                                {isAvailable ? (
-                                  <span className="flex items-center justify-center gap-2">
-                                    <CartIcon className="w-4 h-4" />
-                                    В корзину
-                                  </span>
-                                ) : (
-                                  'Недоступно'
-                                )}
-                              </Button>
-                            ) : (
-                              <div className="flex items-center justify-between bg-brand-seashell border border-brand-indigo/30 rounded-xl p-1.5">
-                                <button
-                                  onClick={e => handleDecreaseQuantity(e, item._id)}
-                                  className="w-8 h-8 rounded-full bg-white text-brand-indigo border border-brand-indigo/40 flex items-center justify-center text-base font-bold hover:bg-brand-indigo hover:text-white transition-all duration-200"
-                                >
-                                  -
-                                </button>
-                                <span className="text-base font-bold text-text-primary mx-2 min-w-[28px] text-center">
-                                  {quantity}
-                                </span>
-                                <button
-                                  onClick={e => handleIncreaseQuantity(e, item)}
+                        {currentUser &&
+                          (currentUser.role === 'admin' ||
+                            currentUser.role === 'user') && (
+                            <div className="mt-2">
+                              {!isInCart ? (
+                                <Button
+                                  onClick={
+                                    isAvailable
+                                      ? e => handleAddToCartClick(e, item)
+                                      : undefined
+                                  }
                                   disabled={!isAvailable}
-                                  className="w-8 h-8 rounded-full bg-white text-brand-indigo border border-brand-indigo/40 flex items-center justify-center text-base font-bold hover:bg-brand-indigo hover:text-white transition-all duration-200"
+                                  variant="outline"
+                                  size="md"
+                                  className="w-full text-sm py-2 px-3 truncate"
                                 >
-                                  +
-                                </button>
-                              </div>
-                            )}
-                            {!isAvailable && isInCart && (
-                              <p className="text-[11px] text-red-500 mt-1 text-center">
-                                Товар недоступен, удалите его из корзины
-                              </p>
-                            )}
-                          </div>
-                        )}
+                                  {isAvailable ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                      <CartIcon className="w-4 h-4" />В корзину
+                                    </span>
+                                  ) : (
+                                    'Недоступно'
+                                  )}
+                                </Button>
+                              ) : (
+                                <div className="flex items-center justify-between bg-brand-seashell border border-brand-indigo/30 rounded-xl p-1.5">
+                                  <button
+                                    onClick={e =>
+                                      handleDecreaseQuantity(e, item._id)
+                                    }
+                                    className="w-8 h-8 rounded-full bg-white text-brand-indigo border border-brand-indigo/40 flex items-center justify-center text-base font-bold hover:bg-brand-indigo hover:text-white transition-all duration-200"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="text-base font-bold text-text-primary mx-2 min-w-[28px] text-center">
+                                    {quantity}
+                                  </span>
+                                  <button
+                                    onClick={e =>
+                                      handleIncreaseQuantity(e, item)
+                                    }
+                                    disabled={!isAvailable}
+                                    className="w-8 h-8 rounded-full bg-white text-brand-indigo border border-brand-indigo/40 flex items-center justify-center text-base font-bold hover:bg-brand-indigo hover:text-white transition-all duration-200"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
+                              {!isAvailable && isInCart && (
+                                <p className="text-[11px] text-red-500 mt-1 text-center">
+                                  Товар недоступен, удалите его из корзины
+                                </p>
+                              )}
+                            </div>
+                          )}
                       </div>
                     </div>
                   );
@@ -653,7 +694,9 @@ export const ItemsList: React.FC = () => {
           <div className="flex items-center justify-center text-text-muted mb-4">
             <ForkKnifeIcon className="w-16 h-16" />
           </div>
-          <p className="text-text-secondary text-xl font-medium mb-3">Товары не найдены</p>
+          <p className="text-text-secondary text-xl font-medium mb-3">
+            Товары не найдены
+          </p>
           <p className="text-text-muted text-sm mb-6">
             {searchQuery ||
             priceRange.min ||
@@ -680,13 +723,19 @@ export const ItemsList: React.FC = () => {
         </div>
       )}
 
-      <ItemModal item={selectedItemForModal} isOpen={itemModalOpen} onClose={() => setItemModalOpen(false)} />
+      <ItemModal
+        item={selectedItemForModal}
+        isOpen={itemModalOpen}
+        onClose={() => setItemModalOpen(false)}
+      />
 
       {showCreateModal && (
         <ItemFormModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          onSave={(data, imageFile) => onCreateItem(data as CreateItemRequest, imageFile)}
+          onSave={(data, imageFile) =>
+            onCreateItem(data as CreateItemRequest, imageFile)
+          }
           categories={categoriesForSelect}
         />
       )}
@@ -745,14 +794,22 @@ const DeleteConfirmModal: React.FC<{
             </svg>
           </div>
           <div className="space-y-3">
-            <h2 className="text-2xl font-semibold text-text-primary">Подтверждение удаления</h2>
+            <h2 className="text-2xl font-semibold text-text-primary">
+              Подтверждение удаления
+            </h2>
             <p className="text-sm text-text-secondary">
-              Вы уверены, что хотите удалить блюдо <strong>"{itemName}"</strong>? Это действие нельзя отменить.
+              Вы уверены, что хотите удалить блюдо <strong>"{itemName}"</strong>
+              ? Это действие нельзя отменить.
             </p>
           </div>
         </div>
         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-          <Button onClick={onClose} variant="outline" size="md" className="flex-1">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            size="md"
+            className="flex-1"
+          >
             Отмена
           </Button>
           <Button

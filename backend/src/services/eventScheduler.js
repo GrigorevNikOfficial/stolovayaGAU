@@ -5,7 +5,12 @@ const TICK_MS = 60_000;
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
 const shouldSendFifteenMinuteReminder = (event, now) => {
-  if (event.status !== "published") return false;
+  if (
+    !["registration_open", "registration_closed", "ongoing"].includes(
+      event.status
+    )
+  )
+    return false;
   if (event.reminders?.fifteenMinutesSent) return false;
   const start = new Date(event.startDate).getTime();
   const nowMs = now.getTime();
@@ -23,7 +28,11 @@ const nextStatusForTime = (event, now) => {
   const end = new Date(event.endDate).getTime();
   const ts = now.getTime();
 
-  if (event.status === "published" && ts >= start) {
+  if (event.status === "registration_open" && ts >= start) {
+    return "ongoing";
+  }
+
+  if (event.status === "registration_closed" && ts >= start) {
     return "ongoing";
   }
 
@@ -68,7 +77,7 @@ const processEvent = async (event, now) => {
       title: "Событие скоро начнется",
       body: `До начала события "${evt.title}" осталось 15 минут`,
       actionLabel: "Открыть",
-      actionUrl: `/events/${evt._id}`,
+      actionUrl: `/services/events/${evt._id}`,
       sourceId: evt._id,
     }));
     updatedEvent.reminders.fifteenMinutesSent = true;
@@ -80,7 +89,7 @@ const processEvent = async (event, now) => {
       title: "Событие началось",
       body: `Событие "${evt.title}" уже стартовало`,
       actionLabel: "Перейти",
-      actionUrl: `/events/${evt._id}`,
+      actionUrl: `/services/events/${evt._id}`,
       sourceId: evt._id,
     }));
     updatedEvent.reminders.startSent = true;
@@ -102,7 +111,7 @@ const runEventMaintenance = async () => {
   const now = new Date();
   try {
     const candidates = await Event.find({
-      status: { $in: ["published", "ongoing"] },
+      status: { $in: ["registration_open", "registration_closed", "ongoing"] },
     });
     await Promise.all(candidates.map((event) => processEvent(event, now)));
   } catch (error) {

@@ -92,7 +92,9 @@ const mapEvent = (event, currentUserId = null) => {
     reviewCount: plain.reviews?.length || 0,
     status: plain.status,
     chatId: plain.chatId,
-    image: plain.image,
+    image: plain.image?.key
+      ? { key: plain.image.key, url: buildPublicUrl(plain.image.key) }
+      : null,
     tags: plain.tags || [],
     requiresApproval: plain.requiresApproval,
     userApprovalStatus:
@@ -113,13 +115,94 @@ const mapEvent = (event, currentUserId = null) => {
   };
 };
 
+const getParticipantCounts = (event) => {
+  const approvedCount = event.participants?.filter?.(
+    (p) => p.approvalStatus === "approved"
+  )?.length;
+  const activeCount = event.participants?.filter?.(
+    (p) => p.approvalStatus !== "rejected"
+  )?.length;
+
+  return {
+    approvedCount: approvedCount || 0,
+    activeCount: activeCount || 0,
+  };
+};
+
+const closeRegistrationIfFull = (event) => {
+  const { approvedCount, activeCount } = getParticipantCounts(event);
+  const limit = event.capacity || 0;
+
+  const shouldClose = event.requiresApproval
+    ? approvedCount >= limit
+    : activeCount >= limit;
+
+  if (shouldClose && event.status === "registration_open") {
+    event.status = "registration_closed";
+    return true;
+  }
+
+  return false;
+};
+
+const openRegistrationIfAvailable = (event) => {
+  const { approvedCount, activeCount } = getParticipantCounts(event);
+  const limit = event.capacity || 0;
+
+  const canOpen = event.requiresApproval
+    ? approvedCount < limit
+    : activeCount < limit;
+
+  if (canOpen && event.status === "registration_closed") {
+    event.status = "registration_open";
+    return true;
+  }
+
+  return false;
+};
+
+const ensureOrganizerAccess = (event, userId, isAdmin) =>
+  event.organizer.toString() === userId.toString() || isAdmin;
+
+const approveParticipantInternal = (event, participant, approverId) => {
+  participant.approvalStatus = "approved";
+  participant.approvalAt = new Date();
+  participant.approvalBy = approverId;
+};
+
 const isStatusTransitionAllowed = (currentStatus, nextStatus) => {
   if (!nextStatus || currentStatus === nextStatus) return true;
 
   const allowedMap = {
-    draft: ["draft", "published", "cancelled"],
-    published: ["published", "ongoing", "completed", "cancelled"],
-    ongoing: ["ongoing", "completed", "cancelled"],
+    draft: [
+      "draft",
+      "registration_open",
+      "registration_closed",
+      "ongoing",
+      "completed",
+      "cancelled",
+    ],
+    registration_open: [
+      "registration_open",
+      "registration_closed",
+      "ongoing",
+      "completed",
+      "cancelled",
+    ],
+    registration_closed: [
+      "registration_open",
+      "registration_closed",
+      "ongoing",
+      "completed",
+      "cancelled",
+    ],
+    ongoing: [
+      "ongoing",
+      "registration_open",
+      "registration_closed",
+      "completed",
+      "cancelled",
+    ],
     completed: ["completed"],
     cancelled: ["cancelled"],
   };
@@ -142,6 +225,7 @@ export const createEvent = async (req, res) => {
       requiresApproval,
       tags,
       status,
+      imageKey,
     } = req.body;
 
     const userId = req.user._id;
@@ -165,7 +249,8 @@ export const createEvent = async (req, res) => {
       organizer: userId,
       requiresApproval: requiresApproval || false,
       tags: tags || [],
-      status: status || "draft",
+      status: status || "registration_open",
+      image: imageKey ? { key: imageKey } : undefined,
       qrCode: Event.generateQRCode(),
     });
 
@@ -226,8 +311,15 @@ export const getEvents = async (req, res) => {
     if (status) {
       query.status = status;
     } else {
-      // By default, show only published, ongoing, and completed events
-      query.status = { $in: ["published", "ongoing", "completed"] };
+      // By default, show only open/closed, ongoing, and completed events
+      query.status = {
+        $in: [
+          "registration_open",
+          "registration_closed",
+          "ongoing",
+          "completed",
+        ],
+      };
     }
 
     // Filter by organizer
@@ -338,6 +430,7 @@ export const updateEvent = async (req, res) => {
       status,
       tags,
       requiresApproval,
+      imageKey,
     } = req.body;
 
     // Validate dates
@@ -366,6 +459,9 @@ export const updateEvent = async (req, res) => {
     if (tags !== undefined) event.tags = tags;
     if (requiresApproval !== undefined)
       event.requiresApproval = requiresApproval;
+    if (imageKey !== undefined) {
+      event.image = imageKey ? { key: imageKey } : null;
+    }
 
     await event.save();
     await event.populate("organizer", "first_name last_name avatar role");
@@ -381,7 +477,7 @@ export const updateEvent = async (req, res) => {
           category: "events",
           severity: "info",
           actionLabel: "Посмотреть",
-          actionUrl: `/events/${event._id}`,
+          actionUrl: `/services/events/${event._id}`,
           sourceId: event._id,
         });
       }
@@ -441,10 +537,16 @@ export const registerForEvent = async (req, res) => {
       return res.status(404).json({ error: "Событие не найдено" });
     }
 
-    // Check if event is published
-    if (event.status !== "published" && event.status !== "ongoing") {
+    // Check if registration is open
+    if (event.status !== "registration_open") {
       return res.status(400).json({
         error: "Регистрация на это событие недоступна",
+      });
+    }
+
+    if (new Date(event.endDate) <= new Date()) {
+      return res.status(400).json({
+        error: "Событие уже завершено",
       });
     }
 
@@ -455,10 +557,23 @@ export const registerForEvent = async (req, res) => {
       });
     }
 
-    // Check capacity
-    if (!event.hasCapacity()) {
+    const { approvedCount, activeCount } = getParticipantCounts(event);
+    const isAtConfirmedCapacity = approvedCount >= event.capacity;
+    const isAtActiveCapacity = activeCount >= event.capacity;
+
+    if (!event.requiresApproval && isAtActiveCapacity) {
+      event.status = "registration_closed";
+      await event.save();
       return res.status(400).json({
         error: "Достигнут лимит участников",
+      });
+    }
+
+    if (event.requiresApproval && isAtConfirmedCapacity) {
+      event.status = "registration_closed";
+      await event.save();
+      return res.status(400).json({
+        error: "Достигнут лимит подтвержденных участников",
       });
     }
 
@@ -470,6 +585,10 @@ export const registerForEvent = async (req, res) => {
       registeredAt: new Date(),
       approvalStatus: requiresApproval ? "pending" : "approved",
     });
+
+    if (!event.requiresApproval) {
+      closeRegistrationIfFull(event);
+    }
 
     await event.save();
 
@@ -503,7 +622,7 @@ export const registerForEvent = async (req, res) => {
       category: "events",
       severity: requiresApproval ? "info" : "success",
       actionLabel: "Посмотреть",
-      actionUrl: `/events/${event._id}`,
+      actionUrl: `/services/events/${event._id}`,
       sourceId: event._id,
     });
 
@@ -538,11 +657,35 @@ export const unregisterFromEvent = async (req, res) => {
       });
     }
 
+    const participant = event.participants.find(
+      (p) => p.user.toString() === userId.toString()
+    );
+
+    if (!participant) {
+      return res.status(400).json({ error: "Участник не найден" });
+    }
+
+    const canUnregister =
+      !event.requiresApproval || participant.approvalStatus !== "approved";
+
+    if (!canUnregister) {
+      return res.status(400).json({
+        error: "Нельзя сняться с подтвержденного события",
+      });
+    }
+
+    if (new Date(event.endDate) <= new Date()) {
+      return res
+        .status(400)
+        .json({ error: "Нельзя сняться с уже завершенного события" });
+    }
+
     // Remove user from participants
     event.participants = event.participants.filter(
       (p) => p.user.toString() !== userId.toString()
     );
 
+    openRegistrationIfAvailable(event);
     await event.save();
 
     res.json({
@@ -555,17 +698,168 @@ export const unregisterFromEvent = async (req, res) => {
   }
 };
 
-const ensureOrganizerAccess = (event, userId, isAdmin) => {
-  if (event.organizer.toString() !== userId.toString() && !isAdmin) {
-    return false;
+export const addParticipantManually = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { userId: targetUserId } = req.body;
+    const actorId = req.user._id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: "userId обязателен" });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    if (!ensureOrganizerAccess(event, actorId, isAdmin)) {
+      return res.status(403).json({ error: "Нет прав для добавления" });
+    }
+
+    if (["completed", "cancelled"].includes(event.status)) {
+      return res.status(400).json({ error: "Событие уже завершено" });
+    }
+
+    if (event.isUserRegistered(targetUserId)) {
+      return res.status(400).json({ error: "Пользователь уже в списке" });
+    }
+
+    const userDoc = await User.findById(targetUserId);
+    if (!userDoc) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    const nextApprovalStatus = "approved";
+
+    event.participants.push({
+      user: targetUserId,
+      registeredAt: new Date(),
+      approvalStatus: nextApprovalStatus,
+      approvalAt: nextApprovalStatus === "approved" ? new Date() : null,
+      approvalBy: nextApprovalStatus === "approved" ? actorId : null,
+    });
+
+    closeRegistrationIfFull(event);
+    await event.save();
+
+    if (event.chatId) {
+      const chat = await Chat.findById(event.chatId);
+      if (chat) {
+        const alreadyInChat = chat.participants.some(
+          (p) => p.user.toString() === targetUserId.toString()
+        );
+        if (!alreadyInChat) {
+          chat.participants.push({ user: targetUserId, role: "member" });
+          await chat.save();
+          attachUsersToChatRoom(event.chatId.toString(), [
+            targetUserId.toString(),
+          ]);
+        }
+      }
+    }
+
+    await createUserNotification({
+      userId: targetUserId,
+      title:
+        nextApprovalStatus === "approved"
+          ? "Добавлены в событие"
+          : "Добавлены: требуется подтверждение",
+      body:
+        nextApprovalStatus === "approved"
+          ? `Вас добавили в событие "${event.title}"`
+          : `Вас добавили в событие "${event.title}". Ожидайте подтверждения`,
+      category: "events",
+      severity: nextApprovalStatus === "approved" ? "success" : "info",
+      actionLabel: "Открыть",
+      actionUrl: `/services/events/${event._id}`,
+      sourceId: event._id,
+    });
+
+    await event.populate("organizer", "first_name last_name avatar role");
+    await event.populate(
+      "participants.user",
+      "first_name last_name avatar role phone"
+    );
+
+    res.json({
+      message: "Участник добавлен",
+      event: mapEvent(event, actorId),
+    });
+  } catch (error) {
+    console.error("Add participant manually error:", error);
+    res.status(500).json({ error: "Ошибка при добавлении участника" });
   }
-  return true;
 };
 
-const approveParticipantInternal = async (event, participant, approverId) => {
-  participant.approvalStatus = "approved";
-  participant.approvalAt = new Date();
-  participant.approvalBy = approverId;
+export const removeParticipant = async (req, res) => {
+  try {
+    const { eventId, participantId } = req.params;
+    const actorId = req.user._id;
+    const isAdmin = req.user.role === "admin";
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    if (!ensureOrganizerAccess(event, actorId, isAdmin)) {
+      return res.status(403).json({ error: "Нет прав для удаления" });
+    }
+
+    const participant = event.participants.find(
+      (p) => p.user.toString() === participantId
+    );
+
+    if (!participant) {
+      return res.status(404).json({ error: "Участник не найден" });
+    }
+
+    if (event.organizer.toString() === participantId.toString()) {
+      return res.status(400).json({ error: "Организатора нельзя удалить" });
+    }
+
+    event.participants = event.participants.filter(
+      (p) => p.user.toString() !== participantId
+    );
+
+    openRegistrationIfAvailable(event);
+
+    await event.save();
+
+    if (event.chatId) {
+      const chat = await Chat.findById(event.chatId);
+      if (chat) {
+        chat.participants = chat.participants.filter(
+          (p) => p.user.toString() !== participantId
+        );
+        await chat.save();
+      }
+    }
+
+    await createUserNotification({
+      userId: participant.user,
+      title: "Вас удалили из события",
+      body: `Организатор удалил вас из события "${event.title}"`,
+      category: "events",
+      severity: "warning",
+      actionLabel: "Открыть",
+      actionUrl: `/services/events/${event._id}`,
+      sourceId: event._id,
+    });
+
+    await event.populate("organizer", "first_name last_name avatar role");
+    await event.populate(
+      "participants.user",
+      "first_name last_name avatar role phone"
+    );
+
+    res.json({ message: "Участник удален", event: mapEvent(event, actorId) });
+  } catch (error) {
+    console.error("Remove participant error:", error);
+    res.status(500).json({ error: "Ошибка при удалении участника" });
+  }
 };
 
 export const approveParticipant = async (req, res) => {
@@ -591,7 +885,8 @@ export const approveParticipant = async (req, res) => {
       return res.status(404).json({ error: "Участник не найден" });
     }
 
-    await approveParticipantInternal(event, participant, userId);
+    approveParticipantInternal(event, participant, userId);
+    closeRegistrationIfFull(event);
     await event.save();
 
     await createUserNotification({
@@ -601,7 +896,7 @@ export const approveParticipant = async (req, res) => {
       category: "events",
       severity: "success",
       actionLabel: "Открыть",
-      actionUrl: `/events/${event._id}`,
+      actionUrl: `/services/events/${event._id}`,
       sourceId: event._id,
     });
 
@@ -641,6 +936,9 @@ export const rejectParticipant = async (req, res) => {
     participant.approvalStatus = "rejected";
     participant.approvalAt = new Date();
     participant.approvalBy = userId;
+
+    openRegistrationIfAvailable(event);
+
     await event.save();
 
     await createUserNotification({
@@ -650,7 +948,7 @@ export const rejectParticipant = async (req, res) => {
       category: "events",
       severity: "warning",
       actionLabel: "Открыть",
-      actionUrl: `/events/${event._id}`,
+      actionUrl: `/services/events/${event._id}`,
       sourceId: event._id,
     });
 

@@ -1,17 +1,18 @@
 import express from "express";
 import { authenticateToken, requireAdmin } from "../controllers/auth.js";
 import {
-    createEmployee,
-    deleteUser,
-    getAllUsers,
-    getMe,
-    login,
-    register,
-    topUpUserBalance,
-    setUserBalance,
-    updateProfile,
-    updateUserAvatar,
-    updateUserRole,
+  createEmployee,
+  deleteUser,
+  getAllUsers,
+  searchUsers,
+  getMe,
+  login,
+  register,
+  topUpUserBalance,
+  setUserBalance,
+  updateProfile,
+  updateUserAvatar,
+  updateUserRole,
 } from "../controllers/userController.js";
 import { singleImageUpload } from "../middleware/upload.js";
 
@@ -30,6 +31,7 @@ router.patch(
   singleImageUpload("avatar"),
   updateUserAvatar
 );
+router.get("/search", authenticateToken, searchUsers);
 
 // Админ роуты
 router.get("/", authenticateToken, requireAdmin, getAllUsers);
