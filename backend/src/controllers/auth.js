@@ -70,6 +70,32 @@ export const requireAdmin = (req, res, next) => {
   next();
 };
 
+const hasRole = (user, roles = []) => user && roles.includes(user.role);
+
+export const requireWorkAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Требуется аутентификация' });
+  }
+
+  if (!hasRole(req.user, ['admin', 'workAdmin'])) {
+    return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора вакансий' });
+  }
+
+  next();
+};
+
+export const requireInternshipAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Требуется аутентификация' });
+  }
+
+  if (!hasRole(req.user, ['admin', 'internshipAdmin'])) {
+    return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора стажировок' });
+  }
+
+  next();
+};
+
 export const requireAdminOrCanteenManager = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Требуется аутентификация' });

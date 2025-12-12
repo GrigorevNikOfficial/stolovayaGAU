@@ -1,0 +1,388 @@
+import React, { useEffect, useState } from 'react';
+import Button from '../../components/layout/Button/Button.tsx';
+import Input from '../../components/layout/Input/Input.tsx';
+import Select from '../../components/layout/Select/Select.tsx';
+import ServiceHeader from '../../components/layout/ServiceHeader/ServiceHeader.tsx';
+import NotificationBell from '../../components/Notifications/NotificationBell.tsx';
+import { internshipsApi } from '../../api/internships';
+import type { InternshipItem } from '../../types/internship';
+import { formatBalance } from '../../utils/formatBalance';
+import { useUnit } from 'effector-react';
+import { $currentUser, logout } from '../../models/users';
+import { showToast } from '../../components/layout/Toast/stores/toastStore.ts';
+
+const formatLabel = (value?: string) => {
+  if (!value) return '—';
+  const map: Record<string, string> = {
+    onsite: 'Офис',
+    remote: 'Удалённо',
+    hybrid: 'Гибрид',
+    unspecified: 'Формат не указан',
+    full: 'Полная занятость',
+    part: 'Частичная',
+    intern: 'Стажировка',
+  };
+  return map[value] || value;
+};
+
+const InternshipCard: React.FC<{
+  item: InternshipItem;
+  currentUserId?: string;
+  isOwner: boolean;
+  canApply: boolean;
+  onApply: (id: string, message: string) => void;
+  onRespond: (id: string, userId: string, action: 'accept' | 'decline') => void;
+  onOpenApplications: (id: string) => void;
+  canOpenApplications: boolean;
+}> = ({ item, currentUserId, isOwner, canApply, onApply, onRespond, onOpenApplications, canOpenApplications }) => {
+  const [note, setNote] = useState('');
+  const myApp = item.applications.find(app => app.user && (typeof app.user === 'string' ? app.user === currentUserId : app.user._id === currentUserId));
+
+  const formatUserName = (user: InternshipItem['applications'][number]['user']) => {
+    if (!user) return 'Неизвестно';
+    if (typeof user === 'string') return 'Неизвестно';
+    const name = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    return name || 'Неизвестно';
+  };
+
+  const applications = item.applications || [];
+  const hasPending = applications.some(app => app.status === 'pending');
+
+  return (
+    <div className="flex h-full flex-col rounded-3xl border border-border-soft bg-white p-3 shadow-brand-card md:p-4">
+      <div className="flex flex-col gap-2 md:grid md:grid-cols-[1fr_auto] md:items-start md:gap-3">
+        <div className="space-y-1.5 min-w-0">
+          <h3 className="text-base font-semibold text-text-primary truncate md:text-lg">{item.title}</h3>
+          <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed line-clamp-3">{item.description}</p>
+          {item.company && <p className="text-sm font-semibold text-brand-indigo">{item.company}</p>}
+          <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
+            {item.location && <span className="rounded-full bg-surface-muted px-3 py-1">📍 {item.location}</span>}
+            <span className="rounded-full bg-surface-muted px-3 py-1">Формат: {formatLabel(item.workFormat)}</span>
+            <span className="rounded-full bg-surface-muted px-3 py-1">Занятость: {formatLabel(item.employmentType)}</span>
+            {item.hoursPerDay ? <span className="rounded-full bg-surface-muted px-3 py-1">Часы/день: {item.hoursPerDay}</span> : null}
+            {item.expectedSalary && <span className="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1">ЗП: {item.expectedSalary}</span>}
+            {isOwner && hasPending && (
+              <span className="rounded-full bg-amber-50 px-3 py-1 font-semibold text-amber-700">Новые отклики</span>
+            )}
+          </div>
+          {item.skills?.length ? (
+            <div className="flex flex-wrap gap-1 text-xs text-text-secondary">
+              {item.skills.map(skill => (
+                <span key={skill} className="rounded-full bg-surface-muted px-2 py-1">{skill}</span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <span className={`inline-flex items-center justify-center self-start rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${item.status === 'open' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+          {item.status === 'open' ? 'Открыта' : 'Закрыта'}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
+        <span className="rounded-full bg-surface-muted px-3 py-1">Создал: {typeof item.createdBy === 'string' ? '—' : `${item.createdBy?.first_name ?? ''} ${item.createdBy?.last_name ?? ''}`}</span>
+        <span className="rounded-full bg-surface-muted px-3 py-1">Отклики: {applications.length}</span>
+      </div>
+
+      <div className="mt-auto space-y-3">
+        {myApp && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            Ваш отклик: {myApp.status === 'pending' ? 'ожидает' : myApp.status === 'accepted' ? 'принят' : 'отклонён'}
+          </div>
+        )}
+
+        {canApply && item.status === 'open' && !myApp && (
+          <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_auto] sm:items-center">
+            <Input placeholder="Сообщение для автора" value={note} onChange={setNote} className="flex-1 text-base" />
+            <Button variant="primary" onClick={() => onApply(item._id, note)} className="w-full sm:w-auto">Откликнуться</Button>
+          </div>
+        )}
+
+        {canOpenApplications && (
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => onOpenApplications(item._id)}>
+              Отклики ({applications.length}) {hasPending ? '•' : ''}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export const InternshipsPage: React.FC = () => {
+  const { currentUser, handleLogout } = useUnit({ currentUser: $currentUser, handleLogout: logout });
+  const [items, setItems] = useState<InternshipItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState({ workFormat: 'all', employmentType: 'all', minHours: '', maxHours: '', skill: '' });
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    company: '',
+    location: '',
+    workFormat: 'onsite',
+    employmentType: 'intern',
+    hoursPerDay: '',
+    expectedSalary: '',
+    skills: '',
+    experienceLevel: '',
+  });
+
+  const isSuperAdmin = currentUser?.role === 'admin';
+  const isInternshipAdmin = currentUser?.role === 'internshipAdmin';
+  const adminLike = isSuperAdmin || isInternshipAdmin;
+  const [viewMode, setViewMode] = useState<'all' | 'mine'>(adminLike ? 'mine' : 'all');
+  const [appsModal, setAppsModal] = useState<{ open: boolean; loading: boolean; item?: InternshipItem | null }>({ open: false, loading: false, item: null });
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const data = await internshipsApi.list({
+        workFormat: filters.workFormat !== 'all' ? filters.workFormat : undefined,
+        employmentType: filters.employmentType !== 'all' ? filters.employmentType : undefined,
+        minHours: filters.minHours ? Number(filters.minHours) : undefined,
+        maxHours: filters.maxHours ? Number(filters.maxHours) : undefined,
+        skill: filters.skill || undefined,
+        view: adminLike ? viewMode : undefined,
+      });
+      setItems(data.items || []);
+    } catch (err: any) {
+      setError(err?.message || 'Не удалось загрузить стажировки');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, adminLike]);
+
+  const handleApply = async (id: string, message: string) => {
+    try {
+      await internshipsApi.apply(id, { message });
+      showToast({ message: 'Отклик отправлен', type: 'success' });
+      await load();
+    } catch (err: any) {
+      setError(err?.message || 'Не удалось откликнуться');
+      showToast({ message: err?.message || 'Не удалось откликнуться', type: 'error' });
+    }
+  };
+
+  const handleRespond = async (id: string, userId: string, action: 'accept' | 'decline') => {
+    if (!userId) return;
+    try {
+      await internshipsApi.respond(id, userId, action);
+      showToast({ message: action === 'accept' ? 'Отклик принят' : 'Отклик отклонён', type: 'success' });
+      await load();
+      if (appsModal.open && appsModal.item?._id === id) {
+        await openApplications(id);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Не удалось обновить отклик');
+      showToast({ message: err?.message || 'Не удалось обновить отклик', type: 'error' });
+    }
+  };
+
+  const handleCloseApplications = () => setAppsModal({ open: false, loading: false, item: null });
+
+  const openApplications = async (id: string) => {
+    setAppsModal({ open: true, loading: true, item: null });
+    try {
+      const { item } = await internshipsApi.detail(id);
+      setAppsModal({ open: true, loading: false, item });
+    } catch (err: any) {
+      setAppsModal({ open: false, loading: false, item: null });
+      showToast({ message: err?.message || 'Не удалось загрузить отклики', type: 'error' });
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!form.title.trim() || !form.description.trim()) return;
+    setCreating(true);
+    try {
+      await internshipsApi.create({
+        title: form.title,
+        description: form.description,
+        company: form.company,
+        location: form.location,
+        workFormat: form.workFormat,
+        employmentType: form.employmentType,
+        hoursPerDay: form.hoursPerDay ? Number(form.hoursPerDay) : undefined,
+        expectedSalary: form.expectedSalary,
+        skills: form.skills ? form.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        experienceLevel: form.experienceLevel,
+      });
+      setForm({ title: '', description: '', company: '', location: '', workFormat: 'onsite', employmentType: 'intern', hoursPerDay: '', expectedSalary: '', skills: '', experienceLevel: '' });
+      showToast({ message: 'Стажировка опубликована', type: 'success' });
+      await load();
+    } catch (err: any) {
+      setError(err?.message || 'Не удалось создать стажировку');
+      showToast({ message: err?.message || 'Не удалось создать стажировку', type: 'error' });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
+
+  return (
+    <div className="min-h-screen bg-surface-base text-text-primary">
+      <ServiceHeader
+        subtitle="стажировки"
+        onLogoClick={() => {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        rightSlot={
+          currentUser ? (
+            <>
+              <button
+                type="button"
+                className="flex min-w-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-inner"
+              >
+                <span className="max-w-[90px] truncate" title={balanceLabel}>{balanceLabel}</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">+</span>
+              </button>
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={() => {
+                  handleLogout();
+                  window.history.pushState({}, '', '/');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary"
+                aria-label="Выйти"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+              </button>
+            </>
+          ) : null
+        }
+      />
+
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-8">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-semibold text-brand-indigo">Стажировки</h1>
+          <p className="text-sm text-text-secondary">Предложения от компаний. Фильтры по формату, занятости и часам.</p>
+        </div>
+
+        {adminLike && (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant={viewMode === 'mine' ? 'primary' : 'outline'} onClick={() => setViewMode('mine')}>
+              Мои карточки
+            </Button>
+            <Button size="sm" variant={viewMode === 'all' ? 'primary' : 'outline'} onClick={() => setViewMode('all')}>
+              Весь список
+            </Button>
+          </div>
+        )}
+
+        <div className="rounded-3xl border border-border-soft bg-white p-4 shadow-brand-card grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Select
+            value={filters.workFormat}
+            onChange={value => setFilters(prev => ({ ...prev, workFormat: value }))}
+            options={[
+              { value: 'all', label: 'Все форматы' },
+              { value: 'onsite', label: 'Офис' },
+              { value: 'remote', label: 'Удалённо' },
+              { value: 'hybrid', label: 'Гибрид' },
+            ]}
+          />
+          <Select
+            value={filters.employmentType}
+            onChange={value => setFilters(prev => ({ ...prev, employmentType: value }))}
+            options={[
+              { value: 'all', label: 'Любая занятость' },
+              { value: 'full', label: 'Полная' },
+              { value: 'part', label: 'Частичная' },
+              { value: 'intern', label: 'Стажировка' },
+            ]}
+          />
+          <Input placeholder="Навык (например React)" value={filters.skill} onChange={value => setFilters(prev => ({ ...prev, skill: value }))} />
+          <Input placeholder="Мин. часов/день" value={filters.minHours} onChange={value => setFilters(prev => ({ ...prev, minHours: value }))} />
+          <Input placeholder="Макс. часов/день" value={filters.maxHours} onChange={value => setFilters(prev => ({ ...prev, maxHours: value }))} />
+          <Button variant="primary" onClick={load}>Применить</Button>
+        </div>
+
+        {(currentUser?.role === 'admin' || currentUser?.role === 'internshipAdmin') && (
+          <div className="rounded-3xl border border-border-soft bg-white p-4 shadow-brand-card space-y-3">
+            <p className="text-sm font-semibold text-text-primary">Создать стажировку (для компаний)</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input placeholder="Название" value={form.title} onChange={value => setForm(prev => ({ ...prev, title: value }))} />
+              <Input placeholder="Компания" value={form.company} onChange={value => setForm(prev => ({ ...prev, company: value }))} />
+              <Input placeholder="Локация" value={form.location} onChange={value => setForm(prev => ({ ...prev, location: value }))} />
+              <Input placeholder="ЗП / ставка" value={form.expectedSalary} onChange={value => setForm(prev => ({ ...prev, expectedSalary: value }))} />
+              <Select
+                value={form.workFormat}
+                onChange={value => setForm(prev => ({ ...prev, workFormat: value }))}
+                options={[
+                  { value: 'onsite', label: 'Офис' },
+                  { value: 'remote', label: 'Удалённо' },
+                  { value: 'hybrid', label: 'Гибрид' },
+                ]}
+              />
+              <Select
+                value={form.employmentType}
+                onChange={value => setForm(prev => ({ ...prev, employmentType: value }))}
+                options={[
+                  { value: 'intern', label: 'Стажировка' },
+                  { value: 'full', label: 'Полная' },
+                  { value: 'part', label: 'Частичная' },
+                ]}
+              />
+              <Input placeholder="Часы в день" value={form.hoursPerDay} onChange={value => setForm(prev => ({ ...prev, hoursPerDay: value }))} />
+              <Input placeholder="Навыки (через запятую)" value={form.skills} onChange={value => setForm(prev => ({ ...prev, skills: value }))} />
+              <Input placeholder="Опыт / стаж" value={form.experienceLevel} onChange={value => setForm(prev => ({ ...prev, experienceLevel: value }))} />
+            </div>
+            <Input placeholder="Описание" value={form.description} onChange={value => setForm(prev => ({ ...prev, description: value }))} />
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={handleCreate} disabled={creating}>{creating ? 'Создаём...' : 'Опубликовать'}</Button>
+            </div>
+          </div>
+        )}
+
+        {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+        {loading ? (
+          <div className="text-center text-text-secondary">Загружаем...</div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {items.length === 0 ? (
+              <p className="text-sm text-text-secondary">Пока нет стажировок.</p>
+            ) : (
+              items.map(item => (
+                (() => {
+                  const owner = currentUser?._id === (typeof item.createdBy === 'string' ? item.createdBy : item.createdBy?._id);
+                  const canApply = !adminLike && !owner;
+                  const canOpenApps = owner || isSuperAdmin;
+                  return (
+                    <InternshipCard
+                      key={item._id}
+                      item={item}
+                      currentUserId={currentUser?._id}
+                      isOwner={owner}
+                      canApply={canApply}
+                      onApply={handleApply}
+                      onRespond={handleRespond}
+                      onOpenApplications={openApplications}
+                      canOpenApplications={canOpenApps}
+                    />
+                  );
+                })()
+              ))
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default InternshipsPage;

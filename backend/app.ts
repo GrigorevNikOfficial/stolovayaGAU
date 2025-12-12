@@ -27,6 +27,8 @@ import { router as notificationRoutes } from "./src/routes/notifications.js";
 import { router as uploadRoutes } from "./src/routes/uploads.js";
 import { router as analyticsRoutes } from "./src/routes/analytics.js";
 import { router as eventRoutes } from "./src/routes/events.js";
+import { router as workRoutes } from "./src/routes/work.js";
+import { router as internshipRoutes } from "./src/routes/internships.js";
 import { startEventScheduler } from "./src/services/eventScheduler.js";
 
 const app = express();
@@ -57,6 +59,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/work", workRoutes);
+app.use("/api/internships", internshipRoutes);
 
 // Health check
 app.get("/health", (req, res) => {

@@ -145,3 +145,16 @@ body {
     rgba(21, 128, 61, 0.95)
   );
 }
+
+/* Mobile drawer animation helpers */
+.slide-in-right {
+  transform: translateX(100%);
+}
+
+.slide-in-right.open {
+  transform: translateX(0%);
+}
+
+.slide-transition {
+  transition: transform 300ms ease;
+}

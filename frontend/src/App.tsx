@@ -10,6 +10,8 @@ import { ChatPage } from './pages/services/chat/ChatPage.tsx';
 import EventsPage from './pages/services/EventsPage.tsx';
 import EventDetailsPage from './pages/services/EventDetailsPage.tsx';
 import { MarketplacePage } from './pages/services/MarketplacePage.tsx';
+import WorkPage from './pages/services/WorkPage.tsx';
+import InternshipsPage from './pages/services/InternshipsPage.tsx';
 import { AdminPanelPage } from './pages/AdminPanelPage';
 import {
   consumeAuthRedirect,
@@ -17,7 +19,7 @@ import {
   markAuthRedirect,
 } from './utils/authRedirect';
 
-const PROTECTED_PATHS = new Set(['/profile', '/services/chat', '/admin']);
+const PROTECTED_PATHS = new Set(['/profile', '/services/chat', '/admin', '/services/work', '/services/internships']);
 
 const AuthPendingScreen = () => (
   <div className="flex min-h-screen items-center justify-center text-text-primary">
@@ -165,6 +167,14 @@ function App() {
 
     if (currentPath === '/services/chat') {
       return renderProtectedPage(<ChatPage />);
+    }
+
+    if (currentPath === '/services/work') {
+      return renderProtectedPage(<WorkPage />);
+    }
+
+    if (currentPath === '/services/internships') {
+      return renderProtectedPage(<InternshipsPage />);
     }
 
     if (currentPath === '/services/marketplace') {

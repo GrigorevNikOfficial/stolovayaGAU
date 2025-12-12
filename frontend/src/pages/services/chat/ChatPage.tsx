@@ -4,41 +4,39 @@ import Button from '../../../components/layout/Button/Button.tsx';
 import Input from '../../../components/layout/Input/Input.tsx';
 import ServiceHeader from '../../../components/layout/ServiceHeader/ServiceHeader.tsx';
 import TopUpRequestModal from '../../../components/Modal/TopUpRequestModal.tsx';
+import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
 import {
-  $activeChatId,
-  $chats,
-  $friends,
-  $friendRequests,
-  $messagesByChat,
-  acceptChatInvite,
-  addParticipantsToChat,
-  declineChatInvite,
-  leaveChat,
-  loadChats,
-  loadFriends,
-  loadFriendRequests,
-  postMessage,
-  requestDirectChat,
-  requestGroupChat,
-  requestMessages,
-  respondToRequest,
-  selectChat,
-  sendFriendRequest,
-} from '../../../models/chat';
-import {
-  acceptChatInviteFx,
-  addParticipantsToChatFx,
-  declineChatInviteFx,
-  respondFriendRequestFx,
-  sendFriendRequestFx,
+    $activeChatId,
+    $chats,
+    $friendRequests,
+    $friends,
+    $messagesByChat,
+    acceptChatInvite,
+    acceptChatInviteFx,
+    addParticipantsToChat,
+    addParticipantsToChatFx,
+    declineChatInvite,
+    declineChatInviteFx,
+    leaveChat,
+    loadChats,
+    loadFriendRequests,
+    loadFriends,
+    postMessage,
+    requestDirectChat,
+    requestGroupChat,
+    requestMessages,
+    respondFriendRequestFx,
+    respondToRequest,
+    selectChat,
+    sendFriendRequest,
+    sendFriendRequestFx,
 } from '../../../models/chat';
 import { $currentUser, logout } from '../../../models/users';
-import NotificationBell from '../../../components/Notifications/NotificationBell.tsx';
-import { formatBalance } from '../../../utils/formatBalance';
-import { isAuthPath, markAuthRedirect } from '../../../utils/authRedirect';
 import type { ChatMessage, ChatParticipant, ChatSummary, ParticipantRole } from '../../../types/chat';
 import type { Friendship } from '../../../types/friend';
 import type { UserPreview } from '../../../types/user';
+import { isAuthPath, markAuthRedirect } from '../../../utils/authRedirect';
+import { formatBalance } from '../../../utils/formatBalance';
 
 const formatTime = (dateString?: string) => {
   if (!dateString) {
@@ -250,7 +248,7 @@ const FriendListCard: React.FC<{
   };
 
   const wrapperClasses = [
-    'flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all duration-200',
+    'flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all duration-200 min-w-0',
     isPending
       ? 'border-amber-200 bg-amber-50/70 shadow-brand-card focus-within:ring-2 focus-within:ring-amber-200'
       : 'cursor-pointer border-border-soft bg-white hover:border-brand-indigo/40 hover:shadow-brand-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-indigo/30',
@@ -272,12 +270,12 @@ const FriendListCard: React.FC<{
           initials
         )}
       </div>
-      <div className="flex flex-1 flex-col leading-tight">
-        <p className="text-sm font-semibold text-text-primary">
+      <div className="flex flex-1 flex-col leading-tight min-w-0">
+        <p className="text-sm font-semibold text-text-primary truncate max-w-[160px] sm:max-w-[200px]">
           {user.first_name} {user.last_name}
         </p>
         {isPending && (
-          <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-700">приглашение в друзья</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-700 truncate">запрос в друзья</span>
         )}
       </div>
       {isPending && (
@@ -286,17 +284,17 @@ const FriendListCard: React.FC<{
             type="button"
             onClick={onAccept}
             disabled={actionPending}
-            className="rounded-full bg-emerald-500/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white disabled:opacity-60"
+            className="h-8 rounded-xl bg-emerald-500/90 px-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-white disabled:opacity-60"
           >
-            Принять
+            OK
           </button>
           <button
             type="button"
             onClick={onDecline}
             disabled={actionPending}
-            className="rounded-full border border-border-soft bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-secondary hover:border-red-300 hover:text-red-600 disabled:opacity-60"
+            className="h-8 rounded-xl border border-border-soft bg-white px-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-text-secondary hover:border-red-300 hover:text-red-600 disabled:opacity-60"
           >
-            Отклонить
+            Нет
           </button>
         </div>
       )}
@@ -401,6 +399,7 @@ export const ChatPage: React.FC = () => {
   const [codeParticipantInput, setCodeParticipantInput] = useState('');
   const [codeParticipants, setCodeParticipants] = useState<string[]>([]);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [participantFilter, setParticipantFilter] = useState('');
   const [selectedInvitees, setSelectedInvitees] = useState<Set<string>>(new Set());
@@ -428,6 +427,12 @@ export const ChatPage: React.FC = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMobileLayout) {
+      setIsSidebarOpen(false);
+    }
+  }, [isMobileLayout]);
 
 
   useEffect(() => {
@@ -721,8 +726,11 @@ export const ChatPage: React.FC = () => {
   const handleChatPreviewSelect = React.useCallback(
     (chatId: string) => {
       handleSelectChat(chatId);
+      if (isMobileLayout) {
+        setIsSidebarOpen(false);
+      }
     },
-    [handleSelectChat]
+    [handleSelectChat, isMobileLayout]
   );
 
   const handleFriendClick = React.useCallback(
@@ -764,13 +772,19 @@ export const ChatPage: React.FC = () => {
         if (sidebarTab !== 'chats') {
           setSidebarTab('chats');
         }
+        if (isMobileLayout) {
+          setIsSidebarOpen(false);
+        }
         return;
       }
 
       handleRequestDirectChat(userId);
       setSidebarTab('chats');
+      if (isMobileLayout) {
+        setIsSidebarOpen(false);
+      }
     },
-    [chats, currentUserId, handleChatPreviewSelect, handleRequestDirectChat, sidebarTab, setSidebarTab]
+    [chats, currentUserId, handleChatPreviewSelect, handleRequestDirectChat, sidebarTab, setSidebarTab, isMobileLayout]
   );
 
   const handleAcceptFriendRequest = React.useCallback(
@@ -910,77 +924,114 @@ export const ChatPage: React.FC = () => {
         }
       />
 
-      <main className="flex-1 w-full overflow-hidden min-h-0 pb-28 lg:pb-0">
-        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:py-8 lg:px-8 min-h-0">
+      <main className="w-full overflow-hidden h-[calc(100vh-70px)] min-h-0 pb-0 lg:pb-0">
+        <div className="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-3 px-3 py-2 sm:gap-6 sm:px-4 sm:py-8 lg:px-8 min-h-0">
           {isMobileLayout && (
-            <div className="lg:hidden rounded-3xl border border-border-soft bg-white p-5 shadow-brand-card">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-text-muted">ваши беседы</p>
-                  <h2 className="text-2xl font-semibold text-text-primary">Чат</h2>
+            <>
+              <div className="lg:hidden flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">навигация</p>
+                  <h2 className="truncate text-2xl font-semibold text-text-primary">{activeChat?.name || 'Чаты и друзья'}</h2>
                 </div>
-                {sidebarTab === 'chats' ? (
-                  <Button variant="primary" size="sm" onClick={() => setIsCreateChatModalOpen(true)}>
-                    Создать чат
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-9 rounded-full border border-dashed border-border-subtle" aria-hidden />
+                  <Button variant="outline" size="sm" onClick={() => setIsSidebarOpen(true)}>
+                    Открыть списки
                   </Button>
-                ) : (
-                  <Button variant="primary" size="sm" onClick={() => setIsAddFriendModalOpen(true)}>
-                    Добавить друга
-                  </Button>
-                )}
+                </div>
               </div>
-              <div className="mt-4">
-                <SidebarTabs active={sidebarTab} onChange={setSidebarTab} />
-              </div>
-              <div className="mt-4">
-                <Input
-                  placeholder={sidebarTab === 'chats' ? 'Поиск чата' : 'Поиск друга'}
-                  value={sidebarFilter}
-                  onChange={setSidebarFilter}
-                  className="text-sm"
-                />
-              </div>
-              <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto pr-1 styled-scrollbar">
-                {sidebarTab === 'chats' ? (
-                  filteredChats.length ? (
-                    filteredChats.map(chat => (
-                      <ChatPreviewButton
-                        key={chat._id}
-                        chat={chat}
-                        active={chat._id === activeChatId}
-                        onSelect={() => handleChatPreviewSelect(chat._id)}
-                        pending={chat.membershipStatus !== 'active'}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
-                  )
-                ) : combinedFriends.length ? (
-                  combinedFriends.map(friendship => {
-                    if (!friendship.user) {
-                      return null;
-                    }
-                    const isPendingFriend = friendship.status === 'pending' && friendship.direction === 'incoming';
-                    return (
-                      <FriendListCard
-                        key={friendship._id}
-                        friendship={friendship}
-                        onClick={handleFriendClick}
-                        pending={isPendingFriend}
-                        actionPending={isRespondingFriendRequest}
-                        onAccept={isPendingFriend ? () => handleAcceptFriendRequest(friendship._id) : undefined}
-                        onDecline={isPendingFriend ? () => handleDeclineFriendRequest(friendship._id) : undefined}
-                      />
-                    );
-                  })
-                ) : (
-                  <p className="text-sm text-text-secondary">Список друзей пуст.</p>
-                )}
-              </div>
-            </div>
+
+              {isSidebarOpen && (
+                <div className="fixed inset-0 z-40 lg:hidden">
+                  <div
+                    className="absolute inset-0 bg-black/40"
+                    aria-label="Закрыть списки"
+                    onClick={() => setIsSidebarOpen(false)}
+                  />
+                  <div
+                    className={`absolute right-0 top-0 flex h-full w-[85%] max-w-[420px] flex-col gap-4 border-l border-border-soft bg-white p-5 shadow-2xl slide-transition slide-in-right ${isSidebarOpen ? 'open' : ''}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">
+                          {sidebarTab === 'chats' ? 'Чаты' : 'Друзья'}
+                        </p>
+                        <h2 className="truncate text-xl font-semibold text-text-primary">Навигация</h2>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setIsSidebarOpen(false)}>
+                        Закрыть
+                      </Button>
+                    </div>
+                    <SidebarTabs active={sidebarTab} onChange={setSidebarTab} />
+                    <Input
+                      placeholder={sidebarTab === 'chats' ? 'Поиск чата' : 'Поиск друга'}
+                      value={sidebarFilter}
+                      onChange={setSidebarFilter}
+                      className="text-sm"
+                    />
+                    <div className="flex-1 min-h-0 max-h-full space-y-2 overflow-y-auto pr-1 styled-scrollbar">
+                      {sidebarTab === 'chats' ? (
+                        filteredChats.length ? (
+                          filteredChats.map(chat => (
+                            <ChatPreviewButton
+                              key={chat._id}
+                              chat={chat}
+                              active={chat._id === activeChatId}
+                              onSelect={() => handleChatPreviewSelect(chat._id)}
+                              pending={chat.membershipStatus !== 'active'}
+                            />
+                          ))
+                        ) : (
+                          <p className="text-sm text-text-secondary">Пока нет чатов — создайте новый, чтобы начать.</p>
+                        )
+                      ) : combinedFriends.length ? (
+                        combinedFriends.map(friendship => {
+                          if (!friendship.user) {
+                            return null;
+                          }
+                          const isPendingFriend = friendship.status === 'pending' && friendship.direction === 'incoming';
+                          return (
+                            <FriendListCard
+                              key={friendship._id}
+                              friendship={friendship}
+                              onClick={handleFriendClick}
+                              pending={isPendingFriend}
+                              actionPending={isRespondingFriendRequest}
+                              onAccept={isPendingFriend ? () => handleAcceptFriendRequest(friendship._id) : undefined}
+                              onDecline={isPendingFriend ? () => handleDeclineFriendRequest(friendship._id) : undefined}
+                            />
+                          );
+                        })
+                      ) : (
+                        <p className="text-sm text-text-secondary">Список друзей пуст.</p>
+                      )}
+                    </div>
+                    {sidebarTab === 'chats' ? (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="w-full"
+                        onClick={() => setIsCreateChatModalOpen(true)}
+                      >
+                        Создать чат
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="w-full"
+                        onClick={() => setIsAddFriendModalOpen(true)}
+                      >
+                        Добавить друга
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          <div className="flex flex-1 min-h-0 flex-col gap-6 lg:h-[72vh] lg:flex-row lg:overflow-hidden">
+          <div className="flex flex-1 min-h-0 flex-col gap-3 lg:h-[72vh] lg:flex-row lg:overflow-hidden">
             <aside className="hidden w-[260px] min-h-[200px] flex-shrink-0 rounded-3xl border border-border-soft bg-white p-4 shadow-brand-card lg:flex lg:h-[72vh] lg:max-h-[72vh] lg:flex-col lg:items-center lg:overflow-hidden">
               <div className="flex h-full w-full max-w-[240px] flex-1 flex-col min-h-0">
                 <div className="text-center">
@@ -1053,7 +1104,7 @@ export const ChatPage: React.FC = () => {
               </div>
             </aside>
 
-            <section className="flex h-full min-h-[60vh] flex-1 flex-col rounded-3xl border border-border-soft bg-white shadow-brand-card overflow-hidden max-h-[85vh] md:max-h-[78vh] lg:h-[72vh] lg:max-h-[72vh] lg:min-h-0">
+            <section className="flex flex-1 min-h-0 flex-col rounded-3xl border border-border-soft bg-white shadow-brand-card overflow-hidden lg:h-[72vh] lg:max-h-[72vh] lg:min-h-0">
               {activeChat ? (
                 <>
                   <div className="flex flex-wrap items-center gap-4 border-b border-border-subtle px-6 py-4 flex-none">
@@ -1107,7 +1158,7 @@ export const ChatPage: React.FC = () => {
                     </div>
                   )}
 
-                  <div ref={messageListRef} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-4 py-6 styled-scrollbar">
+                  <div ref={messageListRef} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-4 py-3 styled-scrollbar">
                     {isMembershipPending ? (
                       <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 px-4 py-6 text-center text-sm text-amber-800">
                         Примите приглашение, чтобы увидеть историю переписки.
@@ -1128,7 +1179,7 @@ export const ChatPage: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="border-t border-border-subtle px-4 py-4 flex-none">
+                  <div className="border-t border-border-subtle px-4 py-3 flex-none bg-white">
                     <div className="flex items-end gap-2 sm:gap-3">
                       <textarea
                         placeholder="Сообщение"
@@ -1208,30 +1259,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
       </main>
-      {SIDEBAR_TABS.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-white/95 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur z-40">
-          <div className="flex items-center justify-around">
-            {SIDEBAR_TABS.map(tab => {
-              const isActive = sidebarTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() => setSidebarTab(tab.id)}
-                  className={`relative flex min-w-[80px] flex-col items-center gap-1 rounded-2xl border px-3 py-2 text-center text-xs font-medium transition-all duration-300 ${
-                    isActive
-                      ? 'text-brand-indigo bg-brand-seashell border-brand-almond shadow-brand-card'
-                      : 'border-transparent text-text-secondary hover:text-brand-indigo hover:bg-surface-muted'
-                  }`}
-                >
-                  <span className="whitespace-normal leading-tight">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Mobile bottom tabs removed to free space for chat viewport */}
       <TopUpRequestModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} />
       {isCreateChatModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
