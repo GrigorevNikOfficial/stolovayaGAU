@@ -1,23 +1,23 @@
 import {
-    combine,
-    createEffect,
-    createEvent,
-    createStore,
-    sample,
+  combine,
+  createEffect,
+  createEvent,
+  createStore,
+  sample,
 } from 'effector';
 import { ordersApi } from '../api/orders';
 import { showToast } from '../components/layout/Toast/stores/toastStore.ts';
 import { onSocketEvent } from '../lib/socket';
 import type {
-    CreateOrderRequest,
-    Order,
-    UpdateOrderRequest,
+  CreateOrderRequest,
+  Order,
+  UpdateOrderRequest,
 } from '../types/order';
 import type { User } from '../types/user';
 import { $currentUser, updateCurrentUserBalance } from './users';
 
 type LoadOrdersParams = {
-  role: 'admin' | 'user' | 'storeManager' | 'canteenManager' | 'cateenManager';
+  role: User['role'];
 };
 
 type OrderWithBalance = {
@@ -35,7 +35,9 @@ const upsertOrder = (orders: Order[], candidate: Order): Order[] => {
   const existingIndex = orders.findIndex(order => order._id === candidate._id);
 
   if (existingIndex >= 0) {
-    return orders.map(order => (order._id === candidate._id ? candidate : order));
+    return orders.map(order =>
+      order._id === candidate._id ? candidate : order
+    );
   }
 
   return sortByCreatedAtDesc([candidate, ...orders]);
@@ -81,12 +83,20 @@ export const loadOrdersFx = createEffect(
       role === 'cateenManager'
     ) {
       const response = await ordersApi.getOrders();
-      console.log('loadOrdersFx: получено заказов:', response.orders.length, response);
+      console.log(
+        'loadOrdersFx: получено заказов:',
+        response.orders.length,
+        response
+      );
       return response.orders;
     }
 
     const response = await ordersApi.getMyOrders();
-    console.log('loadOrdersFx: получено моих заказов:', response.orders.length, response);
+    console.log(
+      'loadOrdersFx: получено моих заказов:',
+      response.orders.length,
+      response
+    );
     return response.orders;
   }
 );
@@ -153,7 +163,12 @@ export const $displayedOrders = combine(
   $orders,
   $currentUser,
   (orders, currentUser) => {
-    console.log('$displayedOrders: orders =', orders.length, 'currentUser =', currentUser?.role);
+    console.log(
+      '$displayedOrders: orders =',
+      orders.length,
+      'currentUser =',
+      currentUser?.role
+    );
     if (!currentUser) return [];
     const isStaffRole =
       currentUser.role === 'admin' ||
@@ -166,7 +181,10 @@ export const $displayedOrders = combine(
       // Для canteenManager дополнительно скрываем передачи в доставку (in_transit)
       const filtered = orders.filter(order => {
         if (order.status === 'completed') return false;
-        if (currentUser.role === 'canteenManager' || currentUser.role === 'cateenManager') {
+        if (
+          currentUser.role === 'canteenManager' ||
+          currentUser.role === 'cateenManager'
+        ) {
           if (order.status === 'in_transit') return false;
         }
         return true;
@@ -174,15 +192,26 @@ export const $displayedOrders = combine(
 
       // Сортируем по возрастанию created_at — старые сначала, новые добавляются в конец
       const sorted = [...filtered].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
-      console.log('$displayedOrders: staff view for', currentUser.role, '->', sorted.length);
+      console.log(
+        '$displayedOrders: staff view for',
+        currentUser.role,
+        '->',
+        sorted.length
+      );
       return sorted;
     } else {
       // Обычный пользователь видит только свои заказы — оставляем порядок как есть (свежие наверху)
-      const filtered = orders.filter(order => order.user_id === currentUser._id);
-      console.log('$displayedOrders: returning filtered orders for user:', filtered.length);
+      const filtered = orders.filter(
+        order => order.user_id === currentUser._id
+      );
+      console.log(
+        '$displayedOrders: returning filtered orders for user:',
+        filtered.length
+      );
       return filtered;
     }
   }
