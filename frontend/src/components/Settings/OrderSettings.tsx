@@ -78,7 +78,7 @@ export const OrderSettings: React.FC = () => {
         </p>
       </div>
 
-      <div className="bg-white border border-border-soft rounded-3xl p-6 space-y-6 shadow-brand-card">
+      <div className="rounded-2xl border border-border-soft bg-surface-muted/40 p-5 space-y-6">
         <div>
           <h3 className="text-lg font-semibold text-text-primary mb-4">
             Сервисный сбор
@@ -132,7 +132,7 @@ export const OrderSettings: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-3 pt-1">
         <Button
           onClick={loadSettings}
           variant="outline"

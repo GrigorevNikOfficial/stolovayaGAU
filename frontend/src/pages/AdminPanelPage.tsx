@@ -11,7 +11,7 @@ import { UserBalances } from '../components/Settings/UserBalances';
 import { TopUpRequestsAdmin } from '../components/TopUpRequests/TopUpRequestsAdmin';
 import { showToast } from '../components/layout/Toast/stores/toastStore';
 import { onSocketEvent } from '../lib/socket';
-import { $currentUser, logout } from '../models/users';
+import { $currentUser } from '../models/users';
 import type { MarketplaceSettings } from '../types/settings';
 import { formatBalance } from '../utils/formatBalance';
 import {
@@ -240,9 +240,8 @@ const AnalyticsBarChart: React.FC<AnalyticsBarChartProps> = ({ data, activeId, o
 };
 
 export const AdminPanelPage: React.FC = () => {
-  const { currentUser, handleLogout } = useUnit({
+  const { currentUser } = useUnit({
     currentUser: $currentUser,
-    handleLogout: logout,
   });
   const isAdmin = currentUser?.role === 'admin';
   const [activeSection, setActiveSection] = React.useState<AdminSectionId>('marketplace');
@@ -265,13 +264,6 @@ export const AdminPanelPage: React.FC = () => {
     window.history.pushState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
   }, []);
-
-  const handleLogoutClick = React.useCallback(() => {
-    handleLogout();
-    setTimeout(() => {
-      handleNavigate('/');
-    }, 100);
-  }, [handleLogout, handleNavigate]);
 
   const handleProfileNavigate = React.useCallback(() => {
     handleNavigate('/profile');
@@ -1015,26 +1007,6 @@ export const AdminPanelPage: React.FC = () => {
                   `${currentUser.first_name?.[0] ?? ''}${currentUser.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
                 )}
               </span>
-            </button>
-            <button
-              type="button"
-              onClick={handleLogoutClick}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-              aria-label="Выйти"
-            >
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                <polyline points="10 17 15 12 10 7" />
-                <line x1="15" y1="12" x2="3" y2="12" />
-              </svg>
             </button>
           </div>
         )}

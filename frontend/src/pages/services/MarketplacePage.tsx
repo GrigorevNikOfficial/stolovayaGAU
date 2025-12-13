@@ -11,7 +11,7 @@ import TopUpRequestModal from '../../components/Modal/TopUpRequestModal';
 import { CheckIcon, EyeIcon, LeafIcon } from '../../components/icons/ServiceIcons.tsx';
 import NotificationBell from '../../components/Notifications/NotificationBell.tsx';
 import { showToast } from '../../components/layout/Toast/stores/toastStore';
-import { $currentUser, getMeFx, logout } from '../../models/users';
+import { $currentUser, getMeFx } from '../../models/users';
 import { onSocketEvent } from '../../lib/socket';
 import { formatBalance } from '../../utils/formatBalance';
 import { isAuthPath, markAuthRedirect } from '../../utils/authRedirect';
@@ -1206,9 +1206,8 @@ const RequestCard: React.FC<{
 };
 
 export const MarketplacePage: React.FC = () => {
-  const { currentUser, handleLogout, refreshCurrentUser } = useUnit({
+  const { currentUser, refreshCurrentUser } = useUnit({
     currentUser: $currentUser,
-    handleLogout: logout,
     refreshCurrentUser: getMeFx,
   });
   const currentUserId = currentUser?._id;
@@ -1356,13 +1355,6 @@ export const MarketplacePage: React.FC = () => {
     [availableTabs, handleHeaderTabChange]
   );
 
-
-  const handleLogoutClick = React.useCallback(() => {
-    handleLogout();
-    setTimeout(() => {
-      handleNavigate('/');
-    }, 100);
-  }, [handleLogout, handleNavigate]);
 
   const handleProfileNavigate = React.useCallback(() => {
     handleNavigate('/profile');
@@ -1926,26 +1918,6 @@ export const MarketplacePage: React.FC = () => {
                 <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-sm font-semibold text-white sm:h-10 sm:w-10">
                   {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
                 </span>
-              </button>
-              <button
-                type="button"
-                onClick={handleLogoutClick}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
-                aria-label="Выйти"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
               </button>
             </>
           ) : (

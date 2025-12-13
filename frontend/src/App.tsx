@@ -33,7 +33,7 @@ const AuthPendingScreen = () => (
 );
 
 function App() {
-  const { currentUser, handleGetMe, handleLogout } = useUnit({
+  const { currentUser, handleGetMe } = useUnit({
     currentUser: $currentUser,
     handleGetMe: getMeFx,
     handleLogout: logout,
@@ -130,10 +130,6 @@ function App() {
         <NavigationPage
           currentUser={currentUser ?? null}
           onNavigate={navigate}
-          onLogout={() => {
-            handleLogout();
-            navigate('/');
-          }}
         />
       );
     }
@@ -143,10 +139,6 @@ function App() {
         <NavigationPage
           currentUser={currentUser}
           onNavigate={navigate}
-          onLogout={() => {
-            handleLogout();
-            navigate('/');
-          }}
         />
       ) : (
         <AuthForm />
@@ -199,10 +191,6 @@ function App() {
           <NavigationPage
             currentUser={currentUser}
             onNavigate={navigate}
-            onLogout={() => {
-              handleLogout();
-              navigate('/');
-            }}
           />
         );
       }
@@ -214,10 +202,6 @@ function App() {
       <NavigationPage
         currentUser={currentUser ?? null}
         onNavigate={navigate}
-        onLogout={() => {
-          handleLogout();
-          navigate('/');
-        }}
       />
     );
   };

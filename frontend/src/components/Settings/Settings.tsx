@@ -73,7 +73,7 @@ export const Settings: React.FC = () => {
       />
 
       {activeTab < visibleTabs.length && (
-        <div className="mt-4 rounded-[32px] border border-border-soft bg-white p-6 text-text-primary shadow-brand-card">
+        <div className="mt-6 rounded-2xl border border-border-soft bg-surface-muted/40 p-4 text-text-primary sm:p-6">
           {visibleTabs[activeTab].id === 'delivery' && <DeliverySettings />}
 
           {visibleTabs[activeTab].id === 'orders' && <OrderSettings />}

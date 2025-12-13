@@ -1,4 +1,4 @@
-﻿import { useState, type FC } from 'react';
+﻿import { type FC } from 'react';
 import Button from '../components/layout/Button/Button.tsx';
 import Footer from '../components/layout/Footer/Footer.tsx';
 import ServiceHeader from '../components/layout/ServiceHeader/ServiceHeader.tsx';
@@ -23,7 +23,7 @@ const statusMap = {
     tone: 'border border-emerald-200 bg-emerald-50 text-emerald-700',
   },
   testing: {
-    label: 'Тестируем',
+    label: 'Демо',
     tone: 'border border-amber-200 bg-amber-50 text-amber-700',
   },
   soon: {
@@ -131,13 +131,11 @@ const services: ServiceCardDescriptor[] = [
 type NavigationPageProps = {
   currentUser: User | null;
   onNavigate: (path: string) => void;
-  onLogout: () => void;
 };
 
 export const NavigationPage: FC<NavigationPageProps> = ({
   currentUser,
   onNavigate,
-  onLogout,
 }) => {
   const avatarUrl = currentUser?.avatar?.url;
   const userInitials = currentUser
@@ -145,7 +143,6 @@ export const NavigationPage: FC<NavigationPageProps> = ({
       'U'
     : '';
   const balanceLabel = currentUser ? formatBalance(currentUser.balance) : '';
-  const [isServicePromptVisible, setIsServicePromptVisible] = useState(true);
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col bg-surface-base">
@@ -188,26 +185,6 @@ export const NavigationPage: FC<NavigationPageProps> = ({
                   )}
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={onLogout}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
-                aria-label="Выйти"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-              </button>
             </>
           ) : (
             <Button
@@ -246,9 +223,6 @@ export const NavigationPage: FC<NavigationPageProps> = ({
                   const Icon = service.Icon;
                   const isComingSoon = service.status === 'soon';
                   const isCardDisabled = isComingSoon;
-                  const cardCtaCopy = isComingSoon
-                    ? 'Готовим к запуску'
-                    : 'Перейти в сервис';
 
                   const handleServiceClick = () => {
                     if (isComingSoon) {
@@ -275,36 +249,23 @@ export const NavigationPage: FC<NavigationPageProps> = ({
                     >
                       <div className="flex h-full flex-col">
                         <div className="sm:hidden space-y-3">
-                          <div className="flex gap-3">
+                          <div className="flex flex-col items-center gap-2 text-center">
                             <div
-                              className={`flex h-10 w-10 min-w-[44px] items-center justify-center rounded-2xl bg-gradient-to-br ${service.iconAccent} text-white shadow-[0_16px_30px_rgba(16,185,129,0.35)]`}
+                              className={`flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br ${service.iconAccent} text-white shadow-[0_16px_30px_rgba(16,185,129,0.35)]`}
                             >
                               <Icon
-                                className="h-5 w-5 text-white"
+                                className="h-6 w-6 text-white"
                                 aria-hidden="true"
                               />
                             </div>
-                            <div className="flex min-w-0 flex-1 flex-col gap-1">
-                              <h3 className="text-[0.9rem] font-semibold leading-tight text-brand-indigo">
-                                {service.title}
-                              </h3>
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[0.58rem] font-semibold tracking-[0.28em] uppercase ${tone.tone}`}
-                              >
-                                {tone.label}
-                              </span>
-                              <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">
-                                {service.description}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-sm font-semibold text-brand-indigo">
-                            {cardCtaCopy}
-                            {!isCardDisabled && (
-                              <span className="text-brand-almond transition-transform duration-300 group-hover:translate-x-1">
-                                →
-                              </span>
-                            )}
+                            <h3 className="text-[1rem] font-semibold leading-snug text-brand-indigo break-words">
+                              {service.title}
+                            </h3>
+                            <span
+                              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[0.62rem] font-semibold tracking-[0.18em] uppercase leading-none whitespace-nowrap ${tone.tone}`}
+                            >
+                              {tone.label}
+                            </span>
                           </div>
                         </div>
 
@@ -319,25 +280,17 @@ export const NavigationPage: FC<NavigationPageProps> = ({
                               />
                             </div>
                             <span
-                              className={`ml-auto rounded-full px-3 py-1 text-xs font-semibold tracking-[0.3em] uppercase ${tone.tone}`}
+                              className={`ml-auto inline-flex w-fit items-center rounded-full px-3 py-1 text-[0.7rem] font-semibold tracking-[0.2em] uppercase leading-none whitespace-nowrap ${tone.tone}`}
                             >
                               {tone.label}
                             </span>
                           </div>
-                          <h3 className="mt-4 text-xl font-semibold leading-tight text-brand-indigo">
+                          <h3 className="mt-4 text-xl font-semibold leading-tight text-brand-indigo break-words">
                             {service.title}
                           </h3>
                           <p className="mt-2 flex-1 text-sm text-text-secondary leading-relaxed">
                             {service.description}
                           </p>
-                          <div className="mt-4 flex items-center gap-2 text-base font-semibold text-brand-indigo">
-                            {cardCtaCopy}
-                            {!isCardDisabled && (
-                              <span className="text-brand-almond transition-transform duration-300 group-hover:translate-x-1">
-                                →
-                              </span>
-                            )}
-                          </div>
                         </div>
                       </div>
 
@@ -351,44 +304,6 @@ export const NavigationPage: FC<NavigationPageProps> = ({
       </main>
 
       <Footer onNavigate={onNavigate} />
-
-      {isServicePromptVisible && (
-        <div className="fixed left-1/2 z-40 w-full max-w-xl -translate-x-1/2 px-4 sm:px-0 top-[6.5rem] sm:top-[7rem]">
-          <div className="mx-auto rounded-[24px] border border-emerald-200/80 bg-emerald-50/95 px-4 py-3 text-emerald-900 shadow-[0_25px_60px_rgba(16,185,129,0.25)]">
-            <div className="flex items-start gap-3">
-              <div className="flex-1 text-center sm:text-left">
-                <h2 className="text-base font-semibold leading-snug sm:text-lg">
-                  Выберите сервис для продолжения
-                </h2>
-                <p className="mt-1 text-xs text-emerald-800 sm:text-sm">
-                  Сервисы доступны в карточках ниже. Нажмите на нужный, чтобы
-                  перейти.
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Скрыть подсказку"
-                onClick={() => setIsServicePromptVisible(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-600 transition hover:bg-emerald-100"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

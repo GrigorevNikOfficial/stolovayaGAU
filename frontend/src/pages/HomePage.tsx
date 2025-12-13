@@ -11,7 +11,6 @@ import { OrdersList } from '../components/Orders/OrdersList.tsx';
 import { $cart } from '../models/cart';
 import {
   $currentUser,
-  logout,
   uploadAvatar,
   uploadAvatarFx,
   updateProfile,
@@ -56,7 +55,6 @@ export const HomePage: React.FC = () => {
   const {
     currentUser,
     cart,
-    handleLogout,
     handleUploadAvatar,
     handleLoadOrders,
     isAvatarUploading,
@@ -66,7 +64,6 @@ export const HomePage: React.FC = () => {
   } = useUnit({
     currentUser: $currentUser,
     cart: $cart,
-    handleLogout: logout,
     handleUploadAvatar: uploadAvatar,
     handleLoadOrders: loadOrders,
     isAvatarUploading: uploadAvatarFx.pending,
@@ -214,13 +211,6 @@ export const HomePage: React.FC = () => {
     }
   }, [activeTab, visibleTabs.length]);
 
-  const handleLogoutClick = () => {
-    handleLogout();
-    setTimeout(() => {
-      handleNavigation('/');
-    }, 100);
-  };
-
   // Определяем, нужно ли показывать корзину
   const showCart =
     currentUser &&
@@ -325,26 +315,6 @@ export const HomePage: React.FC = () => {
                   </span>
                 </button>
               )}
-              <button
-                type="button"
-                onClick={handleLogoutClick}
-                aria-label="Выйти из аккаунта"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600 sm:h-11 sm:w-11"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-              </button>
             </>
           ) : (
             <Button

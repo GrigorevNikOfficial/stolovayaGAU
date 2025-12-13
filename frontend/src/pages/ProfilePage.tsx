@@ -354,26 +354,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
                 )}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={handleLogoutClick}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-brand-indigo/40 hover:text-brand-indigo"
-              aria-label="Выйти"
-            >
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                <polyline points="10 17 15 12 10 7" />
-                <line x1="15" y1="12" x2="3" y2="12" />
-              </svg>
-            </button>
           </div>
         )}
       />
@@ -411,6 +391,30 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
 
               {activeTab === 'achievements' && <Achievements stats={stats} />}
             </div>
+          </div>
+          <div className="mt-6 flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={handleLogoutClick}
+              className="gap-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300"
+            >
+              Выйти из аккаунта
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+            </Button>
           </div>
         </div>
       </main>
