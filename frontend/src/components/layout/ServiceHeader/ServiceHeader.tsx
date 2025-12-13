@@ -1,5 +1,5 @@
 import React from 'react';
-import LogoSAU from '../../../images/logo.jpg';
+import LogoSAU from '../../../images/logo.svg';
 
 type ServiceHeaderProps = {
   subtitle?: string;
