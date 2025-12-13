@@ -31,7 +31,7 @@ import {
     sendFriendRequest,
     sendFriendRequestFx,
 } from '../../../models/chat';
-import { $currentUser, logout } from '../../../models/users';
+import { $currentUser } from '../../../models/users';
 import type { ChatMessage, ChatParticipant, ChatSummary, ParticipantRole } from '../../../types/chat';
 import type { Friendship } from '../../../types/friend';
 import type { UserPreview } from '../../../types/user';
@@ -353,7 +353,6 @@ export const ChatPage: React.FC = () => {
     handleRespondFriendRequest,
     handleAcceptChatInvite,
     handleDeclineChatInvite,
-    handleLogout,
   } = useUnit({
     chats: $chats,
     activeChatId: $activeChatId,
@@ -375,7 +374,6 @@ export const ChatPage: React.FC = () => {
     handleRespondFriendRequest: respondToRequest,
     handleAcceptChatInvite: acceptChatInvite,
     handleDeclineChatInvite: declineChatInvite,
-    handleLogout: logout,
   });
 
   const isAddingParticipants = useUnit(addParticipantsToChatFx.pending);
@@ -898,26 +896,6 @@ export const ChatPage: React.FC = () => {
                 <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-brand-indigo text-base font-semibold text-white">
                   {avatarUrl ? <img src={avatarUrl} alt="Аватар" className="h-full w-full rounded-full object-cover" /> : userInitials}
                 </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLogout()}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary transition-colors hover:border-emerald-300 hover:text-emerald-600"
-                aria-label="Выйти"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
               </button>
             </>
           ) : null

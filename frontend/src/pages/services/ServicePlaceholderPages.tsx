@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import Button from '../../components/layout/Button/Button.tsx';
 import { BellIcon, CalendarIcon, ChatBubblesIcon } from '../../components/icons/ServiceIcons';
+import ServiceHeader from '../../components/layout/ServiceHeader/ServiceHeader.tsx';
 
 const goToNavigation = () => {
   window.history.pushState({}, '', '/');
@@ -18,8 +19,10 @@ type PlaceholderProps = {
 
 const ServicePlaceholder: FC<PlaceholderProps> = ({ icon, title, tagline, description, highlights, status }) => {
   return (
-    <div className="min-h-screen text-text-primary">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="min-h-screen text-text-primary flex flex-col">
+      <ServiceHeader subtitle="скоро" onLogoClick={goToNavigation} />
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full">
         <div className="flex flex-col gap-8 rounded-3xl border border-border-subtle bg-white p-8 shadow-brand-card">
           <div className="flex items-center gap-4 text-text-secondary">
             <span className="text-brand-indigo" aria-hidden>

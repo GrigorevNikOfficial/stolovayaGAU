@@ -8,7 +8,7 @@ import { internshipsApi } from '../../api/internships';
 import type { InternshipItem } from '../../types/internship';
 import { formatBalance } from '../../utils/formatBalance';
 import { useUnit } from 'effector-react';
-import { $currentUser, logout } from '../../models/users';
+import { $currentUser } from '../../models/users';
 import { showToast } from '../../components/layout/Toast/stores/toastStore.ts';
 
 const formatLabel = (value?: string) => {
@@ -176,9 +176,8 @@ const InternshipCard: React.FC<{
 };
 
 export const InternshipsPage: React.FC = () => {
-  const { currentUser, handleLogout } = useUnit({
+  const { currentUser } = useUnit({
     currentUser: $currentUser,
-    handleLogout: logout,
   });
   const [items, setItems] = useState<InternshipItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -369,30 +368,6 @@ export const InternshipsPage: React.FC = () => {
                 </span>
               </button>
               <NotificationBell />
-              <button
-                type="button"
-                onClick={() => {
-                  handleLogout();
-                  window.history.pushState({}, '', '/');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                }}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface-base text-text-secondary"
-                aria-label="Выйти"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-              </button>
             </>
           ) : null
         }
