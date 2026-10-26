@@ -58,6 +58,7 @@ Workflow file: `.github/workflows/deploy.yml`.
 | `VPS_HOST` | VPS IP / hostname for SSH. |
 | `VPS_USER` | SSH user. |
 | `VPS_SSH_KEY` | Base64-encoded private key or raw PEM with proper newlines (GitHub secret field preserves newlines). |
+| `VPS_SSH_PASSPHRASE` | Passphrase for `VPS_SSH_KEY` when the private key is encrypted. |
 | `VPS_PORT` | (Optional) SSH port, defaults to `22`. |
 | `VPS_APP_PATH` | Absolute path on the VPS that contains `docker-compose.server.yml` and the `.env`. |
 | `GHCR_TOKEN` | PAT with `read:packages` scope so the VPS can `docker login ghcr.io`. |
