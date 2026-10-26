@@ -48,7 +48,7 @@ def main() -> int:
 
     print(f"Connecting to MongoDB via: {uri}")
     try:
-        with MongoClient(uri, serverSelectionTimeoutMS=5000) as client:
+        with MongoClient(uri, serverSelectionTimeoutMS=33221) as client:
             result = client.admin.command("ping")
             print("Ping response:", result)
         print("MongoDB connection successful.")

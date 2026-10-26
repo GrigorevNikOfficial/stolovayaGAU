@@ -16,7 +16,7 @@ jobs:
       contents: read
       packages: write
     env:
-      FRONTEND_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL != '' && secrets.FRONTEND_API_BASE_URL || 'http://localhost:5000/api' }}
+      FRONTEND_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL != '' && secrets.FRONTEND_API_BASE_URL || 'http://localhost:33221/api' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

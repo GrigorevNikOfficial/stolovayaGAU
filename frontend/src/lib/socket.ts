@@ -10,7 +10,7 @@ let socket: Socket | null = null;
 
 const stripTrailingSlash = (url: string) => url.replace(/\/+$/, '');
 
-const fallbackSocketUrl = 'http://localhost:5000';
+const fallbackSocketUrl = 'http://localhost:5001';
 const envSocketUrl = (import.meta.env.VITE_SOCKET_URL as string | undefined)?.trim();
 const derivedFromApi = API_CONFIG.BASE_URL.replace(/\/api$/i, '');
 const resolvedSocketUrl = stripTrailingSlash(

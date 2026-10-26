@@ -13,8 +13,8 @@ This repository now ships with Docker images for the backend (Node.js + Express 
    ```
 
 4. The services are available at (override via `.env` if needed):
-   - Backend API: http://localhost:5000
-   - Frontend SPA: http://localhost:4173
+   - Backend API: http://localhost:33221
+   - Frontend SPA: http://localhost:33321
    - MongoDB: localhost:27017
 
 5. Stop everything with `docker compose down` (add `-v` to drop Mongo data volume).
@@ -44,7 +44,7 @@ Workflow file: `.github/workflows/deploy.yml`.
 - Triggers on pushes to `main` and `deploy`, plus manual runs (`workflow_dispatch`).
 - Builds the backend and frontend Docker images using Buildx.
 - Pushes both `latest` and `${{ github.sha }}` tags to GHCR (`ghcr.io/<owner>/stolovaya-backend` and `/stolovaya-frontend`).
-- Frontend build uses the `FRONTEND_API_BASE_URL` secret (falls back to `http://localhost:5000/api`).
+- Frontend build uses the `FRONTEND_API_BASE_URL` secret (falls back to `http://localhost:33221/api`).
 
 ### Deploy job
 - Runs only after the build job succeeds on the same branches.
