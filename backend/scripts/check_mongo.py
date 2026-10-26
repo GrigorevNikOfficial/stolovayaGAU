@@ -4,6 +4,7 @@ Loads MONGODB_URI from the backend .env file (if present) or falls back to
 an environment variable. Prints ping result and exits with non-zero code on
 failure.
 """
+
 from __future__ import annotations
 
 import os
